@@ -34,7 +34,7 @@ export default function Login() {
             <span className="text-accent-foreground font-display font-bold text-lg">Z</span>
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground">Sign in to Zentra</h1>
-          <p className="text-sm text-muted-foreground mt-1">Welcome back to your wholesale OS</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage your inventory, invoices & customers — all in one place</p>
         </div>
 
         <div className="zentra-card p-6">

@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
 import { demoInvoices, demoCustomers, demoCompany } from "@/lib/demo-data";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, FileText, Send, Eye, Printer } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Invoice } from "@/lib/types";
 
@@ -23,14 +24,25 @@ export default function Invoices() {
     window.print();
   };
 
+  const [fullCompany, setFullCompany] = useState<any>(null);
+
+  useEffect(() => {
+    if (company?.id) {
+      supabase.from("companies").select("*").eq("id", company.id).single().then(({ data }) => {
+        if (data) setFullCompany(data);
+      });
+    }
+  }, [company?.id]);
+
   const getInvoiceCompany = () => ({
-    name: company?.name || demoCompany.name,
-    address: demoCompany.address,
-    phone: null as string | null,
-    email: null as string | null,
-    company_number: null as string | null,
-    logo_url: null as string | null,
-    currency: (company?.currency || demoCompany.currency) as "GBP" | "NGN",
+    name: fullCompany?.name || company?.name || demoCompany.name,
+    address: fullCompany?.address || demoCompany.address,
+    phone: fullCompany?.phone || null,
+    email: fullCompany?.email || null,
+    company_number: fullCompany?.company_number || null,
+    logo_url: fullCompany?.logo_url || null,
+    currency: (fullCompany?.currency || company?.currency || demoCompany.currency) as "GBP" | "NGN",
+    brand_color: fullCompany?.brand_color || company?.brand_color || "#0d9488",
   });
 
   return (

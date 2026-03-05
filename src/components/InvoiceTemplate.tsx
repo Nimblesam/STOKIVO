@@ -10,6 +10,7 @@ interface InvoiceCompany {
   company_number?: string | null;
   logo_url?: string | null;
   currency: Currency;
+  brand_color?: string | null;
 }
 
 interface InvoiceItem {
@@ -42,16 +43,19 @@ interface InvoiceTemplateProps {
 export function InvoiceTemplate({ company, invoice }: InvoiceTemplateProps) {
   const balance = invoice.total - invoice.amountPaid;
   const currency = company.currency || "GBP";
+  const brandColor = company.brand_color || "#0d9488";
 
   return (
     <div className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-0" id="invoice-print">
+      {/* Accent bar */}
+      <div className="h-2 rounded-full mb-6" style={{ backgroundColor: brandColor }} />
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
           {company.logo_url ? (
             <img src={company.logo_url} alt={company.name} className="h-12 mb-2 object-contain" />
           ) : (
-            <h2 className="text-2xl font-display font-bold text-foreground">{company.name}</h2>
+            <h2 className="text-2xl font-display font-bold" style={{ color: brandColor }}>{company.name}</h2>
           )}
           {company.address && <p className="text-sm text-muted-foreground mt-1">{company.address}</p>}
           {company.phone && <p className="text-sm text-muted-foreground">{company.phone}</p>}
@@ -61,7 +65,7 @@ export function InvoiceTemplate({ company, invoice }: InvoiceTemplateProps) {
           )}
         </div>
         <div className="text-right">
-          <h1 className="text-3xl font-display font-bold text-accent">INVOICE</h1>
+          <h1 className="text-3xl font-display font-bold" style={{ color: brandColor }}>INVOICE</h1>
           <p className="text-lg font-semibold text-foreground mt-1">{invoice.invoiceNumber}</p>
           <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
             <p>Date: {invoice.createdAt}</p>
@@ -84,7 +88,7 @@ export function InvoiceTemplate({ company, invoice }: InvoiceTemplateProps) {
       {/* Items Table */}
       <table className="w-full text-sm mb-8">
         <thead>
-          <tr className="border-b-2 border-foreground/10">
+          <tr style={{ borderBottomColor: brandColor, borderBottomWidth: 2 }}>
             <th className="text-left py-3 font-semibold text-foreground">Item</th>
             <th className="text-right py-3 font-semibold text-foreground">Qty</th>
             <th className="text-right py-3 font-semibold text-foreground">Unit Price</th>
