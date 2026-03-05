@@ -15,6 +15,7 @@ import PriceChangeAlerts from "./pages/PriceChangeAlerts";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import InventoryMovements from "./pages/InventoryMovements";
+import CreditLedger from "./pages/CreditLedger";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
@@ -71,6 +72,7 @@ const AppRoutes = () => (
               <Route path="invoices" element={<Invoices />} />
               <Route path="alerts/low-stock" element={<LowStockAlerts />} />
               <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
+              <Route path="credit-ledger" element={<CreditLedger />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
