@@ -48,7 +48,7 @@ export default function Suppliers() {
                   variant="outline"
                   size="sm"
                   className="flex-1 gap-1.5 text-xs"
-                  onClick={() => window.open(`tel:${supplier.phone}`)}
+                  onClick={() => { if (supplier.phone) window.open(`tel:${supplier.phone}`); }}
                 >
                   <Phone className="h-3 w-3" /> Call
                 </Button>
@@ -56,7 +56,10 @@ export default function Suppliers() {
                   variant="outline"
                   size="sm"
                   className="flex-1 gap-1.5 text-xs text-success border-success/20 hover:bg-success/5"
-                  onClick={() => window.open(`https://wa.me/${supplier.whatsapp.replace("+", "")}`)}
+                  onClick={() => {
+                    const num = supplier.whatsapp || supplier.phone;
+                    if (num) window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}`);
+                  }}
                 >
                   <MessageCircle className="h-3 w-3" /> WhatsApp
                 </Button>

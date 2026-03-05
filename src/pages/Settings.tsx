@@ -28,6 +28,7 @@ export default function Settings() {
     custom_domain: "",
   });
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const isPro = company?.plan === "pro";
 
   useEffect(() => {
     if (company) {
@@ -99,7 +100,7 @@ export default function Settings() {
   };
 
   const handleSaveDomain = async () => {
-    if (!company) return;
+    if (!company || !isPro) return;
     setSaving(true);
     const { error } = await supabase
       .from("companies")
@@ -109,7 +110,7 @@ export default function Settings() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Custom domain saved!");
+      toast.success("Subdomain saved!");
     }
   };
 
@@ -230,43 +231,43 @@ export default function Settings() {
             <div className="flex items-center gap-3 mb-2">
               <Globe className="h-5 w-5 text-accent" />
               <div>
-                <h3 className="font-display font-semibold text-foreground">Custom Domain</h3>
-                <p className="text-sm text-muted-foreground">Connect your own domain to your Zentra workspace</p>
+                <h3 className="font-display font-semibold text-foreground">Custom Subdomain</h3>
+                <p className="text-sm text-muted-foreground">
+                  {isPro
+                    ? "Set a custom subdomain for your Zentra workspace"
+                    : "Upgrade to Pro to unlock custom subdomains"}
+                </p>
               </div>
             </div>
+
+            {!isPro && (
+              <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 text-sm text-warning-foreground">
+                <strong>Pro plan required.</strong> Custom subdomains are only available on the Pro plan. Upgrade in the Billing tab.
+              </div>
+            )}
 
             <div>
-              <Label>Custom Domain</Label>
-              <Input
-                value={companyForm.custom_domain}
-                onChange={(e) => setCompanyForm({ ...companyForm, custom_domain: e.target.value })}
-                placeholder="invoices.yourbusiness.com"
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                Point your domain's A record to <code className="bg-muted px-1 py-0.5 rounded text-xs">185.158.133.1</code> and
-                add a TXT record <code className="bg-muted px-1 py-0.5 rounded text-xs">_lovable</code> for verification.
-              </p>
-            </div>
-
-            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-foreground">DNS Setup Instructions</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex gap-3">
-                  <span className="font-mono text-xs bg-muted px-2 py-1 rounded shrink-0">A</span>
-                  <span>Point <code>@</code> (root) and <code>www</code> to <code>185.158.133.1</code></span>
-                </div>
-                <div className="flex gap-3">
-                  <span className="font-mono text-xs bg-muted px-2 py-1 rounded shrink-0">TXT</span>
-                  <span>Add <code>_lovable</code> TXT record for domain verification</span>
-                </div>
+              <Label>Subdomain</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input
+                  value={companyForm.custom_domain}
+                  onChange={(e) => setCompanyForm({ ...companyForm, custom_domain: e.target.value })}
+                  placeholder="your-business"
+                  className="flex-1"
+                  disabled={!isPro}
+                />
+                <span className="text-sm text-muted-foreground whitespace-nowrap">.zentra.app</span>
               </div>
-              <p className="text-xs text-muted-foreground">DNS changes can take up to 72 hours to propagate. SSL will be provisioned automatically.</p>
+              {companyForm.custom_domain && isPro && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Your workspace will be accessible at <code className="bg-muted px-1 py-0.5 rounded text-xs">{companyForm.custom_domain}.zentra.app</code>
+                </p>
+              )}
             </div>
 
-            <Button onClick={handleSaveDomain} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving}>
+            <Button onClick={handleSaveDomain} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving || !isPro}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Save Domain
+              Save Subdomain
             </Button>
           </div>
         </TabsContent>

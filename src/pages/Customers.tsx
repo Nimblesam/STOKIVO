@@ -56,10 +56,18 @@ export default function Customers() {
                   <TableCell className="text-right text-sm">{invoiceCount}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.open(`tel:${customer.phone}`)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (customer.phone) window.open(`tel:${customer.phone}`); }}>
                         <Phone className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => window.open(`https://wa.me/${customer.whatsapp.replace("+", "")}`)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-success"
+                        onClick={() => {
+                          const num = customer.whatsapp || customer.phone;
+                          if (num) window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}`);
+                        }}
+                      >
                         <MessageCircle className="h-3.5 w-3.5" />
                       </Button>
                     </div>
