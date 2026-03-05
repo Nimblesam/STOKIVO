@@ -28,6 +28,11 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
   const [inviting, setInviting] = useState(false);
+  const [connectingStripe, setConnectingStripe] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{
+    connected: boolean; charges_enabled?: boolean; payouts_enabled?: boolean; details_submitted?: boolean;
+  } | null>(null);
+  const [loadingStripeStatus, setLoadingStripeStatus] = useState(false);
   const [companyForm, setCompanyForm] = useState({
     name: "", address: "", country: "", currency: "GBP", brand_color: "#0d9488",
     business_type: "wholesale", company_number: "", phone: "", email: "", custom_domain: "",
@@ -60,6 +65,27 @@ export default function Settings() {
         });
     }
   }, [company]);
+
+  // Fetch Stripe Connect status
+  useEffect(() => {
+    if (!company) return;
+    setLoadingStripeStatus(true);
+    supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
+      if (!error && data) setStripeStatus(data);
+      setLoadingStripeStatus(false);
+    });
+  }, [company]);
+
+  const handleConnectStripe = async () => {
+    setConnectingStripe(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start Stripe Connect onboarding");
+    } finally { setConnectingStripe(false); }
+  };
 
   const handleSaveCompany = async () => {
     if (!company) return;
@@ -233,39 +259,73 @@ export default function Settings() {
               </div>
               <Separator className="my-4" />
 
-              {/* Add Bank Account */}
-              <div className="p-4 rounded-lg border-2 border-dashed border-accent/30 bg-accent/5 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Banknote className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Bank Account</p>
-                      <p className="text-xs text-muted-foreground">Add your bank details for payouts</p>
+              {/* Stripe Connect Status */}
+              {loadingStripeStatus ? (
+                <div className="p-4 rounded-lg border bg-muted/20 flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Checking Stripe Connect status...</span>
+                </div>
+              ) : stripeStatus?.connected && stripeStatus.details_submitted ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg border-2 border-green-500/30 bg-green-500/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                          <Check className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Stripe Connect Active</p>
+                          <p className="text-xs text-muted-foreground">
+                            Charges: {stripeStatus.charges_enabled ? "✅ Enabled" : "⏳ Pending"} • Payouts: {stripeStatus.payouts_enabled ? "✅ Enabled" : "⏳ Pending"}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleConnectStripe} disabled={connectingStripe} className="gap-2">
+                        {connectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                        Manage
+                      </Button>
                     </div>
                   </div>
-                  <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
-                    onClick={() => toast.info("Bank account setup will be available once Stripe Connect is integrated.", { duration: 4000 })}>
-                    <Plus className="h-4 w-4" /> Add Bank Account
-                  </Button>
                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-[hsl(250,60%,50%)]/10 flex items-center justify-center">
-                      <CreditCard className="h-5 w-5 text-[hsl(250,60%,50%)]" />
+              ) : stripeStatus?.connected && !stripeStatus.details_submitted ? (
+                <div className="p-4 rounded-lg border-2 border-yellow-500/30 bg-yellow-500/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                        <Loader2 className="h-5 w-5 text-yellow-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Onboarding Incomplete</p>
+                        <p className="text-xs text-muted-foreground">Complete your Stripe account setup to start receiving payments</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">Stripe Connect</p>
-                      <p className="text-xs text-muted-foreground">Accept card, Apple Pay, Google Pay • UK & Global</p>
-                    </div>
+                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={handleConnectStripe} disabled={connectingStripe}>
+                      {connectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                      Continue Setup
+                    </Button>
                   </div>
-                  <Badge variant="secondary">Coming Soon</Badge>
                 </div>
+              ) : (
+                <div className="p-4 rounded-lg border-2 border-dashed border-accent/30 bg-accent/5 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Connect Stripe</p>
+                        <p className="text-xs text-muted-foreground">Set up your bank account to receive payments via Stripe</p>
+                      </div>
+                    </div>
+                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={handleConnectStripe} disabled={connectingStripe}>
+                      {connectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      Connect Stripe Account
+                    </Button>
+                  </div>
+                </div>
+              )}
 
+              <div className="space-y-4 mt-4">
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20 opacity-60">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">

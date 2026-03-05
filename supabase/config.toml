@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.create-payment-link]
 verify_jwt = false
+
+[functions.stripe-connect-onboard]
+verify_jwt = false
+
+[functions.stripe-connect-status]
+verify_jwt = false
