@@ -9,24 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Filter, Package, Barcode, Loader2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
+const emptyForm = {
+  name: "", sku: "", barcode: "", category: "", unit_type: "unit",
+  cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5",
+};
+
 export default function Products() {
-  const { profile, company } = useAuth();
+  const { profile, company, role } = useAuth();
   const currency = (company?.currency || "GBP") as Currency;
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [barcodeProduct, setBarcodeProduct] = useState<any | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: "", sku: "", barcode: "", category: "", unit_type: "unit",
-    cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const fetchProducts = async () => {
     if (!profile?.company_id) return;
@@ -49,7 +53,29 @@ export default function Products() {
       (p.category || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = async () => {
+  const openAdd = () => {
+    setEditingProduct(null);
+    setForm(emptyForm);
+    setShowDialog(true);
+  };
+
+  const openEdit = (product: any) => {
+    setEditingProduct(product);
+    setForm({
+      name: product.name,
+      sku: product.sku,
+      barcode: product.barcode || "",
+      category: product.category || "",
+      unit_type: product.unit_type || "unit",
+      cost_price: (product.cost_price / 100).toFixed(2),
+      selling_price: (product.selling_price / 100).toFixed(2),
+      stock_qty: String(product.stock_qty),
+      min_stock_level: String(product.min_stock_level),
+    });
+    setShowDialog(true);
+  };
+
+  const handleSave = async () => {
     if (!form.name.trim() || !form.sku.trim()) {
       toast.error("Name and SKU are required");
       return;
@@ -59,8 +85,7 @@ export default function Products() {
     const costPrice = Math.round(parseFloat(form.cost_price || "0") * 100);
     const sellingPrice = Math.round(parseFloat(form.selling_price || "0") * 100);
 
-    const { error } = await supabase.from("products").insert({
-      company_id: profile.company_id,
+    const payload = {
       name: form.name,
       sku: form.sku,
       barcode: form.barcode || null,
@@ -70,17 +95,32 @@ export default function Products() {
       selling_price: sellingPrice,
       stock_qty: parseInt(form.stock_qty || "0"),
       min_stock_level: parseInt(form.min_stock_level || "5"),
-    });
+    };
+
+    let error;
+    if (editingProduct) {
+      ({ error } = await supabase.from("products").update(payload).eq("id", editingProduct.id));
+    } else {
+      ({ error } = await supabase.from("products").insert({ ...payload, company_id: profile.company_id }));
+    }
 
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Product added!");
-      setShowAdd(false);
-      setForm({ name: "", sku: "", barcode: "", category: "", unit_type: "unit", cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5" });
+      toast.success(editingProduct ? "Product updated!" : "Product added!");
+      setShowDialog(false);
+      setForm(emptyForm);
+      setEditingProduct(null);
       fetchProducts();
     }
     setSaving(false);
+  };
+
+  const handleDelete = async (product: any) => {
+    if (!confirm(`Delete "${product.name}"?`)) return;
+    const { error } = await supabase.from("products").delete().eq("id", product.id);
+    if (error) toast.error(error.message);
+    else { toast.success("Product deleted"); fetchProducts(); }
   };
 
   return (
@@ -89,7 +129,7 @@ export default function Products() {
         title="Products"
         subtitle={`${products.length} products in inventory`}
         actions={
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => setShowAdd(true)}>
+          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
             <Plus className="h-4 w-4" /> Add Product
           </Button>
         }
@@ -126,6 +166,7 @@ export default function Products() {
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Barcode</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -166,6 +207,25 @@ export default function Products() {
                           </Button>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEdit(product)}>
+                              <Pencil className="h-4 w-4 mr-2" /> Edit Product
+                            </DropdownMenuItem>
+                            {role === "owner" && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(product)}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -175,11 +235,11 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Add Product Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      {/* Add/Edit Product Dialog */}
+      <Dialog open={showDialog} onOpenChange={(o) => { if (!o) { setShowDialog(false); setEditingProduct(null); } else setShowDialog(true); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Product</DialogTitle>
+            <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -233,8 +293,8 @@ export default function Products() {
                 <Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="5" className="mt-1" />
               </div>
             </div>
-            <Button onClick={handleAdd} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
-              {saving ? "Saving..." : "Add Product"}
+            <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
+              {saving ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
             </Button>
           </div>
         </DialogContent>

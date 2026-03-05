@@ -16,6 +16,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import InventoryMovements from "./pages/InventoryMovements";
 import CreditLedger from "./pages/CreditLedger";
+import Payouts from "./pages/Payouts";
 import Cashier from "./pages/Cashier";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -75,6 +76,7 @@ const AppRoutes = () => (
               <Route path="alerts/low-stock" element={<LowStockAlerts />} />
               <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
               <Route path="credit-ledger" element={<CreditLedger />} />
+              <Route path="payouts" element={<Payouts />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />

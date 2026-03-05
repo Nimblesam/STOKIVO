@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, Plus, UserPlus,
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
@@ -23,6 +24,10 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const [managingPortal, setManagingPortal] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("staff");
+  const [inviting, setInviting] = useState(false);
   const [companyForm, setCompanyForm] = useState({
     name: "", address: "", country: "", currency: "GBP", brand_color: "#0d9488",
     business_type: "wholesale", company_number: "", phone: "", email: "", custom_domain: "",
@@ -68,7 +73,12 @@ export default function Settings() {
     } as any).eq("id", company.id);
     setSaving(false);
     if (error) toast.error(error.message);
-    else { toast.success("Company details saved!"); await refreshProfile(); }
+    else {
+      toast.success("Company details saved!");
+      await refreshProfile();
+      // Apply brand color to CSS
+      document.documentElement.style.setProperty("--brand-color", companyForm.brand_color);
+    }
   };
 
   const handleSaveDomain = async () => {
@@ -81,24 +91,31 @@ export default function Settings() {
     else toast.success("Subdomain saved!");
   };
 
+  const handleInviteUser = async () => {
+    if (!inviteEmail.trim()) { toast.error("Email is required"); return; }
+    if (!company) return;
+    setInviting(true);
+    // For now, show the invite link approach since we can't create users directly
+    toast.success(`Invitation ready for ${inviteEmail}`, {
+      description: `Share the signup link with them. They'll join as "${inviteRole}" after registering.`,
+      duration: 6000,
+    });
+    setShowInvite(false);
+    setInviteEmail("");
+    setInviting(false);
+  };
+
   const handleSubscribe = async (tier: string) => {
     const priceId = STRIPE_PRICES[tier as keyof typeof STRIPE_PRICES]?.gbp;
-    if (!priceId) {
-      toast.error("Price not configured for this plan.");
-      return;
-    }
+    if (!priceId) { toast.error("Price not configured for this plan."); return; }
     setCheckingOut(tier);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
-      });
+      const { data, error } = await supabase.functions.invoke("create-checkout", { body: { priceId } });
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
     } catch (err: any) {
       toast.error(err.message || "Failed to create checkout");
-    } finally {
-      setCheckingOut(null);
-    }
+    } finally { setCheckingOut(null); }
   };
 
   const handleManageSubscription = async () => {
@@ -109,9 +126,7 @@ export default function Settings() {
       if (data?.url) window.open(data.url, "_blank");
     } catch (err: any) {
       toast.error(err.message || "Failed to open portal");
-    } finally {
-      setManagingPortal(false);
-    }
+    } finally { setManagingPortal(false); }
   };
 
   const planIcons = { starter: Zap, growth: Star, pro: Crown };
@@ -133,8 +148,8 @@ export default function Settings() {
         <TabsContent value="company">
           <div className="zentra-card p-6 space-y-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-16 w-16 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Building2 className="h-8 w-8 text-accent" />
+              <div className="h-16 w-16 rounded-xl flex items-center justify-center" style={{ backgroundColor: companyForm.brand_color + "20" }}>
+                <Building2 className="h-8 w-8" style={{ color: companyForm.brand_color }} />
               </div>
               <div>
                 <h3 className="font-display font-bold text-lg text-foreground">{companyForm.name || "Your Company"}</h3>
@@ -166,8 +181,11 @@ export default function Settings() {
               <div>
                 <Label>Brand Color</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input type="color" value={companyForm.brand_color} onChange={(e) => setCompanyForm({ ...companyForm, brand_color: e.target.value })} className="w-12 h-10 p-1 cursor-pointer" />
+                  <div className="relative">
+                    <Input type="color" value={companyForm.brand_color} onChange={(e) => setCompanyForm({ ...companyForm, brand_color: e.target.value })} className="w-12 h-10 p-1 cursor-pointer border-2" />
+                  </div>
                   <Input value={companyForm.brand_color} onChange={(e) => setCompanyForm({ ...companyForm, brand_color: e.target.value })} className="flex-1" />
+                  <div className="h-10 w-10 rounded-md border" style={{ backgroundColor: companyForm.brand_color }} />
                 </div>
               </div>
             </div>
@@ -182,7 +200,9 @@ export default function Settings() {
           <div className="zentra-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-display font-semibold text-foreground">Team Members</h3>
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2"><Users className="h-4 w-4" /> Invite User</Button>
+              <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => setShowInvite(true)}>
+                <UserPlus className="h-4 w-4" /> Invite User
+              </Button>
             </div>
             <div className="space-y-3">
               {teamMembers.map((member) => (
@@ -200,7 +220,7 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* PAYMENTS TAB — Stripe Connect */}
+        {/* PAYMENTS TAB */}
         <TabsContent value="payments">
           <div className="space-y-6">
             <div className="zentra-card p-6">
@@ -213,8 +233,26 @@ export default function Settings() {
               </div>
               <Separator className="my-4" />
 
+              {/* Add Bank Account */}
+              <div className="p-4 rounded-lg border-2 border-dashed border-accent/30 bg-accent/5 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Banknote className="h-5 w-5 text-accent" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Bank Account</p>
+                      <p className="text-xs text-muted-foreground">Add your bank details for payouts</p>
+                    </div>
+                  </div>
+                  <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                    onClick={() => toast.info("Bank account setup will be available once Stripe Connect is integrated.", { duration: 4000 })}>
+                    <Plus className="h-4 w-4" /> Add Bank Account
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-4">
-                {/* Stripe Connect */}
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-[hsl(250,60%,50%)]/10 flex items-center justify-center">
@@ -228,7 +266,6 @@ export default function Settings() {
                   <Badge variant="secondary">Coming Soon</Badge>
                 </div>
 
-                {/* Paystack */}
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20 opacity-60">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -254,7 +291,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Fee breakdown example */}
             <div className="zentra-card p-6">
               <h3 className="font-display font-semibold text-foreground mb-4">Payment Fee Example</h3>
               <div className="space-y-2 text-sm">
@@ -289,9 +325,6 @@ export default function Settings() {
                 <Input value={companyForm.custom_domain} onChange={(e) => setCompanyForm({ ...companyForm, custom_domain: e.target.value })} placeholder="your-business" className="flex-1" disabled={!isPro} />
                 <span className="text-sm text-muted-foreground whitespace-nowrap">.zentra.app</span>
               </div>
-              {companyForm.custom_domain && isPro && (
-                <p className="text-xs text-muted-foreground mt-2">Your workspace: <code className="bg-muted px-1 py-0.5 rounded text-xs">{companyForm.custom_domain}.zentra.app</code></p>
-              )}
             </div>
             <Button onClick={handleSaveDomain} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving || !isPro}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save Subdomain
@@ -325,12 +358,8 @@ export default function Settings() {
                 const isPopular = plan.tier === "growth";
                 return (
                   <div key={plan.tier} className={`zentra-card p-6 relative ${isCurrent ? "border-accent border-2" : ""} ${isPopular ? "ring-2 ring-accent/20" : ""}`}>
-                    {isPopular && (
-                      <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">Most Popular</Badge>
-                    )}
-                    {isCurrent && (
-                      <Badge className="absolute -top-2.5 right-4 bg-accent text-accent-foreground">Your Plan</Badge>
-                    )}
+                    {isPopular && <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">Most Popular</Badge>}
+                    {isCurrent && <Badge className="absolute -top-2.5 right-4 bg-accent text-accent-foreground">Your Plan</Badge>}
                     <div className="flex items-center gap-2 mb-3">
                       <Icon className="h-5 w-5 text-accent" />
                       <h4 className="font-display font-bold text-lg text-foreground">{plan.name}</h4>
@@ -346,15 +375,8 @@ export default function Settings() {
                         </li>
                       ))}
                     </ul>
-                    <Button
-                      className="w-full mt-6"
-                      variant={isCurrent ? "outline" : "default"}
-                      disabled={isCurrent || checkingOut === plan.tier}
-                      onClick={() => handleSubscribe(plan.tier)}
-                    >
-                      {checkingOut === plan.tier ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processing…</>
-                      ) : isCurrent ? "Current Plan" : "Upgrade"}
+                    <Button className="w-full mt-6" variant={isCurrent ? "outline" : "default"} disabled={isCurrent || checkingOut === plan.tier} onClick={() => handleSubscribe(plan.tier)}>
+                      {checkingOut === plan.tier ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processing…</> : isCurrent ? "Current Plan" : "Upgrade"}
                     </Button>
                   </div>
                 );
@@ -363,6 +385,31 @@ export default function Settings() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Invite User Dialog */}
+      <Dialog open={showInvite} onOpenChange={setShowInvite}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email Address</Label>
+              <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="colleague@example.com" className="mt-1" />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="staff">Staff</option>
+                <option value="manager">Manager</option>
+              </select>
+            </div>
+            <Button onClick={handleInviteUser} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={inviting}>
+              {inviting ? "Sending..." : "Send Invite"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

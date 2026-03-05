@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -20,6 +20,7 @@ const mainNav = [
   { title: "Customers", url: "/customers", icon: Users },
   { title: "Invoices", url: "/invoices", icon: FileText },
   { title: "Credit Ledger", url: "/credit-ledger", icon: CreditCard },
+  { title: "Payouts", url: "/payouts", icon: Banknote },
 ];
 
 const alertNav = [

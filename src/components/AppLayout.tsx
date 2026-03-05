@@ -1,9 +1,13 @@
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Bell, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -11,7 +15,35 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { profile, company } = useAuth();
+  const navigate = useNavigate();
   const initials = company?.name?.split(" ").map((n) => n[0]).slice(0, 2).join("") || "Z";
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const unreadCount = alerts.filter((a) => !a.read).length;
+
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    supabase
+      .from("alerts")
+      .select("*")
+      .eq("company_id", profile.company_id)
+      .eq("read", false)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setAlerts(data || []));
+  }, [profile?.company_id]);
+
+  const markRead = async (id: string) => {
+    await supabase.from("alerts").update({ read: true }).eq("id", id);
+    setAlerts((prev) => prev.map((a) => a.id === id ? { ...a, read: true } : a));
+  };
+
+  const markAllRead = async () => {
+    if (!profile?.company_id) return;
+    const ids = alerts.filter((a) => !a.read).map((a) => a.id);
+    if (ids.length === 0) return;
+    await supabase.from("alerts").update({ read: true }).in("id", ids);
+    setAlerts((prev) => prev.map((a) => ({ ...a, read: true })));
+  };
 
   return (
     <SidebarProvider>
@@ -20,16 +52,50 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center border-b bg-card px-4 gap-3 shrink-0">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search products, customers, invoices..." className="pl-9 h-9 bg-muted/50 border-0 focus-visible:ring-1" />
-              </div>
-            </div>
+            <div className="flex-1" />
             <div className="flex items-center gap-2 ml-auto">
-              <Button variant="ghost" size="icon" className="relative h-9 w-9">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                    <Bell className="h-4 w-4 text-muted-foreground" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="flex items-center justify-between p-3 border-b">
+                    <h4 className="font-semibold text-sm">Notifications</h4>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} className="text-xs text-accent hover:underline">Mark all read</button>
+                    )}
+                  </div>
+                  <ScrollArea className="max-h-80">
+                    {alerts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
+                    ) : (
+                      alerts.map((alert) => (
+                        <div
+                          key={alert.id}
+                          className={`p-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${!alert.read ? "bg-accent/5" : ""}`}
+                          onClick={() => {
+                            markRead(alert.id);
+                            navigate(alert.type === "LOW_STOCK" ? "/alerts/low-stock" : "/alerts/price-changes");
+                          }}
+                        >
+                          <p className="text-sm font-medium text-foreground">{alert.product_name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{alert.message}</p>
+                          <span className={`text-[10px] font-medium mt-1 inline-block ${alert.severity === "critical" ? "text-destructive" : "text-warning"}`}>
+                            {alert.severity.toUpperCase()}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
               <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground">
                 {initials}
               </div>
