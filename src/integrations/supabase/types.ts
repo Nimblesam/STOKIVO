@@ -829,7 +829,18 @@ export type Database = {
       alert_type: "LOW_STOCK" | "SUPPLIER_PRICE_CHANGE"
       app_role: "owner" | "manager" | "staff"
       business_type: "wholesale" | "retail" | "hybrid"
-      currency_code: "GBP" | "NGN"
+      currency_code:
+        | "GBP"
+        | "NGN"
+        | "USD"
+        | "EUR"
+        | "CAD"
+        | "GHS"
+        | "KES"
+        | "ZAR"
+        | "INR"
+        | "AED"
+        | "AUD"
       invoice_status: "draft" | "sent" | "partially_paid" | "paid" | "overdue"
       movement_type: "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT" | "SALE"
       plan_tier: "starter" | "growth" | "pro"
@@ -965,7 +976,19 @@ export const Constants = {
       alert_type: ["LOW_STOCK", "SUPPLIER_PRICE_CHANGE"],
       app_role: ["owner", "manager", "staff"],
       business_type: ["wholesale", "retail", "hybrid"],
-      currency_code: ["GBP", "NGN"],
+      currency_code: [
+        "GBP",
+        "NGN",
+        "USD",
+        "EUR",
+        "CAD",
+        "GHS",
+        "KES",
+        "ZAR",
+        "INR",
+        "AED",
+        "AUD",
+      ],
       invoice_status: ["draft", "sent", "partially_paid", "paid", "overdue"],
       movement_type: ["STOCK_IN", "STOCK_OUT", "ADJUSTMENT", "SALE"],
       plan_tier: ["starter", "growth", "pro"],
