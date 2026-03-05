@@ -1,0 +1,138 @@
+import { formatMoney } from "@/lib/currency";
+import type { Currency } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
+
+interface InvoiceCompany {
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  company_number?: string | null;
+  logo_url?: string | null;
+  currency: Currency;
+}
+
+interface InvoiceItem {
+  productName: string;
+  qty: number;
+  unitPrice: number;
+  total: number;
+}
+
+interface InvoiceData {
+  invoiceNumber: string;
+  status: string;
+  createdAt: string;
+  dueDate: string;
+  customerName: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  total: number;
+  amountPaid: number;
+}
+
+interface InvoiceTemplateProps {
+  company: InvoiceCompany;
+  invoice: InvoiceData;
+}
+
+export function InvoiceTemplate({ company, invoice }: InvoiceTemplateProps) {
+  const balance = invoice.total - invoice.amountPaid;
+  const currency = company.currency || "GBP";
+
+  return (
+    <div className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-0" id="invoice-print">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          {company.logo_url ? (
+            <img src={company.logo_url} alt={company.name} className="h-12 mb-2 object-contain" />
+          ) : (
+            <h2 className="text-2xl font-display font-bold text-foreground">{company.name}</h2>
+          )}
+          {company.address && <p className="text-sm text-muted-foreground mt-1">{company.address}</p>}
+          {company.phone && <p className="text-sm text-muted-foreground">{company.phone}</p>}
+          {company.email && <p className="text-sm text-muted-foreground">{company.email}</p>}
+          {company.company_number && (
+            <p className="text-xs text-muted-foreground mt-1">Company No: {company.company_number}</p>
+          )}
+        </div>
+        <div className="text-right">
+          <h1 className="text-3xl font-display font-bold text-accent">INVOICE</h1>
+          <p className="text-lg font-semibold text-foreground mt-1">{invoice.invoiceNumber}</p>
+          <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
+            <p>Date: {invoice.createdAt}</p>
+            <p>Due: {invoice.dueDate}</p>
+          </div>
+        </div>
+      </div>
+
+      <Separator className="mb-6" />
+
+      {/* Bill To */}
+      <div className="mb-8">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bill To</p>
+        <p className="font-semibold text-foreground">{invoice.customerName}</p>
+        {invoice.customerAddress && <p className="text-sm text-muted-foreground">{invoice.customerAddress}</p>}
+        {invoice.customerPhone && <p className="text-sm text-muted-foreground">{invoice.customerPhone}</p>}
+        {invoice.customerEmail && <p className="text-sm text-muted-foreground">{invoice.customerEmail}</p>}
+      </div>
+
+      {/* Items Table */}
+      <table className="w-full text-sm mb-8">
+        <thead>
+          <tr className="border-b-2 border-foreground/10">
+            <th className="text-left py-3 font-semibold text-foreground">Item</th>
+            <th className="text-right py-3 font-semibold text-foreground">Qty</th>
+            <th className="text-right py-3 font-semibold text-foreground">Unit Price</th>
+            <th className="text-right py-3 font-semibold text-foreground">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {invoice.items.map((item, i) => (
+            <tr key={i} className="border-b border-foreground/5">
+              <td className="py-3 text-foreground">{item.productName}</td>
+              <td className="py-3 text-right text-muted-foreground">{item.qty}</td>
+              <td className="py-3 text-right text-muted-foreground">{formatMoney(item.unitPrice, currency)}</td>
+              <td className="py-3 text-right font-medium text-foreground">{formatMoney(item.total, currency)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Totals */}
+      <div className="flex justify-end">
+        <div className="w-64 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="font-medium text-foreground">{formatMoney(invoice.subtotal, currency)}</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between text-base font-bold">
+            <span className="text-foreground">Total</span>
+            <span className="text-foreground">{formatMoney(invoice.total, currency)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Amount Paid</span>
+            <span className="text-success">{formatMoney(invoice.amountPaid, currency)}</span>
+          </div>
+          {balance > 0 && (
+            <div className="flex justify-between text-sm font-semibold pt-1 border-t">
+              <span className="text-destructive">Balance Due</span>
+              <span className="text-destructive">{formatMoney(balance, currency)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-12 pt-6 border-t text-center text-xs text-muted-foreground">
+        <p>Thank you for your business!</p>
+        <p className="mt-1">{company.name}{company.company_number ? ` · Company No: ${company.company_number}` : ""}{company.address ? ` · ${company.address}` : ""}</p>
+      </div>
+    </div>
+  );
+}
