@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle } from "lucide-react";
+import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle, Mail, Phone, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -161,6 +161,21 @@ export default function AdminCompanies() {
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => viewDetails(c)}><Eye className="h-4 w-4 mr-2" />View Details</DropdownMenuItem>
+                      {c.email && (
+                        <DropdownMenuItem onClick={() => window.open(`mailto:${c.email}`, "_blank")}>
+                          <Mail className="h-4 w-4 mr-2" />Send Email
+                        </DropdownMenuItem>
+                      )}
+                      {c.phone && (
+                        <DropdownMenuItem onClick={() => window.open(`tel:${c.phone}`, "_blank")}>
+                          <Phone className="h-4 w-4 mr-2" />Call
+                        </DropdownMenuItem>
+                      )}
+                      {c.phone && (
+                        <DropdownMenuItem onClick={() => window.open(`https://wa.me/${c.phone.replace(/[^0-9]/g, "")}`, "_blank")}>
+                          <MessageCircle className="h-4 w-4 mr-2" />WhatsApp
+                        </DropdownMenuItem>
+                      )}
                       {isSuperAdmin && (
                         <>
                           <DropdownMenuSeparator />
@@ -214,8 +229,33 @@ export default function AdminCompanies() {
                 <div><label className="text-xs text-muted-foreground">Currency</label><p>{detail.currency}</p></div>
                 <div><label className="text-xs text-muted-foreground">Plan</label><p className="capitalize">{detail.plan}</p></div>
                 <div><label className="text-xs text-muted-foreground">Business Type</label><p className="capitalize">{detail.business_type}</p></div>
-                <div><label className="text-xs text-muted-foreground">Email</label><p>{detail.email || "—"}</p></div>
-                <div><label className="text-xs text-muted-foreground">Phone</label><p>{detail.phone || "—"}</p></div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Email</label>
+                  <div className="flex items-center gap-2">
+                    <p>{detail.email || "—"}</p>
+                    {detail.email && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => window.open(`mailto:${detail.email}`, "_blank")}>
+                        <Mail className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Phone</label>
+                  <div className="flex items-center gap-2">
+                    <p>{detail.phone || "—"}</p>
+                    {detail.phone && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => window.open(`tel:${detail.phone}`, "_blank")}>
+                          <Phone className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => window.open(`https://wa.me/${detail.phone.replace(/[^0-9]/g, "")}`, "_blank")}>
+                          <MessageCircle className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div className="col-span-2"><label className="text-xs text-muted-foreground">Address</label><p>{detail.address || "—"}</p></div>
               </div>
               {usage && (
