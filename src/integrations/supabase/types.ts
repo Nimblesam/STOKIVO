@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action_type: string
+          admin_email: string | null
+          admin_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_email?: string | null
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_email?: string | null
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_logs_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_users: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          id: string
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       alerts: {
         Row: {
           company_id: string
@@ -84,6 +155,7 @@ export type Database = {
           name: string
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
+          status: string
           stripe_account_id: string | null
           subdomain: string | null
           updated_at: string
@@ -103,6 +175,7 @@ export type Database = {
           name: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
+          status?: string
           stripe_account_id?: string | null
           subdomain?: string | null
           updated_at?: string
@@ -122,11 +195,51 @@ export type Database = {
           name?: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
+          status?: string
           stripe_account_id?: string | null
           subdomain?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      company_feature_flags: {
+        Row: {
+          company_id: string
+          created_at: string
+          enabled: boolean
+          flag_id: string
+          id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          enabled?: boolean
+          flag_id: string
+          id?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          enabled?: boolean
+          flag_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_feature_flags_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_feature_flags_flag_id_fkey"
+            columns: ["flag_id"]
+            isOneToOne: false
+            referencedRelation: "feature_flags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
@@ -177,6 +290,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled_global: boolean
+          flag_key: string
+          id: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled_global?: boolean
+          flag_key: string
+          id?: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled_global?: boolean
+          flag_key?: string
+          id?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       inventory_movements: {
         Row: {
@@ -774,6 +917,42 @@ export type Database = {
           },
         ]
       }
+      system_jobs_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          internal_notes: string | null
+          job_type: string
+          metadata: Json | null
+          resolved: boolean
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          internal_notes?: string | null
+          job_type: string
+          metadata?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          internal_notes?: string | null
+          job_type?: string
+          metadata?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           active: boolean
@@ -809,6 +988,53 @@ export type Database = {
           },
         ]
       }
+      webhook_events: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          provider: string
+          retries: number
+          status: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider: string
+          retries?: number
+          status?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider?: string
+          retries?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -822,12 +1048,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      make_admin_by_email: {
+        Args: {
+          _email: string
+          _role?: Database["public"]["Enums"]["admin_role"]
+        }
+        Returns: undefined
+      }
       user_belongs_to_company: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      admin_role: "super_admin" | "support_admin"
       alert_severity: "warning" | "critical"
       alert_type: "LOW_STOCK" | "SUPPLIER_PRICE_CHANGE"
       app_role: "owner" | "manager" | "staff"
@@ -975,6 +1211,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_role: ["super_admin", "support_admin"],
       alert_severity: ["warning", "critical"],
       alert_type: ["LOW_STOCK", "SUPPLIER_PRICE_CHANGE"],
       app_role: ["owner", "manager", "staff"],
