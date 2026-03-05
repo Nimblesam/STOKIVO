@@ -35,37 +35,44 @@ export default function Onboarding() {
     }
     setLoading(true);
     try {
-      // Create company
-      const { data: company, error: compErr } = await supabase
+      const companyId = crypto.randomUUID();
+
+      // Create company (no returning select to avoid RLS select check during first-time onboarding)
+      const { error: compErr } = await supabase
         .from("companies")
-        .insert([{
+        .insert({
+          id: companyId,
           name: form.name,
           address: form.address,
           country: form.country,
           currency: form.currency as any,
           brand_color: form.brandColor,
           business_type: form.businessType,
-        }])
-        .select("id")
-        .single();
+        });
 
       if (compErr) throw compErr;
 
       // Update profile with company_id
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
-        .update({ company_id: company.id })
+        .update({ company_id: companyId })
         .eq("user_id", user.id);
 
+      if (profileErr) throw profileErr;
+
       // Add owner role
-      await supabase
+      const { error: roleErr } = await supabase
         .from("user_roles")
-        .insert({ user_id: user.id, company_id: company.id, role: "owner" });
+        .insert({ user_id: user.id, company_id: companyId, role: "owner" });
+
+      if (roleErr) throw roleErr;
 
       // Create subscription
-      await supabase
+      const { error: subErr } = await supabase
         .from("subscriptions")
-        .insert({ company_id: company.id, plan: "starter", max_products: 500, max_users: 1 });
+        .insert({ company_id: companyId, plan: "starter", max_products: 500, max_users: 1 });
+
+      if (subErr) throw subErr;
 
       await refreshProfile();
       toast.success("Company created! Welcome to Zentra 🎉");
