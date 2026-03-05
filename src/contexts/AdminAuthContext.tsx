@@ -135,11 +135,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, [adminUser?.last_login_at]);
 
   const login = useCallback(async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
     const { data, error } = await supabase.functions.invoke("admin-auth", {
-      body: { email, password },
+      body: { email: normalizedEmail, password },
     });
 
-    if (error) throw new Error(error.message || "Login failed");
+    if (error) {
+      const parsedError = error.message?.match(/"error":"([^"]+)"/)?.[1];
+      throw new Error(parsedError || "Invalid credentials");
+    }
     if (data?.error) throw new Error(data.error);
 
     // Set the session from the edge function response
