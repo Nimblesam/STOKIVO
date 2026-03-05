@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AdminAuthProvider, useAdminAuth } from "@/contexts/AdminAuthContext";
 import { AppLayout } from "@/components/AppLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Suppliers from "./pages/Suppliers";
@@ -22,6 +24,17 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCompanies from "./pages/admin/AdminCompanies";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminTransactions from "./pages/admin/AdminTransactions";
+import AdminIntegrations from "./pages/admin/AdminIntegrations";
+import AdminSystem from "./pages/admin/AdminSystem";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
+import AdminFeatureFlags from "./pages/admin/AdminFeatureFlags";
+import AdminSupport from "./pages/admin/AdminSupport";
 
 const queryClient = new QueryClient();
 
@@ -54,12 +67,46 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { loading, isAdmin } = useAdminAuth();
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <p className="text-sm text-muted-foreground">Loading...</p>
+    </div>
+  );
+  if (!isAdmin) return <Navigate to="/admin/login" replace />;
+  return <>{children}</>;
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Navigate to="/dashboard" replace />} />
     <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/onboarding" element={<Onboarding />} />
+
+    {/* Admin routes */}
+    <Route path="/admin/login" element={<AdminLogin />} />
+    <Route path="/admin/*" element={
+      <AdminProtectedRoute>
+        <AdminLayout>
+          <Routes>
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="companies" element={<AdminCompanies />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="subscriptions" element={<AdminSubscriptions />} />
+            <Route path="transactions" element={<AdminTransactions />} />
+            <Route path="integrations" element={<AdminIntegrations />} />
+            <Route path="system" element={<AdminSystem />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="feature-flags" element={<AdminFeatureFlags />} />
+            <Route path="support" element={<AdminSupport />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AdminLayout>
+      </AdminProtectedRoute>
+    } />
+
     <Route
       path="/*"
       element={
@@ -95,7 +142,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <AdminAuthProvider>
+            <AppRoutes />
+          </AdminAuthProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
