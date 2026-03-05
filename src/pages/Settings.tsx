@@ -82,10 +82,9 @@ export default function Settings() {
   };
 
   const handleSubscribe = async (tier: string) => {
-    const priceKey = currency === "NGN" ? "ngn" : "gbp";
-    const priceId = STRIPE_PRICES[tier as keyof typeof STRIPE_PRICES]?.[priceKey];
-    if (!priceId || priceId.startsWith("price_REPLACE")) {
-      toast.error("Stripe prices not configured yet. Please set up products in Stripe dashboard.");
+    const priceId = STRIPE_PRICES[tier as keyof typeof STRIPE_PRICES]?.gbp;
+    if (!priceId) {
+      toast.error("Price not configured for this plan.");
       return;
     }
     setCheckingOut(tier);
