@@ -23,18 +23,19 @@ serve(async (req) => {
 
   try {
     const { email, password } = await req.json();
-    if (!email || !password) throw new Error("Email and password required");
+    const normalizedEmail = String(email ?? "").trim().toLowerCase();
+    if (!normalizedEmail || !password) throw new Error("Email and password required");
 
     // Check admin_users table
     const { data: admin, error: adminErr } = await adminClient
       .from("admin_users")
       .select("id, email, role, status, full_name, failed_attempts, locked_until, last_login_at")
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .single();
 
     if (!admin || adminErr) {
       // Don't reveal whether the email exists
-      console.log(`[ADMIN-AUTH] Login attempt for unknown email: ${email}`);
+      console.log(`[ADMIN-AUTH] Login attempt for unknown email: ${normalizedEmail}`);
       return new Response(JSON.stringify({ error: "Invalid credentials" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -42,7 +43,7 @@ serve(async (req) => {
     }
 
     if (admin.status !== "active") {
-      console.log(`[ADMIN-AUTH] Login attempt for non-active admin: ${email} (${admin.status})`);
+      console.log(`[ADMIN-AUTH] Login attempt for non-active admin: ${normalizedEmail} (${admin.status})`);
       return new Response(JSON.stringify({ error: "Account not active. Contact a super admin." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 403,
@@ -53,7 +54,7 @@ serve(async (req) => {
     if (admin.locked_until && new Date(admin.locked_until) > new Date()) {
       const mins = Math.ceil((new Date(admin.locked_until).getTime() - Date.now()) / 60000);
       await adminClient.from("admin_audit_logs").insert({
-        admin_id: admin.id, admin_email: email,
+        admin_id: admin.id, admin_email: normalizedEmail,
         action: "admin_login_failed_locked",
         metadata: { locked_minutes_remaining: mins },
       });
@@ -64,7 +65,7 @@ serve(async (req) => {
     }
 
     // Attempt sign in via Supabase Auth
-    const { data: sessionData, error: signInError } = await anonClient.auth.signInWithPassword({ email, password });
+    const { data: sessionData, error: signInError } = await anonClient.auth.signInWithPassword({ email: normalizedEmail, password });
 
     if (signInError) {
       const newAttempts = (admin.failed_attempts || 0) + 1;
@@ -76,12 +77,12 @@ serve(async (req) => {
 
       await adminClient.from("admin_users").update(updateData).eq("id", admin.id);
       await adminClient.from("admin_audit_logs").insert({
-        admin_id: admin.id, admin_email: email,
+        admin_id: admin.id, admin_email: normalizedEmail,
         action: "admin_login_failed",
         metadata: { attempts: newAttempts, locked: newAttempts >= 10 },
       });
 
-      console.log(`[ADMIN-AUTH] Login failed for ${email}. Attempt ${newAttempts}/10`);
+      console.log(`[ADMIN-AUTH] Login failed for ${normalizedEmail}. Attempt ${newAttempts}/10`);
 
       return new Response(JSON.stringify({
         error: newAttempts >= 10 ? "Account locked for 30 minutes due to too many failed attempts" : "Invalid credentials",
@@ -100,11 +101,11 @@ serve(async (req) => {
     }).eq("id", admin.id);
 
     await adminClient.from("admin_audit_logs").insert({
-      admin_id: admin.id, admin_email: email,
+      admin_id: admin.id, admin_email: normalizedEmail,
       action: "admin_login_success",
     });
 
-    console.log(`[ADMIN-AUTH] Login successful for ${email}`);
+    console.log(`[ADMIN-AUTH] Login successful for ${normalizedEmail}`);
 
     return new Response(JSON.stringify({
       session: sessionData.session,
