@@ -1,1 +1,13 @@
 project_id = "lsujpckltpgrydbfuadt"
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.create-payment-link]
+verify_jwt = false

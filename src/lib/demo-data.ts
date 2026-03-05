@@ -1,9 +1,38 @@
 import type { Company, User, Product, Supplier, Customer, Invoice, InventoryMovement, Alert, SupplierPriceHistory, PlanConfig } from './types';
 
+// IMPORTANT: Replace these with your actual Stripe price IDs from your Stripe dashboard
+// Create products & prices at https://dashboard.stripe.com/products
+export const STRIPE_PRICES = {
+  starter: {
+    gbp: "price_REPLACE_STARTER_GBP", // £5/mo
+    ngn: "price_REPLACE_STARTER_NGN", // ₦2,500/mo
+  },
+  growth: {
+    gbp: "price_REPLACE_GROWTH_GBP", // £12/mo
+    ngn: "price_REPLACE_GROWTH_NGN", // ₦6,000/mo
+  },
+  pro: {
+    gbp: "price_REPLACE_PRO_GBP", // £25/mo
+    ngn: "price_REPLACE_PRO_NGN", // ₦12,000/mo
+  },
+} as const;
+
 export const PLANS: PlanConfig[] = [
-  { name: 'Starter', tier: 'starter', maxProducts: 500, maxUsers: 1, price: { GBP: 1900, NGN: 500000 }, features: ['500 products', 'Low stock alerts', '1 user', 'Basic analytics'] },
-  { name: 'Growth', tier: 'growth', maxProducts: 2000, maxUsers: 3, price: { GBP: 4900, NGN: 1500000 }, features: ['2,000 products', 'Advanced analytics', 'Invoicing + reminders', 'Supplier tracking', '3 users', 'Branding customization'] },
-  { name: 'Pro', tier: 'pro', maxProducts: Infinity, maxUsers: Infinity, price: { GBP: 9900, NGN: 3500000 }, features: ['Unlimited products', 'Multi-branch support', 'Custom domain', 'Advanced analytics', 'Priority alerts', 'Unlimited staff'] },
+  {
+    name: 'Starter', tier: 'starter', maxProducts: 200, maxUsers: 1,
+    price: { GBP: 500, NGN: 250000 },
+    features: ['Up to 200 products', '1 user', 'Basic inventory', 'POS cashier system', 'Low stock alerts', 'Basic dashboard'],
+  },
+  {
+    name: 'Growth', tier: 'growth', maxProducts: 2000, maxUsers: 3,
+    price: { GBP: 1200, NGN: 600000 },
+    features: ['Up to 2,000 products', '3 staff users', 'Barcode generation', 'Invoicing + reminders', 'Supplier management', 'Analytics dashboard', 'Customer database', 'Reorder suggestions'],
+  },
+  {
+    name: 'Pro', tier: 'pro', maxProducts: Infinity, maxUsers: Infinity,
+    price: { GBP: 2500, NGN: 1200000 },
+    features: ['Unlimited products', 'Unlimited staff', 'Multi-branch support', 'Supplier price intelligence', 'Advanced analytics', 'Custom domain', 'Payment gateway integrations', 'Priority alerts'],
+  },
 ];
 
 export const demoCompany: Company = {
