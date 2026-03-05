@@ -1,20 +1,21 @@
 import type { Company, User, Product, Supplier, Customer, Invoice, InventoryMovement, Alert, SupplierPriceHistory, PlanConfig } from './types';
 
-// IMPORTANT: Replace these with your actual Stripe price IDs from your Stripe dashboard
-// Create products & prices at https://dashboard.stripe.com/products
 export const STRIPE_PRICES = {
   starter: {
-    gbp: "price_REPLACE_STARTER_GBP", // £5/mo
-    ngn: "price_REPLACE_STARTER_NGN", // ₦2,500/mo
+    gbp: "price_1T7eFYGB56wrZn9RoOoNEZiW", // £5/mo
   },
   growth: {
-    gbp: "price_REPLACE_GROWTH_GBP", // £12/mo
-    ngn: "price_REPLACE_GROWTH_NGN", // ₦6,000/mo
+    gbp: "price_1T7eFZGB56wrZn9RmwJTpRCI", // £12/mo
   },
   pro: {
-    gbp: "price_REPLACE_PRO_GBP", // £25/mo
-    ngn: "price_REPLACE_PRO_NGN", // ₦12,000/mo
+    gbp: "price_1T7eFaGB56wrZn9R9wCI4g7o", // £25/mo
   },
+} as const;
+
+export const STRIPE_PRODUCTS = {
+  starter: "prod_U5pvfaoKTFT1LL",
+  growth: "prod_U5pv34xjesA8Qj",
+  pro: "prod_U5pvGcCZdYGpGc",
 } as const;
 
 export const PLANS: PlanConfig[] = [
