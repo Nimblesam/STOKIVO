@@ -73,12 +73,16 @@ export type Database = {
           address: string | null
           brand_color: string
           business_type: Database["public"]["Enums"]["business_type"]
+          company_number: string | null
           country: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          custom_domain: string | null
+          email: string | null
           id: string
           logo_url: string | null
           name: string
+          phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
           subdomain: string | null
           updated_at: string
@@ -87,12 +91,16 @@ export type Database = {
           address?: string | null
           brand_color?: string
           business_type?: Database["public"]["Enums"]["business_type"]
+          company_number?: string | null
           country?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          custom_domain?: string | null
+          email?: string | null
           id?: string
           logo_url?: string | null
           name: string
+          phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           subdomain?: string | null
           updated_at?: string
@@ -101,12 +109,16 @@ export type Database = {
           address?: string | null
           brand_color?: string
           business_type?: Database["public"]["Enums"]["business_type"]
+          company_number?: string | null
           country?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          custom_domain?: string | null
+          email?: string | null
           id?: string
           logo_url?: string | null
           name?: string
+          phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           subdomain?: string | null
           updated_at?: string
