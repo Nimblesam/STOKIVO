@@ -1,38 +1,20 @@
 import {
-  LayoutDashboard,
-  Package,
-  Truck,
-  Users,
-  FileText,
-  AlertTriangle,
-  BarChart3,
-  Settings,
-  Bell,
-  TrendingDown,
-  Search,
-  ChevronDown,
-  LogOut,
+  LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { demoUser, demoAlerts } from "@/lib/demo-data";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Products", url: "/products", icon: Package },
+  { title: "Stock Movements", url: "/inventory/movements", icon: ArrowLeftRight },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
   { title: "Customers", url: "/customers", icon: Users },
   { title: "Invoices", url: "/invoices", icon: FileText },
@@ -52,10 +34,16 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const unreadAlerts = demoAlerts.filter((a) => !a.read).length;
+  const { profile, company, role, signOut } = useAuth();
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
+
+  const initials = profile?.full_name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2) || "?";
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -66,10 +54,8 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="animate-fade-in">
-              <h1 className="font-display font-bold text-base text-sidebar-primary-foreground leading-none">
-                Zentra
-              </h1>
-              <p className="text-[11px] text-sidebar-foreground/60 mt-0.5">Wholesale OS</p>
+              <h1 className="font-display font-bold text-base text-sidebar-primary-foreground leading-none">Zentra</h1>
+              <p className="text-[11px] text-sidebar-foreground/60 mt-0.5 truncate">{company?.name || "Wholesale OS"}</p>
             </div>
           )}
         </div>
@@ -77,24 +63,13 @@ export function AppSidebar() {
 
       <SidebarContent className="px-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
-            Main
-          </SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/dashboard"}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <NavLink to={item.url} end={item.url === "/dashboard"} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -107,28 +82,14 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
-            <Bell className="h-3 w-3 mr-1 inline" />
-            Alerts
-            {unreadAlerts > 0 && (
-              <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] rounded-full px-1.5 py-0.5 leading-none">
-                {unreadAlerts}
-              </span>
-            )}
+            <Bell className="h-3 w-3 mr-1 inline" /> Alerts
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {alertNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <NavLink
-                      to={item.url}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <NavLink to={item.url} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -140,23 +101,13 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
-            More
-          </SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">More</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {otherNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <NavLink
-                      to={item.url}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <NavLink to={item.url} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -171,17 +122,18 @@ export function AppSidebar() {
       <SidebarFooter className="p-3 border-t border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-primary shrink-0">
-            {demoUser.name.split(" ").map((n) => n[0]).join("")}
+            {initials}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0 animate-fade-in">
-              <p className="text-sm font-medium text-sidebar-primary-foreground truncate">
-                {demoUser.name}
-              </p>
-              <p className="text-[11px] text-sidebar-foreground/50 truncate">
-                {demoUser.role}
-              </p>
+              <p className="text-sm font-medium text-sidebar-primary-foreground truncate">{profile?.full_name}</p>
+              <p className="text-[11px] text-sidebar-foreground/50 truncate capitalize">{role || "member"}</p>
             </div>
+          )}
+          {!collapsed && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5" />
+            </Button>
           )}
         </div>
       </SidebarFooter>
