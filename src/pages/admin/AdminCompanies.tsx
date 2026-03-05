@@ -5,10 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Search, Eye, Ban, Unlock, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -16,6 +16,7 @@ export default function AdminCompanies() {
   const { logAction, isSuperAdmin } = useAdminAuth();
   const [companies, setCompanies] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<any | null>(null);
   const [usage, setUsage] = useState<any>(null);
@@ -29,49 +30,83 @@ export default function AdminCompanies() {
 
   useEffect(() => { load(); }, []);
 
-  const toggleSuspend = async (company: any) => {
-    const newStatus = company.status === "active" ? "suspended" : "active";
+  const updateStatus = async (company: any, newStatus: string) => {
     await supabase.from("companies").update({ status: newStatus } as any).eq("id", company.id);
-    await logAction(`company_${newStatus}`, "company", company.id, { name: company.name });
-    toast({ title: `Company ${newStatus}` });
+    await logAction(`company_${newStatus}`, "company", company.id, { name: company.name, previousStatus: company.status });
+    toast({ title: `Company ${newStatus === "active" ? "approved" : newStatus}` });
     load();
   };
 
   const changePlan = async (companyId: string, plan: string) => {
+    // Update both companies and subscriptions tables
     await supabase.from("companies").update({ plan } as any).eq("id", companyId);
+    await supabase.from("subscriptions").update({ plan } as any).eq("company_id", companyId);
     await logAction("company_plan_change", "company", companyId, { plan });
-    toast({ title: "Plan updated" });
+    toast({ title: "Plan updated on company and subscription" });
     load();
   };
 
   const viewDetails = async (company: any) => {
     setDetail(company);
-    const [products, users, invoices, sales] = await Promise.all([
+    const [products, users, invoices, sales, subscription] = await Promise.all([
       supabase.from("products").select("id").eq("company_id", company.id),
-      supabase.from("user_roles").select("id").eq("company_id", company.id),
-      supabase.from("invoices").select("id").eq("company_id", company.id),
+      supabase.from("user_roles").select("id, role").eq("company_id", company.id),
+      supabase.from("invoices").select("id, status").eq("company_id", company.id),
       supabase.from("sales").select("total").eq("company_id", company.id),
+      supabase.from("subscriptions").select("*").eq("company_id", company.id).maybeSingle(),
     ]);
     setUsage({
       products: products.data?.length || 0,
       users: users.data?.length || 0,
+      userRoles: users.data || [],
       invoices: invoices.data?.length || 0,
+      paidInvoices: (invoices.data || []).filter(i => i.status === "paid").length,
       salesVolume: (sales.data || []).reduce((s, r) => s + (r.total || 0), 0),
+      salesCount: sales.data?.length || 0,
+      subscription: subscription.data,
     });
   };
 
-  const filtered = companies.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.country?.toLowerCase().includes(search.toLowerCase())
-  );
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200">Active</Badge>;
+      case "suspended": return <Badge variant="destructive">Suspended</Badge>;
+      case "disabled": return <Badge className="bg-muted text-muted-foreground">Disabled</Badge>;
+      case "pending": return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-200">Pending</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const filtered = companies.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.country?.toLowerCase().includes(search.toLowerCase()) ||
+      c.email?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Companies</h1>
-        <div className="relative w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search companies..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Companies</h1>
+          <p className="text-sm text-muted-foreground">{filtered.length} of {companies.length} companies</p>
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="disabled">Disabled</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search companies..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
         </div>
       </div>
 
@@ -92,7 +127,12 @@ export default function AdminCompanies() {
           <TableBody>
             {filtered.map((c) => (
               <TableRow key={c.id}>
-                <TableCell className="font-medium">{c.name}</TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{c.name}</p>
+                    {c.email && <p className="text-xs text-muted-foreground">{c.email}</p>}
+                  </div>
+                </TableCell>
                 <TableCell>{c.country}</TableCell>
                 <TableCell>{c.currency}</TableCell>
                 <TableCell>
@@ -109,15 +149,11 @@ export default function AdminCompanies() {
                     <Badge variant="outline">{c.plan}</Badge>
                   )}
                 </TableCell>
-                <TableCell>
-                  <Badge variant={c.status === "active" ? "default" : "destructive"}>
-                    {c.status}
-                  </Badge>
-                </TableCell>
+                <TableCell>{getStatusBadge(c.status)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{format(new Date(c.created_at), "dd MMM yyyy")}</TableCell>
                 <TableCell>
-                  <Badge variant={c.stripe_account_id ? "default" : "secondary"}>
-                    {c.stripe_account_id ? "Connected" : "Not Connected"}
+                  <Badge variant={c.stripe_account_id ? "default" : "secondary"} className="text-[10px]">
+                    {c.stripe_account_id ? "Connected" : "No"}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -126,9 +162,29 @@ export default function AdminCompanies() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => viewDetails(c)}><Eye className="h-4 w-4 mr-2" />View Details</DropdownMenuItem>
                       {isSuperAdmin && (
-                        <DropdownMenuItem onClick={() => toggleSuspend(c)}>
-                          {c.status === "active" ? <><Ban className="h-4 w-4 mr-2" />Suspend</> : <><Unlock className="h-4 w-4 mr-2" />Unsuspend</>}
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuSeparator />
+                          {c.status !== "active" && (
+                            <DropdownMenuItem onClick={() => updateStatus(c, "active")}>
+                              <CheckCircle className="h-4 w-4 mr-2 text-emerald-600" />Approve / Activate
+                            </DropdownMenuItem>
+                          )}
+                          {c.status === "active" && (
+                            <DropdownMenuItem onClick={() => updateStatus(c, "suspended")}>
+                              <Ban className="h-4 w-4 mr-2 text-destructive" />Suspend
+                            </DropdownMenuItem>
+                          )}
+                          {c.status !== "disabled" && (
+                            <DropdownMenuItem onClick={() => updateStatus(c, "disabled")} className="text-destructive">
+                              <XCircle className="h-4 w-4 mr-2" />Disable
+                            </DropdownMenuItem>
+                          )}
+                          {(c.status === "suspended" || c.status === "disabled") && (
+                            <DropdownMenuItem onClick={() => updateStatus(c, "active")}>
+                              <Unlock className="h-4 w-4 mr-2" />Re-activate
+                            </DropdownMenuItem>
+                          )}
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -142,30 +198,78 @@ export default function AdminCompanies() {
         </Table>
       </div>
 
+      {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={() => { setDetail(null); setUsage(null); }}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{detail?.name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {detail?.name}
+              {detail && getStatusBadge(detail.status)}
+            </DialogTitle>
+          </DialogHeader>
           {detail && (
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                <div><span className="text-muted-foreground">Country:</span> {detail.country}</div>
-                <div><span className="text-muted-foreground">Currency:</span> {detail.currency}</div>
-                <div><span className="text-muted-foreground">Plan:</span> {detail.plan}</div>
-                <div><span className="text-muted-foreground">Status:</span> {detail.status}</div>
-                <div><span className="text-muted-foreground">Email:</span> {detail.email || "—"}</div>
-                <div><span className="text-muted-foreground">Phone:</span> {detail.phone || "—"}</div>
-                <div className="col-span-2"><span className="text-muted-foreground">Address:</span> {detail.address || "—"}</div>
+                <div><label className="text-xs text-muted-foreground">Country</label><p>{detail.country}</p></div>
+                <div><label className="text-xs text-muted-foreground">Currency</label><p>{detail.currency}</p></div>
+                <div><label className="text-xs text-muted-foreground">Plan</label><p className="capitalize">{detail.plan}</p></div>
+                <div><label className="text-xs text-muted-foreground">Business Type</label><p className="capitalize">{detail.business_type}</p></div>
+                <div><label className="text-xs text-muted-foreground">Email</label><p>{detail.email || "—"}</p></div>
+                <div><label className="text-xs text-muted-foreground">Phone</label><p>{detail.phone || "—"}</p></div>
+                <div className="col-span-2"><label className="text-xs text-muted-foreground">Address</label><p>{detail.address || "—"}</p></div>
               </div>
               {usage && (
-                <div className="border-t pt-3">
-                  <h4 className="font-medium mb-2">Usage</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Products: {usage.products}</div>
-                    <div>Users: {usage.users}</div>
-                    <div>Invoices: {usage.invoices}</div>
-                    <div>Sales Volume: £{(usage.salesVolume / 100).toFixed(2)}</div>
+                <>
+                  <div className="border-t pt-3">
+                    <h4 className="font-medium mb-2">Usage Summary</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-2 rounded-lg bg-muted/50">
+                        <p className="text-lg font-bold">{usage.products}</p>
+                        <p className="text-xs text-muted-foreground">Products</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-muted/50">
+                        <p className="text-lg font-bold">{usage.users}</p>
+                        <p className="text-xs text-muted-foreground">Users</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-muted/50">
+                        <p className="text-lg font-bold">{usage.salesCount}</p>
+                        <p className="text-xs text-muted-foreground">Sales</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-muted/50">
+                        <p className="text-lg font-bold">{usage.invoices}</p>
+                        <p className="text-xs text-muted-foreground">Invoices</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-muted/50">
+                        <p className="text-lg font-bold">{usage.paidInvoices}</p>
+                        <p className="text-xs text-muted-foreground">Paid</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-muted/50">
+                        <p className="text-lg font-bold">£{(usage.salesVolume / 100).toFixed(0)}</p>
+                        <p className="text-xs text-muted-foreground">Revenue</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  {usage.subscription && (
+                    <div className="border-t pt-3">
+                      <h4 className="font-medium mb-2">Subscription</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div><span className="text-muted-foreground">Plan:</span> <span className="capitalize font-medium">{usage.subscription.plan}</span></div>
+                        <div><span className="text-muted-foreground">Max Products:</span> {usage.subscription.max_products}</div>
+                        <div><span className="text-muted-foreground">Max Users:</span> {usage.subscription.max_users}</div>
+                        <div><span className="text-muted-foreground">Started:</span> {format(new Date(usage.subscription.started_at), "dd MMM yyyy")}</div>
+                        {usage.subscription.expires_at && (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Expires:</span>{" "}
+                            <span className={new Date(usage.subscription.expires_at) < new Date() ? "text-destructive font-medium" : ""}>
+                              {format(new Date(usage.subscription.expires_at), "dd MMM yyyy")}
+                              {new Date(usage.subscription.expires_at) < new Date() && " (EXPIRED)"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

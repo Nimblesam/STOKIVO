@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, CreditCard, ArrowLeftRight,
-  Plug, AlertTriangle, ClipboardList, Flag, Headphones, LogOut, Shield,
+  Plug, AlertTriangle, ClipboardList, Flag, Headphones, LogOut, Shield, BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
@@ -19,6 +19,7 @@ const items = [
   { title: "Transactions", url: "/admin/transactions", icon: ArrowLeftRight },
   { title: "Integrations", url: "/admin/integrations", icon: Plug },
   { title: "System Alerts", url: "/admin/system", icon: AlertTriangle },
+  { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Audit Logs", url: "/admin/audit-logs", icon: ClipboardList },
   { title: "Feature Flags", url: "/admin/feature-flags", icon: Flag },
   { title: "Support", url: "/admin/support", icon: Headphones },

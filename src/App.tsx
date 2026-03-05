@@ -37,6 +37,7 @@ import AdminSystem from "./pages/admin/AdminSystem";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminFeatureFlags from "./pages/admin/AdminFeatureFlags";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,7 @@ const AppRoutes = () => (
             <Route path="system" element={<AdminSystem />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
             <Route path="feature-flags" element={<AdminFeatureFlags />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="support" element={<AdminSupport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
