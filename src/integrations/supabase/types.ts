@@ -16,70 +16,115 @@ export type Database = {
     Tables: {
       admin_audit_logs: {
         Row: {
-          action_type: string
+          action: string
           admin_email: string | null
-          admin_user_id: string | null
+          admin_id: string | null
           created_at: string
+          entity: string | null
+          entity_id: string | null
           id: string
           metadata: Json | null
-          target_id: string | null
-          target_type: string | null
         }
         Insert: {
-          action_type: string
+          action: string
           admin_email?: string | null
-          admin_user_id?: string | null
+          admin_id?: string | null
           created_at?: string
+          entity?: string | null
+          entity_id?: string | null
           id?: string
           metadata?: Json | null
-          target_id?: string | null
-          target_type?: string | null
         }
         Update: {
-          action_type?: string
+          action?: string
           admin_email?: string | null
-          admin_user_id?: string | null
+          admin_id?: string | null
           created_at?: string
+          entity?: string | null
+          entity_id?: string | null
           id?: string
           metadata?: Json | null
-          target_id?: string | null
-          target_type?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "admin_audit_logs_admin_user_id_fkey"
-            columns: ["admin_user_id"]
+            foreignKeyName: "admin_audit_logs_admin_id_fkey"
+            columns: ["admin_id"]
             isOneToOne: false
             referencedRelation: "admin_users"
             referencedColumns: ["id"]
           },
         ]
       }
-      admin_users: {
+      admin_invites: {
         Row: {
-          active: boolean
           created_at: string
           email: string
+          expires_at: string
           id: string
+          invited_by: string | null
           role: Database["public"]["Enums"]["admin_role"]
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["admin_role"]
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["admin_role"]
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          failed_attempts: number
+          full_name: string | null
+          id: string
+          last_login_at: string | null
+          locked_until: string | null
+          role: Database["public"]["Enums"]["admin_role"]
+          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          active?: boolean
           created_at?: string
           email: string
+          failed_attempts?: number
+          full_name?: string | null
           id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
           role?: Database["public"]["Enums"]["admin_role"]
+          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          active?: boolean
           created_at?: string
           email?: string
+          failed_attempts?: number
+          full_name?: string | null
           id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
           role?: Database["public"]["Enums"]["admin_role"]
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -1050,13 +1095,6 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
-      make_admin_by_email: {
-        Args: {
-          _email: string
-          _role?: Database["public"]["Enums"]["admin_role"]
-        }
-        Returns: undefined
-      }
       user_belongs_to_company: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean

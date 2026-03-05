@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, CreditCard, ArrowLeftRight,
-  Plug, AlertTriangle, ClipboardList, Flag, Headphones, LogOut,
+  Plug, AlertTriangle, ClipboardList, Flag, Headphones, LogOut, Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
@@ -14,6 +14,7 @@ const items = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Companies", url: "/admin/companies", icon: Building2 },
   { title: "Users", url: "/admin/users", icon: Users },
+  { title: "Admin Users", url: "/admin/admins", icon: Shield },
   { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
   { title: "Transactions", url: "/admin/transactions", icon: ArrowLeftRight },
   { title: "Integrations", url: "/admin/integrations", icon: Plug },
