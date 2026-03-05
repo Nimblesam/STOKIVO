@@ -1,4 +1,4 @@
-export type Currency = 'GBP' | 'NGN';
+export type Currency = 'GBP' | 'NGN' | 'USD' | 'EUR' | 'CAD' | 'GHS' | 'KES' | 'ZAR' | 'INR' | 'AED' | 'AUD';
 export type PlanTier = 'starter' | 'growth' | 'pro';
 export type UserRole = 'owner' | 'manager' | 'staff';
 export type InvoiceStatus = 'draft' | 'sent' | 'partially_paid' | 'paid' | 'overdue';
@@ -134,5 +134,5 @@ export interface PlanConfig {
   maxProducts: number;
   maxUsers: number;
   features: string[];
-  price: { GBP: number; NGN: number };
+  price: Record<string, number>;
 }

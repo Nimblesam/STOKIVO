@@ -7,7 +7,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   profile: { id: string; full_name: string; avatar_url: string | null; company_id: string | null } | null;
-  company: { id: string; name: string; currency: "GBP" | "NGN"; brand_color: string; plan: string } | null;
+  company: { id: string; name: string; currency: string; brand_color: string; plan: string } | null;
   role: string | null;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;

@@ -149,8 +149,12 @@ export default function Settings() {
               <div className="sm:col-span-2"><Label>Address</Label><Input value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} className="mt-1" /></div>
               <div>
                 <Label>Country</Label>
-                <select value={companyForm.country} onChange={(e) => setCompanyForm({ ...companyForm, country: e.target.value, currency: e.target.value === "Nigeria" ? "NGN" : "GBP" })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="UK">United Kingdom</option><option value="Nigeria">Nigeria</option>
+                <select value={companyForm.country} onChange={(e) => {
+                  const c = e.target.value;
+                  const currMap: Record<string, string> = { "UK": "GBP", "Nigeria": "NGN", "USA": "USD", "Canada": "CAD", "Ghana": "GHS", "Kenya": "KES", "South Africa": "ZAR", "India": "INR", "UAE": "AED", "Australia": "AUD", "EU": "EUR" };
+                  setCompanyForm({ ...companyForm, country: c, currency: currMap[c] || "USD" });
+                }} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="UK">United Kingdom</option><option value="Nigeria">Nigeria</option><option value="USA">United States</option><option value="Canada">Canada</option><option value="Ghana">Ghana</option><option value="Kenya">Kenya</option><option value="South Africa">South Africa</option><option value="India">India</option><option value="UAE">UAE</option><option value="Australia">Australia</option><option value="EU">European Union</option>
                 </select>
               </div>
               <div>
@@ -332,7 +336,7 @@ export default function Settings() {
                       <h4 className="font-display font-bold text-lg text-foreground">{plan.name}</h4>
                     </div>
                     <p className="text-3xl font-display font-bold text-foreground">
-                      {formatMoney(plan.price[currency as "GBP" | "NGN"], currency as "GBP" | "NGN")}
+                      {formatMoney(plan.price[currency] || plan.price["GBP"], currency)}
                       <span className="text-sm font-normal text-muted-foreground">/mo</span>
                     </p>
                     <ul className="mt-4 space-y-2">

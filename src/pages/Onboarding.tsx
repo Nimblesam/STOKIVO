@@ -19,7 +19,7 @@ export default function Onboarding() {
     name: "",
     address: "",
     country: "UK",
-    currency: "GBP" as "GBP" | "NGN",
+    currency: "GBP",
     brandColor: "#0d9488",
     businessType: "wholesale" as "wholesale" | "retail" | "hybrid",
   });
@@ -38,14 +38,14 @@ export default function Onboarding() {
       // Create company
       const { data: company, error: compErr } = await supabase
         .from("companies")
-        .insert({
+        .insert([{
           name: form.name,
           address: form.address,
           country: form.country,
-          currency: form.currency,
+          currency: form.currency as any,
           brand_color: form.brandColor,
           business_type: form.businessType,
-        })
+        }])
         .select("id")
         .single();
 
@@ -102,22 +102,48 @@ export default function Onboarding() {
               <Label>Country</Label>
               <select
                 value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value, currency: e.target.value === "Nigeria" ? "NGN" : "GBP" })}
+                onChange={(e) => {
+                  const c = e.target.value;
+                  const currMap: Record<string, string> = {
+                    "UK": "GBP", "Nigeria": "NGN", "USA": "USD", "Canada": "CAD",
+                    "Ghana": "GHS", "Kenya": "KES", "South Africa": "ZAR",
+                    "India": "INR", "UAE": "AED", "Australia": "AUD", "EU": "EUR",
+                  };
+                  setForm({ ...form, country: c, currency: currMap[c] || "USD" });
+                }}
                 className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="UK">United Kingdom</option>
                 <option value="Nigeria">Nigeria</option>
+                <option value="USA">United States</option>
+                <option value="Canada">Canada</option>
+                <option value="Ghana">Ghana</option>
+                <option value="Kenya">Kenya</option>
+                <option value="South Africa">South Africa</option>
+                <option value="India">India</option>
+                <option value="UAE">UAE</option>
+                <option value="Australia">Australia</option>
+                <option value="EU">European Union</option>
               </select>
             </div>
             <div>
               <Label>Currency</Label>
               <select
                 value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value as "GBP" | "NGN" })}
+                onChange={(e) => setForm({ ...form, currency: e.target.value })}
                 className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="GBP">GBP (£)</option>
                 <option value="NGN">NGN (₦)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="CAD">CAD (C$)</option>
+                <option value="GHS">GHS (₵)</option>
+                <option value="KES">KES (KSh)</option>
+                <option value="ZAR">ZAR (R)</option>
+                <option value="INR">INR (₹)</option>
+                <option value="AED">AED (د.إ)</option>
+                <option value="AUD">AUD (A$)</option>
               </select>
             </div>
             <div>

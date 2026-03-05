@@ -1,11 +1,11 @@
-import type { Currency } from './types';
-
-export function formatMoney(minorUnits: number, currency: Currency = 'GBP'): string {
+export function formatMoney(minorUnits: number, currency: string = 'GBP'): string {
   const major = minorUnits / 100;
-  if (currency === 'GBP') {
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(major);
-  }
-  return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(major);
+  const localeMap: Record<string, string> = {
+    GBP: 'en-GB', NGN: 'en-NG', USD: 'en-US', EUR: 'de-DE', CAD: 'en-CA',
+    GHS: 'en-GH', KES: 'en-KE', ZAR: 'en-ZA', INR: 'en-IN', AED: 'ar-AE', AUD: 'en-AU',
+  };
+  const locale = localeMap[currency] || 'en-US';
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(major);
 }
 
 export function formatCompact(value: number): string {
