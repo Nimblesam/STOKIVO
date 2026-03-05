@@ -14,16 +14,681 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          message: string
+          meta: Json | null
+          product_id: string | null
+          product_name: string | null
+          read: boolean
+          severity: Database["public"]["Enums"]["alert_severity"]
+          type: Database["public"]["Enums"]["alert_type"]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          message: string
+          meta?: Json | null
+          product_id?: string | null
+          product_name?: string | null
+          read?: boolean
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          type: Database["public"]["Enums"]["alert_type"]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          meta?: Json | null
+          product_id?: string | null
+          product_name?: string | null
+          read?: boolean
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          type?: Database["public"]["Enums"]["alert_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          address: string | null
+          brand_color: string
+          business_type: Database["public"]["Enums"]["business_type"]
+          country: string
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          id: string
+          logo_url: string | null
+          name: string
+          plan: Database["public"]["Enums"]["plan_tier"]
+          subdomain: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          brand_color?: string
+          business_type?: Database["public"]["Enums"]["business_type"]
+          country?: string
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          logo_url?: string | null
+          name: string
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          subdomain?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          brand_color?: string
+          business_type?: Database["public"]["Enums"]["business_type"]
+          country?: string
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          logo_url?: string | null
+          name?: string
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          subdomain?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          outstanding_balance: number
+          phone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          outstanding_balance?: number
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          outstanding_balance?: number
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          note: string | null
+          product_id: string
+          product_name: string
+          qty: number
+          type: Database["public"]["Enums"]["movement_type"]
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          product_id: string
+          product_name: string
+          qty: number
+          type: Database["public"]["Enums"]["movement_type"]
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          product_id?: string
+          product_name?: string
+          qty?: number
+          type?: Database["public"]["Enums"]["movement_type"]
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          id: string
+          invoice_id: string
+          product_id: string | null
+          product_name: string
+          qty: number
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          product_id?: string | null
+          product_name: string
+          qty?: number
+          total?: number
+          unit_price?: number
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          product_id?: string | null
+          product_name?: string
+          qty?: number
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid: number
+          company_id: string
+          created_at: string
+          customer_id: string
+          due_date: string
+          id: string
+          invoice_number: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          company_id: string
+          created_at?: string
+          customer_id: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          note: string | null
+          payment_method: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          note?: string | null
+          payment_method?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          note?: string | null
+          payment_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          category: string | null
+          company_id: string
+          cost_price: number
+          created_at: string
+          expiry_date: string | null
+          id: string
+          min_stock_level: number
+          name: string
+          profit_margin: number | null
+          selling_price: number
+          sku: string
+          stock_qty: number
+          supplier_id: string | null
+          unit_type: Database["public"]["Enums"]["unit_type"]
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string | null
+          company_id: string
+          cost_price?: number
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          min_stock_level?: number
+          name: string
+          profit_margin?: number | null
+          selling_price?: number
+          sku: string
+          stock_qty?: number
+          supplier_id?: string | null
+          unit_type?: Database["public"]["Enums"]["unit_type"]
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          category?: string | null
+          company_id?: string
+          cost_price?: number
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          min_stock_level?: number
+          name?: string
+          profit_margin?: number | null
+          selling_price?: number
+          sku?: string
+          stock_qty?: number
+          supplier_id?: string | null
+          unit_type?: Database["public"]["Enums"]["unit_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          company_id: string | null
+          created_at: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company_id?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminder_logs: {
+        Row: {
+          channel: string
+          id: string
+          invoice_id: string
+          note: string | null
+          sent_at: string
+        }
+        Insert: {
+          channel?: string
+          id?: string
+          invoice_id: string
+          note?: string | null
+          sent_at?: string
+        }
+        Update: {
+          channel?: string
+          id?: string
+          invoice_id?: string
+          note?: string | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          company_id: string
+          expires_at: string | null
+          id: string
+          max_products: number
+          max_users: number
+          plan: Database["public"]["Enums"]["plan_tier"]
+          started_at: string
+        }
+        Insert: {
+          company_id: string
+          expires_at?: string | null
+          id?: string
+          max_products?: number
+          max_users?: number
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          started_at?: string
+        }
+        Update: {
+          company_id?: string
+          expires_at?: string | null
+          id?: string
+          max_products?: number
+          max_users?: number
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_price_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_cost: number
+          old_cost: number
+          product_id: string
+          supplier_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_cost: number
+          old_cost: number
+          product_id: string
+          supplier_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_cost?: number
+          old_cost?: number
+          product_id?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_price_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          email: string | null
+          id: string
+          last_supply_date: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_supply_date?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_supply_date?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_company_id: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      user_belongs_to_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      alert_severity: "warning" | "critical"
+      alert_type: "LOW_STOCK" | "SUPPLIER_PRICE_CHANGE"
+      app_role: "owner" | "manager" | "staff"
+      business_type: "wholesale" | "retail" | "hybrid"
+      currency_code: "GBP" | "NGN"
+      invoice_status: "draft" | "sent" | "partially_paid" | "paid" | "overdue"
+      movement_type: "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT" | "SALE"
+      plan_tier: "starter" | "growth" | "pro"
+      unit_type: "bag" | "carton" | "unit" | "kg" | "bottle" | "tin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +815,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      alert_severity: ["warning", "critical"],
+      alert_type: ["LOW_STOCK", "SUPPLIER_PRICE_CHANGE"],
+      app_role: ["owner", "manager", "staff"],
+      business_type: ["wholesale", "retail", "hybrid"],
+      currency_code: ["GBP", "NGN"],
+      invoice_status: ["draft", "sent", "partially_paid", "paid", "overdue"],
+      movement_type: ["STOCK_IN", "STOCK_OUT", "ADJUSTMENT", "SALE"],
+      plan_tier: ["starter", "growth", "pro"],
+      unit_type: ["bag", "carton", "unit", "kg", "bottle", "tin"],
+    },
   },
 } as const
