@@ -16,6 +16,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import InventoryMovements from "./pages/InventoryMovements";
 import CreditLedger from "./pages/CreditLedger";
+import Cashier from "./pages/Cashier";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
@@ -65,6 +66,7 @@ const AppRoutes = () => (
           <AppLayout>
             <Routes>
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="pos" element={<Cashier />} />
               <Route path="products" element={<Products />} />
               <Route path="inventory/movements" element={<InventoryMovements />} />
               <Route path="suppliers" element={<Suppliers />} />

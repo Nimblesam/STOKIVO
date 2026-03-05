@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Cashier (POS)", url: "/pos", icon: ScanBarcode },
   { title: "Products", url: "/products", icon: Package },
   { title: "Stock Movements", url: "/inventory/movements", icon: ArrowLeftRight },
   { title: "Suppliers", url: "/suppliers", icon: Truck },
