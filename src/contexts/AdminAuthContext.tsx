@@ -81,16 +81,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, sess) => {
+      (_event, sess) => {
         setSession(sess);
         setUser(sess?.user ?? null);
         if (sess?.user) {
-          const admin = await fetchAdminUser(sess.user.id);
-          setAdminUser(admin);
+          // Defer to avoid Supabase client deadlock
+          setTimeout(async () => {
+            const admin = await fetchAdminUser(sess.user.id);
+            setAdminUser(admin);
+            setLoading(false);
+          }, 0);
         } else {
           setAdminUser(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
