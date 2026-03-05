@@ -17,3 +17,15 @@ verify_jwt = false
 
 [functions.stripe-connect-status]
 verify_jwt = false
+
+[functions.admin-bootstrap]
+verify_jwt = false
+
+[functions.admin-auth]
+verify_jwt = false
+
+[functions.admin-invite]
+verify_jwt = false
+
+[functions.admin-setup]
+verify_jwt = false
