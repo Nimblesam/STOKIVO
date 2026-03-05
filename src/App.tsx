@@ -25,9 +25,11 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminSetup from "./pages/admin/AdminSetup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAdmins from "./pages/admin/AdminAdmins";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminIntegrations from "./pages/admin/AdminIntegrations";
@@ -40,7 +42,6 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth();
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -53,7 +54,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
   if (!user) return <Navigate to="/login" replace />;
   if (!profile?.company_id) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
@@ -85,8 +85,11 @@ const AppRoutes = () => (
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/onboarding" element={<Onboarding />} />
 
-    {/* Admin routes */}
+    {/* Admin routes - public */}
     <Route path="/admin/login" element={<AdminLogin />} />
+    <Route path="/admin/setup" element={<AdminSetup />} />
+
+    {/* Admin routes - protected */}
     <Route path="/admin/*" element={
       <AdminProtectedRoute>
         <AdminLayout>
@@ -94,6 +97,7 @@ const AppRoutes = () => (
             <Route path="/" element={<AdminDashboard />} />
             <Route path="companies" element={<AdminCompanies />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="admins" element={<AdminAdmins />} />
             <Route path="subscriptions" element={<AdminSubscriptions />} />
             <Route path="transactions" element={<AdminTransactions />} />
             <Route path="integrations" element={<AdminIntegrations />} />
@@ -107,31 +111,28 @@ const AppRoutes = () => (
       </AdminProtectedRoute>
     } />
 
-    <Route
-      path="/*"
-      element={
-        <ProtectedRoute>
-          <AppLayout>
-            <Routes>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="pos" element={<Cashier />} />
-              <Route path="products" element={<Products />} />
-              <Route path="inventory/movements" element={<InventoryMovements />} />
-              <Route path="suppliers" element={<Suppliers />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="invoices" element={<Invoices />} />
-              <Route path="alerts/low-stock" element={<LowStockAlerts />} />
-              <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
-              <Route path="credit-ledger" element={<CreditLedger />} />
-              <Route path="payouts" element={<Payouts />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
-        </ProtectedRoute>
-      }
-    />
+    <Route path="/*" element={
+      <ProtectedRoute>
+        <AppLayout>
+          <Routes>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="pos" element={<Cashier />} />
+            <Route path="products" element={<Products />} />
+            <Route path="inventory/movements" element={<InventoryMovements />} />
+            <Route path="suppliers" element={<Suppliers />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="invoices" element={<Invoices />} />
+            <Route path="alerts/low-stock" element={<LowStockAlerts />} />
+            <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
+            <Route path="credit-ledger" element={<CreditLedger />} />
+            <Route path="payouts" element={<Payouts />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppLayout>
+      </ProtectedRoute>
+    } />
   </Routes>
 );
 
