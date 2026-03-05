@@ -84,6 +84,7 @@ export type Database = {
           name: string
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
+          stripe_account_id: string | null
           subdomain: string | null
           updated_at: string
         }
@@ -102,6 +103,7 @@ export type Database = {
           name: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
+          stripe_account_id?: string | null
           subdomain?: string | null
           updated_at?: string
         }
@@ -120,6 +122,7 @@ export type Database = {
           name?: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
+          stripe_account_id?: string | null
           subdomain?: string | null
           updated_at?: string
         }

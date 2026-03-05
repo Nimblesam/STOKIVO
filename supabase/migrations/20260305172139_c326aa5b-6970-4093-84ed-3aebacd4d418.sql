@@ -1,0 +1,1 @@
+ALTER TABLE public.companies ADD COLUMN stripe_account_id text DEFAULT NULL;
