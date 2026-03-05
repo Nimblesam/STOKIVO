@@ -10,12 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, FileText, Eye, Printer, Loader2, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
-const statusFilters = ["all", "draft", "sent", "partially_paid", "paid", "overdue"] as const;
+const statusFilters = ["all", "draft", "sent", "paid", "overdue"] as const;
 
 interface InvoiceRow {
   id: string;
@@ -27,7 +28,7 @@ interface InvoiceRow {
   amount_paid: number;
   due_date: string;
   created_at: string;
-  customers?: { name: string; address: string | null; phone: string | null; email: string | null } | null;
+  customers?: { name: string; address: string | null; phone: string | null; email: string | null; whatsapp?: string | null } | null;
 }
 
 export default function Invoices() {
@@ -43,14 +44,13 @@ export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
 
-  // New invoice form
   const [newInv, setNewInv] = useState({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
 
   const fetchData = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     const [{ data: invs }, { data: custs }, { data: prods }] = await Promise.all([
-      supabase.from("invoices").select("*, customers(name, address, phone, email)").eq("company_id", profile.company_id).order("created_at", { ascending: false }),
+      supabase.from("invoices").select("*, customers(name, address, phone, email, whatsapp)").eq("company_id", profile.company_id).order("created_at", { ascending: false }),
       supabase.from("customers").select("id, name").eq("company_id", profile.company_id),
       supabase.from("products").select("id, name, selling_price").eq("company_id", profile.company_id),
     ]);
@@ -114,6 +114,35 @@ export default function Invoices() {
     setSelectedItems(data || []);
   };
 
+  const sendViaEmail = (inv: InvoiceRow) => {
+    const cust = (inv as any).customers;
+    if (!cust?.email) { toast.error("Customer has no email address"); return; }
+    const subject = encodeURIComponent(`Invoice ${inv.invoice_number} from ${company?.name || "Us"}`);
+    const body = encodeURIComponent(
+      `Hi ${cust.name},\n\nPlease find your invoice ${inv.invoice_number} for ${formatMoney(inv.total, currency)}.\nDue date: ${inv.due_date}\nBalance: ${formatMoney(inv.total - inv.amount_paid, currency)}\n\nThank you!`
+    );
+    window.open(`mailto:${cust.email}?subject=${subject}&body=${body}`);
+    // Update status to sent if draft
+    if (inv.status === "draft") {
+      supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
+    }
+    toast.success("Email client opened");
+  };
+
+  const sendViaWhatsApp = (inv: InvoiceRow) => {
+    const cust = (inv as any).customers;
+    const num = cust?.whatsapp || cust?.phone;
+    if (!num) { toast.error("Customer has no phone/WhatsApp number"); return; }
+    const msg = encodeURIComponent(
+      `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\nThank you!`
+    );
+    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
+    if (inv.status === "draft") {
+      supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
+    }
+    toast.success("WhatsApp opened");
+  };
+
   const [fullCompany, setFullCompany] = useState<any>(null);
   useEffect(() => {
     if (company?.id) {
@@ -147,7 +176,7 @@ export default function Invoices() {
       <div className="flex gap-2 mb-4 flex-wrap">
         {statusFilters.map((s) => (
           <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" className={filter === s ? "bg-primary text-primary-foreground" : ""} onClick={() => setFilter(s)}>
-            {s === "all" ? "All" : s === "partially_paid" ? "Partial" : s.charAt(0).toUpperCase() + s.slice(1)}
+            {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
           </Button>
         ))}
       </div>
@@ -187,7 +216,18 @@ export default function Invoices() {
                     <TableCell className="text-right text-sm text-success">{formatMoney(inv.amount_paid, currency)}</TableCell>
                     <TableCell className="text-right"><span className={`text-sm font-semibold ${balance > 0 ? "text-destructive" : "text-success"}`}>{formatMoney(balance, currency)}</span></TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-accent"><Send className="h-3.5 w-3.5" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => sendViaEmail(inv)}><Mail className="h-3.5 w-3.5 mr-2" /> Send to Email</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => sendViaWhatsApp(inv)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -253,7 +293,18 @@ export default function Invoices() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>{selectedInvoice?.invoice_number}</span>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="h-4 w-4" /> Print</Button>
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2"><Send className="h-4 w-4" /> Send</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => selectedInvoice && sendViaEmail(selectedInvoice)}><Mail className="h-3.5 w-3.5 mr-2" /> Send to Email</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => selectedInvoice && sendViaWhatsApp(selectedInvoice)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="h-4 w-4" /> Print</Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
           {selectedInvoice && (

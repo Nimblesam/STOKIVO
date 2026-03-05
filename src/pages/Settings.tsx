@@ -325,20 +325,6 @@ export default function Settings() {
                 </div>
               )}
 
-              <div className="space-y-4 mt-4">
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20 opacity-60">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Banknote className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Paystack</p>
-                      <p className="text-xs text-muted-foreground">Accept payments in Nigeria</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline">Future</Badge>
-                </div>
-              </div>
 
               <div className="mt-6 p-4 rounded-lg bg-accent/5 border border-accent/20">
                 <h4 className="text-sm font-semibold text-foreground mb-2">How payments work</h4>
