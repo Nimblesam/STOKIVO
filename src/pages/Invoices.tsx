@@ -337,6 +337,11 @@ export default function Invoices() {
             <DialogTitle className="flex items-center justify-between">
               <span>{selectedInvoice?.invoice_number}</span>
               <div className="flex gap-2">
+                {selectedInvoice && (selectedInvoice.total - selectedInvoice.amount_paid) > 0 && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => selectedInvoice && sendReminder(selectedInvoice)}>
+                    <Bell className="h-4 w-4" /> Send Reminder
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-2"><Send className="h-4 w-4" /> Send</Button>
