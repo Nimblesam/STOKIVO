@@ -1,16 +1,19 @@
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { BarcodeGenerator } from "@/components/BarcodeGenerator";
+import { BarcodeGenerator, BARCODE_FORMATS, BarcodeFormat, generateBarcode, validateBarcode } from "@/components/BarcodeGenerator";
+import { BarcodePrintView } from "@/components/BarcodePrintView";
 import { formatMoney } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -27,10 +30,16 @@ export default function Products() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [barcodeProduct, setBarcodeProduct] = useState<any | null>(null);
+  const [barcodeViewFormat, setBarcodeViewFormat] = useState<BarcodeFormat>("CODE128");
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
+
+  // Batch print
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showPrintView, setShowPrintView] = useState(false);
 
   const fetchProducts = async () => {
     if (!profile?.company_id) return;
@@ -50,12 +59,14 @@ export default function Products() {
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      (p.category || "").toLowerCase().includes(search.toLowerCase())
+      (p.category || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.barcode || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const openAdd = () => {
     setEditingProduct(null);
     setForm(emptyForm);
+    setBarcodeFormat("EAN13");
     setShowDialog(true);
   };
 
@@ -75,10 +86,23 @@ export default function Products() {
     setShowDialog(true);
   };
 
+  const handleGenerateBarcode = () => {
+    const code = generateBarcode(barcodeFormat);
+    setForm({ ...form, barcode: code });
+    toast.success(`${barcodeFormat} barcode generated`);
+  };
+
   const handleSave = async () => {
     if (!form.name.trim() || !form.sku.trim()) {
       toast.error("Name and SKU are required");
       return;
+    }
+    if (form.barcode) {
+      const validation = validateBarcode(form.barcode, barcodeFormat);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
     }
     if (!profile?.company_id) return;
     setSaving(true);
@@ -123,15 +147,49 @@ export default function Products() {
     else { toast.success("Product deleted"); fetchProducts(); }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(p => p.id)));
+    }
+  };
+
+  const selectedProducts = products.filter(p => selectedIds.has(p.id));
+
+  // Detect format from barcode value for viewing
+  const detectFormat = (barcode: string): BarcodeFormat => {
+    if (/^\d{13}$/.test(barcode)) return "EAN13";
+    if (/^\d{8}$/.test(barcode)) return "EAN8";
+    if (/^\d{12}$/.test(barcode)) return "UPC";
+    if (/^\d{14}$/.test(barcode)) return "ITF14";
+    return "CODE128";
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Products"
         subtitle={`${products.length} products in inventory`}
         actions={
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
-            <Plus className="h-4 w-4" /> Add Product
-          </Button>
+          <div className="flex gap-2">
+            {selectedIds.size > 0 && (
+              <Button variant="outline" className="gap-2" onClick={() => setShowPrintView(true)}>
+                <Printer className="h-4 w-4" /> Print {selectedIds.size} Labels
+              </Button>
+            )}
+            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
+              <Plus className="h-4 w-4" /> Add Product
+            </Button>
+          </div>
         }
       />
 
@@ -139,7 +197,7 @@ export default function Products() {
         <div className="p-4 border-b flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name, SKU, or category..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Search by name, SKU, barcode, or category..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
         </div>
 
@@ -157,6 +215,12 @@ export default function Products() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectedIds.size === filtered.length && filtered.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Category</TableHead>
@@ -178,6 +242,12 @@ export default function Products() {
                     : "in_stock";
                   return (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelect(product.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
@@ -201,10 +271,15 @@ export default function Products() {
                       <TableCell className="text-right font-medium text-sm">{product.stock_qty}</TableCell>
                       <TableCell><StatusBadge status={stockStatus} /></TableCell>
                       <TableCell>
-                        {product.barcode && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBarcodeProduct(product)}>
+                        {product.barcode ? (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                            setBarcodeProduct(product);
+                            setBarcodeViewFormat(detectFormat(product.barcode));
+                          }}>
                             <Barcode className="h-4 w-4 text-muted-foreground" />
                           </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -218,6 +293,19 @@ export default function Products() {
                             <DropdownMenuItem onClick={() => openEdit(product)}>
                               <Pencil className="h-4 w-4 mr-2" /> Edit Product
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setBarcodeProduct(product);
+                              setBarcodeViewFormat(detectFormat(product.barcode || product.sku));
+                            }}>
+                              <Barcode className="h-4 w-4 mr-2" /> View Barcode
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedIds(new Set([product.id]));
+                              setShowPrintView(true);
+                            }}>
+                              <Printer className="h-4 w-4 mr-2" /> Print Label
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             {role === "owner" && (
                               <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(product)}>
                                 <Trash2 className="h-4 w-4 mr-2" /> Delete
@@ -252,9 +340,39 @@ export default function Products() {
                 <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="e.g. IND-001" className="mt-1" />
               </div>
               <div>
-                <Label>Barcode</Label>
-                <Input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Optional" className="mt-1" />
+                <Label>Barcode Format</Label>
+                <Select value={barcodeFormat} onValueChange={(v) => setBarcodeFormat(v as BarcodeFormat)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BARCODE_FORMATS.map(f => (
+                      <SelectItem key={f.value} value={f.value}>
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+            <div>
+              <Label>Barcode Value</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={form.barcode}
+                  onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                  placeholder={`Enter or generate ${barcodeFormat} barcode`}
+                  className="flex-1 font-mono"
+                />
+                <Button type="button" variant="outline" size="icon" onClick={handleGenerateBarcode} title="Auto-generate barcode">
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
+              {form.barcode && (
+                <div className="mt-2 flex justify-center p-2 bg-white rounded border">
+                  <BarcodeGenerator value={form.barcode} format={barcodeFormat} height={40} width={1.5} fontSize={10} />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -300,20 +418,70 @@ export default function Products() {
         </DialogContent>
       </Dialog>
 
-      {/* Barcode Dialog */}
+      {/* Barcode View Dialog */}
       <Dialog open={!!barcodeProduct} onOpenChange={() => setBarcodeProduct(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{barcodeProduct?.name} — Barcode</DialogTitle>
           </DialogHeader>
           {barcodeProduct && (
-            <div className="flex flex-col items-center gap-4 py-4">
-              <BarcodeGenerator value={barcodeProduct.barcode || barcodeProduct.sku} format="CODE128" height={80} width={2} />
-              <p className="text-xs text-muted-foreground text-center">Code128 format</p>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs">Format</Label>
+                <Select value={barcodeViewFormat} onValueChange={(v) => setBarcodeViewFormat(v as BarcodeFormat)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BARCODE_FORMATS.map(f => (
+                      <SelectItem key={f.value} value={f.value}>{f.label} — {f.description}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col items-center gap-3 py-4 bg-white rounded-lg border p-4">
+                <BarcodeGenerator
+                  value={barcodeProduct.barcode || barcodeProduct.sku}
+                  format={barcodeViewFormat}
+                  height={80}
+                  width={2}
+                />
+                <p className="text-xs text-muted-foreground font-mono">{barcodeProduct.barcode || barcodeProduct.sku}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={() => {
+                  setSelectedIds(new Set([barcodeProduct.id]));
+                  setBarcodeProduct(null);
+                  setShowPrintView(true);
+                }}>
+                  <Printer className="h-4 w-4" /> Print Label
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">
+                Compatible with Dymo, Zebra, Brother, and all standard barcode scanners
+              </p>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Batch Print View */}
+      <BarcodePrintView
+        open={showPrintView}
+        onOpenChange={(open) => {
+          setShowPrintView(open);
+          if (!open) setSelectedIds(new Set());
+        }}
+        products={selectedProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          barcode: p.barcode || p.sku,
+          sku: p.sku,
+          selling_price: p.selling_price,
+        }))}
+        barcodeFormat={barcodeViewFormat}
+        currency={currency}
+      />
     </div>
   );
 }
