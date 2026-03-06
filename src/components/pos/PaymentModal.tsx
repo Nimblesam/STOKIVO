@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Banknote, CreditCard, Delete, X, Loader2 } from "lucide-react";
+import { Banknote, CreditCard, Delete, X, Loader2, Clock } from "lucide-react";
 import type { Currency } from "@/lib/types";
 
 interface Props {
@@ -187,13 +187,16 @@ export function PaymentModal({ total, currency, onClose, onComplete, processing 
                 </Button>
               </div>
 
-              {/* Quick full card */}
+              {/* Pay Later */}
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={payFullCard}
+                onClick={() => {
+                  // Mark as pay later - complete with zero payments
+                  onComplete([]);
+                }}
               >
-                <CreditCard className="h-4 w-4 mr-2" /> Pay full {formatMoney(remaining, currency)} by card
+                <Clock className="h-4 w-4 mr-2" /> Pay Later
               </Button>
             </>
           )}

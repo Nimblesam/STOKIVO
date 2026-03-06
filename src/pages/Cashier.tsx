@@ -182,6 +182,7 @@ export default function Cashier() {
     try {
       const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
       const changeGiven = Math.max(0, totalPaid - grandTotal);
+      const isPayLater = payments.length === 0;
 
       // 1. Create sale
       const { data: sale, error: saleErr } = await supabase
@@ -195,6 +196,7 @@ export default function Cashier() {
           tax,
           total: grandTotal,
           change_given: changeGiven,
+          status: isPayLater ? "pending" : "completed",
         })
         .select("id")
         .single();
@@ -214,23 +216,34 @@ export default function Cashier() {
       );
       if (itemsErr) throw itemsErr;
 
-      // 3. Insert payments
-      const { error: payErr } = await supabase.from("sale_payments").insert(
-        payments.map((p) => ({
-          sale_id: sale.id,
-          method: p.method,
-          amount: p.amount,
-          provider: p.method === "card" ? "mock" : null,
-          reference: p.method === "card" ? `MOCK-${Date.now()}` : null,
-        }))
-      );
-      if (payErr) throw payErr;
+      // 3. Insert payments (if any)
+      if (payments.length > 0) {
+        const { error: payErr } = await supabase.from("sale_payments").insert(
+          payments.map((p) => ({
+            sale_id: sale.id,
+            method: p.method,
+            amount: p.amount,
+            provider: p.method === "card" ? "mock" : null,
+            reference: p.method === "card" ? `MOCK-${Date.now()}` : null,
+          }))
+        );
+        if (payErr) throw payErr;
+      }
 
-      // 4. Deduct stock + create inventory movements
+      // 4. Deduct stock + create inventory movements (fetch current stock for accuracy)
       for (const item of cart) {
+        // Fetch current stock to avoid stale data
+        const { data: currentProduct } = await supabase
+          .from("products")
+          .select("stock_qty")
+          .eq("id", item.product_id)
+          .single();
+
+        const currentStock = currentProduct?.stock_qty ?? item.stock_qty;
+
         await supabase
           .from("products")
-          .update({ stock_qty: item.stock_qty - item.qty })
+          .update({ stock_qty: Math.max(0, currentStock - item.qty) })
           .eq("id", item.product_id);
 
         await supabase.from("inventory_movements").insert({
@@ -241,7 +254,7 @@ export default function Cashier() {
           qty: -item.qty,
           user_id: user.id,
           user_name: profile.full_name,
-          note: `POS Sale #${sale.id.slice(0, 8)}`,
+          note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`,
         });
       }
 
@@ -263,7 +276,7 @@ export default function Cashier() {
 
       setShowPayment(false);
       setCart([]);
-      toast.success("Payment successful!");
+      toast.success(isPayLater ? "Sale recorded — payment pending" : "Payment successful!");
     } catch (err: any) {
       toast.error("Payment failed", { description: err?.message });
     } finally {

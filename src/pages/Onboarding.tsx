@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,41 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Building2, ArrowRight } from "lucide-react";
 
-type Step = "company" | "details";
-
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
-  const [step, setStep] = useState<Step>("company");
+  const { user, loading: authLoading, profile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
+    companyNumber: "",
+    companyPhone: "",
+    companyEmail: "",
     address: "",
     country: "UK",
     currency: "GBP",
     brandColor: "#0d9488",
     businessType: "wholesale" as "wholesale" | "retail" | "hybrid",
   });
+
+  // Wait for auth to load
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-xl zentra-gradient flex items-center justify-center animate-pulse-subtle">
+            <span className="text-accent-foreground font-display font-bold">Z</span>
+          </div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in → go to login
+  if (!user) return <Navigate to="/login" replace />;
+
+  // Already has company → go to dashboard
+  if (profile?.company_id) return <Navigate to="/dashboard" replace />;
 
   const handleCreate = async () => {
     if (!form.name.trim()) {
@@ -37,12 +57,14 @@ export default function Onboarding() {
     try {
       const companyId = crypto.randomUUID();
 
-      // Create company (no returning select to avoid RLS select check during first-time onboarding)
       const { error: compErr } = await supabase
         .from("companies")
         .insert({
           id: companyId,
           name: form.name,
+          company_number: form.companyNumber || null,
+          phone: form.companyPhone || null,
+          email: form.companyEmail || null,
           address: form.address,
           country: form.country,
           currency: form.currency as any,
@@ -52,7 +74,6 @@ export default function Onboarding() {
 
       if (compErr) throw compErr;
 
-      // Update profile with company_id
       const { error: profileErr } = await supabase
         .from("profiles")
         .update({ company_id: companyId })
@@ -60,14 +81,12 @@ export default function Onboarding() {
 
       if (profileErr) throw profileErr;
 
-      // Add owner role
       const { error: roleErr } = await supabase
         .from("user_roles")
         .insert({ user_id: user.id, company_id: companyId, role: "owner" });
 
       if (roleErr) throw roleErr;
 
-      // Create subscription
       const { error: subErr } = await supabase
         .from("subscriptions")
         .insert({ company_id: companyId, plan: "starter", max_products: 500, max_users: 1 });
@@ -92,7 +111,7 @@ export default function Onboarding() {
             <Building2 className="h-7 w-7 text-accent-foreground" />
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground">Set up your workspace</h1>
-          <p className="text-sm text-muted-foreground mt-1">Tell us about your business</p>
+          <p className="text-sm text-muted-foreground mt-1">Tell us about your business to get started</p>
         </div>
 
         <div className="zentra-card p-6 space-y-5">
@@ -101,7 +120,19 @@ export default function Onboarding() {
               <Label>Company Name *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mama Africa Wholesale" className="mt-1" />
             </div>
-            <div className="sm:col-span-2">
+            <div>
+              <Label>Company Number</Label>
+              <Input value={form.companyNumber} onChange={(e) => setForm({ ...form, companyNumber: e.target.value })} placeholder="e.g. 12345678" className="mt-1" />
+            </div>
+            <div>
+              <Label>Company Phone</Label>
+              <Input value={form.companyPhone} onChange={(e) => setForm({ ...form, companyPhone: e.target.value })} placeholder="+44 7700 900000" className="mt-1" />
+            </div>
+            <div>
+              <Label>Company Email</Label>
+              <Input type="email" value={form.companyEmail} onChange={(e) => setForm({ ...form, companyEmail: e.target.value })} placeholder="info@business.com" className="mt-1" />
+            </div>
+            <div>
               <Label>Address</Label>
               <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="45 Peckham High St, London" className="mt-1" />
             </div>
