@@ -169,6 +169,20 @@ export default function Invoices() {
     fetchData();
   };
 
+  const sendViaWhatsApp = (inv: InvoiceRow) => {
+    const cust = (inv as any).customers;
+    const num = cust?.whatsapp || cust?.phone;
+    if (!num) { toast.error("Customer has no phone/WhatsApp number"); return; }
+    const msg = encodeURIComponent(
+      `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\nThank you!`
+    );
+    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
+    if (inv.status === "draft") {
+      supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
+    }
+    toast.success("WhatsApp opened");
+  };
+
   const [fullCompany, setFullCompany] = useState<any>(null);
   useEffect(() => {
     if (company?.id) {
@@ -244,6 +258,9 @@ export default function Invoices() {
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                        {balance > 0 && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-warning" title="Send Payment Reminder" onClick={() => sendReminder(inv)}><Bell className="h-3.5 w-3.5" /></Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-accent"><Send className="h-3.5 w-3.5" /></Button>
