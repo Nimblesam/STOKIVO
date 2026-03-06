@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle } from "lucide-react";
+import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -129,18 +129,44 @@ export default function Invoices() {
     toast.success("Email client opened");
   };
 
-  const sendViaWhatsApp = (inv: InvoiceRow) => {
+  const sendReminder = async (inv: InvoiceRow) => {
     const cust = (inv as any).customers;
-    const num = cust?.whatsapp || cust?.phone;
-    if (!num) { toast.error("Customer has no phone/WhatsApp number"); return; }
-    const msg = encodeURIComponent(
-      `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\nThank you!`
+    if (!cust?.email) { toast.error("Customer has no email address registered"); return; }
+    
+    const balance = inv.total - inv.amount_paid;
+    if (balance <= 0) { toast.info("This invoice is fully paid"); return; }
+
+    const subject = encodeURIComponent(`Payment Reminder: Invoice ${inv.invoice_number}`);
+    const body = encodeURIComponent(
+      `Dear ${cust.name},\n\n` +
+      `This is a friendly reminder that payment is due for the following invoice:\n\n` +
+      `Invoice Number: ${inv.invoice_number}\n` +
+      `Invoice Total: ${formatMoney(inv.total, currency)}\n` +
+      `Amount Paid: ${formatMoney(inv.amount_paid, currency)}\n` +
+      `Balance Due: ${formatMoney(balance, currency)}\n` +
+      `Due Date: ${inv.due_date}\n\n` +
+      `Please arrange payment at your earliest convenience.\n\n` +
+      `If you have already made this payment, please disregard this reminder.\n\n` +
+      `Thank you for your business.\n\n` +
+      `Kind regards,\n${company?.name || "The Team"}`
     );
-    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
-    if (inv.status === "draft") {
-      supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
+    window.open(`mailto:${cust.email}?subject=${subject}&body=${body}`);
+
+    // Log the reminder
+    await supabase.from("reminder_logs").insert({
+      invoice_id: inv.id,
+      channel: "email",
+      note: `Payment reminder sent for balance ${formatMoney(balance, currency)}`,
+    });
+
+    // Update status to overdue if past due date
+    const now = new Date().toISOString().split("T")[0];
+    if (inv.due_date < now && inv.status !== "overdue" && inv.status !== "paid") {
+      await supabase.from("invoices").update({ status: "overdue" as any }).eq("id", inv.id);
     }
-    toast.success("WhatsApp opened");
+
+    toast.success("Payment reminder email opened");
+    fetchData();
   };
 
   const [fullCompany, setFullCompany] = useState<any>(null);
