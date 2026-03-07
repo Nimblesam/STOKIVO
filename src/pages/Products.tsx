@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2 } from "lucide-react";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, ScanBarcode } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -199,6 +199,18 @@ export default function Products() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search by name, SKU, barcode, or category..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
+          <Button variant="outline" className="gap-2" onClick={() => {
+            const lines = ["Name,SKU,Barcode,Category,Unit Type,Cost Price,Selling Price,Stock Qty,Min Stock"];
+            filtered.forEach(p => {
+              lines.push(`"${p.name}","${p.sku}","${p.barcode || ""}","${p.category || ""}","${p.unit_type}",${(p.cost_price/100).toFixed(2)},${(p.selling_price/100).toFixed(2)},${p.stock_qty},${p.min_stock_level}`);
+            });
+            const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = "products.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -357,13 +369,18 @@ export default function Products() {
             </div>
             <div>
               <Label>Barcode Value</Label>
+              <p className="text-[10px] text-muted-foreground mb-1">Type manually, scan with a scanner, or auto-generate</p>
               <div className="flex gap-2 mt-1">
-                <Input
-                  value={form.barcode}
-                  onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                  placeholder={`Enter or generate ${barcodeFormat} barcode`}
-                  className="flex-1 font-mono"
-                />
+                <div className="relative flex-1">
+                  <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={form.barcode}
+                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                    placeholder={`Enter, scan, or generate ${barcodeFormat}`}
+                    className="pl-10 font-mono"
+                    autoFocus={false}
+                  />
+                </div>
                 <Button type="button" variant="outline" size="icon" onClick={handleGenerateBarcode} title="Auto-generate barcode">
                   <Wand2 className="h-4 w-4" />
                 </Button>

@@ -63,33 +63,22 @@ export default function Cashier() {
   const tax = 0;
   const grandTotal = subtotal - discount + tax;
 
-  // Keep scan focused
-  useEffect(() => {
-    scanRef.current?.focus();
-  }, [cart]);
+  useEffect(() => { scanRef.current?.focus(); }, [cart]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "F2" && cart.length > 0 && !showPayment && !completedSale) {
         e.preventDefault();
         setShowPayment(true);
       }
-      if (e.key === "Escape") {
-        setShowPayment(false);
-        setShowReceipt(false);
-      }
+      if (e.key === "Escape") { setShowPayment(false); setShowReceipt(false); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [cart, showPayment, completedSale]);
 
-  // Search products for catalog
   useEffect(() => {
-    if (!profile?.company_id || searchQuery.length < 1) {
-      setProducts([]);
-      return;
-    }
+    if (!profile?.company_id || searchQuery.length < 1) { setProducts([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
       const { data } = await supabase
@@ -114,68 +103,45 @@ export default function Cashier() {
             : i
         );
       }
-      return [
-        ...prev,
-        {
-          product_id: product.id,
-          name: product.name,
-          barcode: product.barcode,
-          unit_price: product.selling_price,
-          qty: 1,
-          stock_qty: product.stock_qty,
-          line_total: product.selling_price,
-        },
-      ];
+      return [...prev, {
+        product_id: product.id, name: product.name, barcode: product.barcode,
+        unit_price: product.selling_price, qty: 1, stock_qty: product.stock_qty,
+        line_total: product.selling_price,
+      }];
     });
-    // Visual feedback
     toast.success(`${product.name} added`, { duration: 1000 });
   }, []);
 
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scanValue.trim() || !profile?.company_id) return;
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("products")
       .select("id, name, barcode, selling_price, stock_qty")
       .eq("company_id", profile.company_id)
       .eq("barcode", scanValue.trim())
       .maybeSingle();
-
-    if (data) {
-      addToCart(data);
-    } else {
-      toast.error("Barcode not found", {
-        description: `No product matches "${scanValue}"`,
-        action: { label: "Add Product", onClick: () => window.open("/products", "_blank") },
-      });
-    }
+    if (data) { addToCart(data); }
+    else { toast.error("Barcode not found", { description: `No product matches "${scanValue}"` }); }
     setScanValue("");
     scanRef.current?.focus();
   };
 
   const updateQty = (productId: string, delta: number) => {
     setCart((prev) =>
-      prev
-        .map((i) => {
-          if (i.product_id !== productId) return i;
-          const newQty = Math.max(0, i.qty + delta);
-          return { ...i, qty: newQty, line_total: newQty * i.unit_price };
-        })
-        .filter((i) => i.qty > 0)
+      prev.map((i) => {
+        if (i.product_id !== productId) return i;
+        const newQty = Math.max(0, i.qty + delta);
+        return { ...i, qty: newQty, line_total: newQty * i.unit_price };
+      }).filter((i) => i.qty > 0)
     );
   };
 
-  const removeItem = (productId: string) => {
-    setCart((prev) => prev.filter((i) => i.product_id !== productId));
-  };
-
+  const removeItem = (productId: string) => setCart((prev) => prev.filter((i) => i.product_id !== productId));
   const clearCart = () => setCart([]);
-
-  // Check stock before payment
   const stockErrors = cart.filter((i) => i.qty > i.stock_qty);
 
-  const handlePaymentComplete = async (payments: { method: string; amount: number }[]) => {
+  const handlePaymentComplete = async (payments: { method: string; amount: number }[], customerName?: string) => {
     if (!profile?.company_id || !user) return;
     setProcessing(true);
 
@@ -188,95 +154,112 @@ export default function Cashier() {
       const { data: sale, error: saleErr } = await supabase
         .from("sales")
         .insert({
-          company_id: profile.company_id,
-          cashier_id: user.id,
-          cashier_name: profile.full_name,
-          subtotal,
-          discount,
-          tax,
-          total: grandTotal,
-          change_given: changeGiven,
+          company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
+          subtotal, discount, tax, total: grandTotal, change_given: changeGiven,
           status: isPayLater ? "pending" : "completed",
         })
-        .select("id")
-        .single();
-
+        .select("id").single();
       if (saleErr || !sale) throw saleErr || new Error("Failed to create sale");
 
       // 2. Insert sale items
-      const { error: itemsErr } = await supabase.from("sale_items").insert(
+      await supabase.from("sale_items").insert(
         cart.map((i) => ({
-          sale_id: sale.id,
-          product_id: i.product_id,
-          product_name: i.name,
-          qty: i.qty,
-          unit_price: i.unit_price,
-          line_total: i.line_total,
+          sale_id: sale.id, product_id: i.product_id, product_name: i.name,
+          qty: i.qty, unit_price: i.unit_price, line_total: i.line_total,
         }))
       );
-      if (itemsErr) throw itemsErr;
 
       // 3. Insert payments (if any)
       if (payments.length > 0) {
-        const { error: payErr } = await supabase.from("sale_payments").insert(
+        await supabase.from("sale_payments").insert(
           payments.map((p) => ({
-            sale_id: sale.id,
-            method: p.method,
-            amount: p.amount,
+            sale_id: sale.id, method: p.method, amount: p.amount,
             provider: p.method === "card" ? "mock" : null,
             reference: p.method === "card" ? `MOCK-${Date.now()}` : null,
           }))
         );
-        if (payErr) throw payErr;
       }
 
-      // 4. Deduct stock + create inventory movements (fetch current stock for accuracy)
+      // 4. Deduct stock
       for (const item of cart) {
-        // Fetch current stock to avoid stale data
         const { data: currentProduct } = await supabase
-          .from("products")
-          .select("stock_qty")
-          .eq("id", item.product_id)
-          .single();
-
+          .from("products").select("stock_qty").eq("id", item.product_id).single();
         const currentStock = currentProduct?.stock_qty ?? item.stock_qty;
-
-        await supabase
-          .from("products")
+        await supabase.from("products")
           .update({ stock_qty: Math.max(0, currentStock - item.qty) })
           .eq("id", item.product_id);
-
         await supabase.from("inventory_movements").insert({
-          company_id: profile.company_id,
-          product_id: item.product_id,
-          product_name: item.name,
-          type: "SALE" as const,
-          qty: -item.qty,
-          user_id: user.id,
-          user_name: profile.full_name,
+          company_id: profile.company_id, product_id: item.product_id,
+          product_name: item.name, type: "SALE" as const, qty: -item.qty,
+          user_id: user.id, user_name: profile.full_name,
           note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`,
         });
       }
 
-      // 5. Build completed sale record
+      // 5. If Pay Later → create customer (if needed), invoice, and add to credit ledger
+      if (isPayLater && customerName) {
+        // Find or create customer
+        let customerId: string | null = null;
+        const { data: existingCustomers } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("company_id", profile.company_id)
+          .ilike("name", customerName)
+          .limit(1);
+
+        if (existingCustomers && existingCustomers.length > 0) {
+          customerId = existingCustomers[0].id;
+        } else {
+          const { data: newCust } = await supabase
+            .from("customers")
+            .insert({ company_id: profile.company_id, name: customerName, outstanding_balance: 0 })
+            .select("id").single();
+          customerId = newCust?.id || null;
+        }
+
+        if (customerId) {
+          // Create invoice for the credit
+          const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30);
+
+          const { data: inv } = await supabase.from("invoices").insert({
+            company_id: profile.company_id,
+            customer_id: customerId,
+            invoice_number: invNum,
+            due_date: dueDate.toISOString().split("T")[0],
+            subtotal: grandTotal, total: grandTotal,
+            status: "sent" as any,
+          }).select("id").single();
+
+          if (inv) {
+            await supabase.from("invoice_items").insert(
+              cart.map((i) => ({
+                invoice_id: inv.id, product_id: i.product_id, product_name: i.name,
+                qty: i.qty, unit_price: i.unit_price, total: i.line_total,
+              }))
+            );
+          }
+
+          // Update customer outstanding balance
+          const { data: custData } = await supabase
+            .from("customers").select("outstanding_balance").eq("id", customerId).single();
+          await supabase.from("customers").update({
+            outstanding_balance: (custData?.outstanding_balance || 0) + grandTotal,
+          }).eq("id", customerId);
+        }
+      }
+
+      // 6. Build completed sale record
       setCompletedSale({
-        id: sale.id,
-        items: [...cart],
-        subtotal,
-        discount,
-        tax,
-        total: grandTotal,
-        payments,
-        change_given: changeGiven,
-        cashier_name: profile.full_name,
-        created_at: new Date().toISOString(),
-        company_name: company?.name || "",
-        currency,
+        id: sale.id, items: [...cart], subtotal, discount, tax, total: grandTotal,
+        payments, change_given: changeGiven, cashier_name: profile.full_name,
+        created_at: new Date().toISOString(), company_name: company?.name || "", currency,
       });
 
       setShowPayment(false);
       setCart([]);
-      toast.success(isPayLater ? "Sale recorded — payment pending" : "Payment successful!");
+      toast.success(isPayLater ? "Sale recorded — added to credit ledger" : "Payment successful!");
     } catch (err: any) {
       toast.error("Payment failed", { description: err?.message });
     } finally {
@@ -285,10 +268,7 @@ export default function Cashier() {
   };
 
   const startNewSale = () => {
-    setCompletedSale(null);
-    setShowReceipt(false);
-    setCart([]);
-    setScanValue("");
+    setCompletedSale(null); setShowReceipt(false); setCart([]); setScanValue("");
     scanRef.current?.focus();
   };
 
@@ -300,7 +280,9 @@ export default function Cashier() {
           <div className="mx-auto h-20 w-20 rounded-full bg-success/10 flex items-center justify-center">
             <CheckCircle2 className="h-10 w-10 text-success" />
           </div>
-          <h2 className="text-2xl font-display font-bold">Payment Successful</h2>
+          <h2 className="text-2xl font-display font-bold">
+            {completedSale.payments.length === 0 ? "Sale Recorded" : "Payment Successful"}
+          </h2>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total</span>
@@ -312,6 +294,12 @@ export default function Cashier() {
                 <span>{formatMoney(p.amount, currency)}</span>
               </div>
             ))}
+            {completedSale.payments.length === 0 && (
+              <div className="flex justify-between text-warning font-semibold">
+                <span>Status</span>
+                <span>Pay Later — Added to Credit Ledger</span>
+              </div>
+            )}
             {completedSale.change_given > 0 && (
               <div className="flex justify-between text-success font-semibold">
                 <span>Change</span>
@@ -333,7 +321,6 @@ export default function Cashier() {
     );
   }
 
-  // RECEIPT VIEW
   if (showReceipt && completedSale) {
     return (
       <div className="space-y-4">
@@ -352,46 +339,30 @@ export default function Cashier() {
   // MAIN POS LAYOUT
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-5rem)]">
-      {/* LEFT — Scan + Catalog */}
       <div className="flex-1 flex flex-col gap-4 min-w-0">
-        {/* Scan bar */}
         <Card className="p-4">
           <form onSubmit={handleScan} className="flex gap-3">
             <div className="relative flex-1">
               <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                ref={scanRef}
-                value={scanValue}
-                onChange={(e) => setScanValue(e.target.value)}
-                placeholder="Scan barcode or type code…"
-                className="pl-11 h-12 text-lg font-mono"
-                autoFocus
-              />
+              <Input ref={scanRef} value={scanValue} onChange={(e) => setScanValue(e.target.value)}
+                placeholder="Scan barcode or type code…" className="pl-11 h-12 text-lg font-mono" autoFocus />
             </div>
-            <Button type="submit" size="lg" className="h-12 px-6">
-              Scan
-            </Button>
+            <Button type="submit" size="lg" className="h-12 px-6">Scan</Button>
           </form>
         </Card>
 
-        {/* Product search / catalog */}
         <Card className="flex-1 flex flex-col overflow-hidden">
           <div className="p-4 border-b">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products by name, SKU, or barcode…"
-                className="pl-10"
-              />
+              <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products by name, SKU, or barcode…" className="pl-10" />
             </div>
           </div>
           <ScrollArea className="flex-1">
             {products.length === 0 && searchQuery.length > 0 && !searching && (
               <div className="p-8 text-center text-muted-foreground">
-                <Package className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                <p>No products found</p>
+                <Package className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No products found</p>
               </div>
             )}
             {products.length === 0 && searchQuery.length === 0 && (
@@ -403,25 +374,18 @@ export default function Cashier() {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 p-4">
               {products.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => addToCart(p)}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/10 hover:border-accent transition-colors text-left"
-                >
+                <button key={p.id} onClick={() => addToCart(p)}
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/10 hover:border-accent transition-colors text-left">
                   <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
                     <Package className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{p.name}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{p.sku}</span>
-                      <span>•</span>
-                      <span>{p.stock_qty} in stock</span>
+                      <span>{p.sku}</span><span>•</span><span>{p.stock_qty} in stock</span>
                     </div>
                   </div>
-                  <span className="font-semibold text-sm whitespace-nowrap">
-                    {formatMoney(p.selling_price, currency)}
-                  </span>
+                  <span className="font-semibold text-sm whitespace-nowrap">{formatMoney(p.selling_price, currency)}</span>
                 </button>
               ))}
             </div>
@@ -429,15 +393,12 @@ export default function Cashier() {
         </Card>
       </div>
 
-      {/* RIGHT — Cart panel */}
       <Card className="w-full lg:w-[400px] xl:w-[440px] flex flex-col shrink-0">
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-accent" />
             <h2 className="font-display font-semibold text-lg">Cart</h2>
-            {cart.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{cart.length}</Badge>
-            )}
+            {cart.length > 0 && <Badge variant="secondary" className="ml-1">{cart.length}</Badge>}
           </div>
           {cart.length > 0 && (
             <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:text-destructive">
@@ -450,8 +411,7 @@ export default function Cashier() {
           {cart.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-40" />
-              <p>Cart is empty</p>
-              <p className="text-xs mt-1">Scan items to add them</p>
+              <p>Cart is empty</p><p className="text-xs mt-1">Scan items to add them</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -459,42 +419,23 @@ export default function Cashier() {
                 <div key={item.product_id} className="p-3 flex gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatMoney(item.unit_price, currency)} each
-                    </p>
+                    <p className="text-xs text-muted-foreground">{formatMoney(item.unit_price, currency)} each</p>
                     {item.qty > item.stock_qty && (
-                      <p className="text-xs text-destructive font-medium mt-0.5">
-                        Only {item.stock_qty} in stock!
-                      </p>
+                      <p className="text-xs text-destructive font-medium mt-0.5">Only {item.stock_qty} in stock!</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => updateQty(item.product_id, -1)}
-                    >
+                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, -1)}>
                       <Minus className="h-3 w-3" />
                     </Button>
                     <span className="w-8 text-center font-semibold text-sm">{item.qty}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => updateQty(item.product_id, 1)}
-                    >
+                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, 1)}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="flex flex-col items-end justify-between">
-                    <span className="font-semibold text-sm">
-                      {formatMoney(item.line_total, currency)}
-                    </span>
-                    <button
-                      onClick={() => removeItem(item.product_id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
+                    <span className="font-semibold text-sm">{formatMoney(item.line_total, currency)}</span>
+                    <button onClick={() => removeItem(item.product_id)} className="text-muted-foreground hover:text-destructive transition-colors">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
@@ -504,25 +445,12 @@ export default function Cashier() {
           )}
         </ScrollArea>
 
-        {/* Totals + Pay */}
         <div className="border-t p-4 space-y-3">
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
               <span>{formatMoney(subtotal, currency)}</span>
             </div>
-            {discount > 0 && (
-              <div className="flex justify-between text-success">
-                <span>Discount</span>
-                <span>-{formatMoney(discount, currency)}</span>
-              </div>
-            )}
-            {tax > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax</span>
-                <span>{formatMoney(tax, currency)}</span>
-              </div>
-            )}
             <Separator />
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
@@ -536,23 +464,18 @@ export default function Cashier() {
             </p>
           )}
 
-          <Button
-            className="w-full h-14 text-lg font-bold gap-2"
+          <Button className="w-full h-14 text-lg font-bold gap-2"
             disabled={cart.length === 0 || stockErrors.length > 0}
-            onClick={() => setShowPayment(true)}
-          >
-            <Banknote className="h-5 w-5" />
-            Pay {grandTotal > 0 ? formatMoney(grandTotal, currency) : ""}
+            onClick={() => setShowPayment(true)}>
+            <Banknote className="h-5 w-5" /> Pay {grandTotal > 0 ? formatMoney(grandTotal, currency) : ""}
           </Button>
           <p className="text-xs text-center text-muted-foreground">Press F2 for quick pay</p>
         </div>
       </Card>
 
-      {/* Payment Modal */}
       {showPayment && (
         <PaymentModal
-          total={grandTotal}
-          currency={currency}
+          total={grandTotal} currency={currency}
           onClose={() => setShowPayment(false)}
           onComplete={handlePaymentComplete}
           processing={processing}
