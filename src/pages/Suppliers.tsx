@@ -1,36 +1,43 @@
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import type { Currency } from "@/lib/types";
 
 const emptyForm = { name: "", phone: "", whatsapp: "", email: "", address: "" };
 
 export default function Suppliers() {
-  const { profile } = useAuth();
+  const { profile, company } = useAuth();
+  const currency = (company?.currency || "GBP") as Currency;
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [saleItems, setSaleItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [showProducts, setShowProducts] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
-    const [{ data: s }, { data: p }] = await Promise.all([
+    const [{ data: s }, { data: p }, { data: si }] = await Promise.all([
       supabase.from("suppliers").select("*").eq("company_id", profile.company_id).order("created_at", { ascending: false }),
-      supabase.from("products").select("id, supplier_id").eq("company_id", profile.company_id),
+      supabase.from("products").select("*").eq("company_id", profile.company_id),
+      supabase.from("sale_items").select("product_id, qty"),
     ]);
     setSuppliers(s || []);
     setProducts(p || []);
+    setSaleItems(si || []);
     setLoading(false);
   };
 
@@ -47,24 +54,12 @@ export default function Suppliers() {
     if (!form.name.trim()) { toast.error("Name is required"); return; }
     if (!profile?.company_id) return;
     setSaving(true);
-    const payload = {
-      name: form.name,
-      phone: form.phone || null,
-      whatsapp: form.whatsapp || null,
-      email: form.email || null,
-      address: form.address || null,
-    };
-
+    const payload = { name: form.name, phone: form.phone || null, whatsapp: form.whatsapp || null, email: form.email || null, address: form.address || null };
     const { error } = editingId
       ? await supabase.from("suppliers").update(payload).eq("id", editingId)
       : await supabase.from("suppliers").insert({ ...payload, company_id: profile.company_id });
-
     if (error) toast.error(error.message);
-    else {
-      toast.success(editingId ? "Supplier updated!" : "Supplier added!");
-      setShowDialog(false);
-      fetchData();
-    }
+    else { toast.success(editingId ? "Supplier updated!" : "Supplier added!"); setShowDialog(false); fetchData(); }
     setSaving(false);
   };
 
@@ -73,6 +68,38 @@ export default function Suppliers() {
     const { error } = await supabase.from("suppliers").delete().eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Supplier deleted"); fetchData(); }
+  };
+
+  const getSupplierProducts = (supplierId: string) => {
+    return products.filter(p => p.supplier_id === supplierId);
+  };
+
+  const handleReorder = (supplier: any) => {
+    const supplierProducts = getSupplierProducts(supplier.id);
+    if (supplierProducts.length === 0) { toast.error("No products linked to this supplier"); return; }
+
+    const num = supplier.whatsapp || supplier.phone;
+    if (!num) { toast.error("Supplier has no phone/WhatsApp number"); return; }
+
+    // Find products with low stock or frequently ordered
+    const reorderItems = supplierProducts
+      .filter(p => p.stock_qty <= p.min_stock_level || p.stock_qty < p.min_stock_level * 2)
+      .map(p => {
+        const suggestedQty = Math.max(p.min_stock_level * 2 - p.stock_qty, p.min_stock_level);
+        return { name: p.name, qty: suggestedQty, unit_type: p.unit_type };
+      });
+
+    // If no low stock, include all supplier products with reasonable quantities
+    const itemsToOrder = reorderItems.length > 0 ? reorderItems : supplierProducts.slice(0, 5).map(p => ({
+      name: p.name, qty: p.min_stock_level || 10, unit_type: p.unit_type,
+    }));
+
+    const itemsList = itemsToOrder.map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`).join("\n");
+    const msg = encodeURIComponent(
+      `Hi ${supplier.name},\n\nI'd like to place a reorder:\n\n${itemsList}\n\nPlease confirm availability and pricing.\n\nThank you!`
+    );
+    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
+    toast.success("Reorder message opened in WhatsApp");
   };
 
   if (loading) {
@@ -97,9 +124,10 @@ export default function Suppliers() {
           <p>No suppliers yet. Add your first supplier!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {suppliers.map((supplier) => {
-            const productCount = products.filter((p) => p.supplier_id === supplier.id).length;
+            const supplierProducts = getSupplierProducts(supplier.id);
+            const lowStockCount = supplierProducts.filter(p => p.stock_qty <= p.min_stock_level).length;
             return (
               <div key={supplier.id} className="zentra-card p-5">
                 <div className="flex items-start justify-between mb-4">
@@ -118,6 +146,7 @@ export default function Suppliers() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(supplier)}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowProducts(supplier.id)}><Package className="h-3.5 w-3.5 mr-2" /> View Products</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(supplier.id)}><Trash2 className="h-3.5 w-3.5 mr-2" /> Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -126,8 +155,14 @@ export default function Suppliers() {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Products</span>
-                    <span className="font-medium text-foreground">{productCount}</span>
+                    <span className="font-medium text-foreground">{supplierProducts.length}</span>
                   </div>
+                  {lowStockCount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Low Stock</span>
+                      <span className="font-medium text-destructive">{lowStockCount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Last Supply</span>
                     <span className="font-medium text-foreground">{supplier.last_supply_date || "—"}</span>
@@ -146,12 +181,37 @@ export default function Suppliers() {
                     }}>
                     <MessageCircle className="h-3 w-3" /> WhatsApp
                   </Button>
+                  <Button size="sm" className="flex-1 gap-1.5 text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                    onClick={() => handleReorder(supplier)}>
+                    <RefreshCw className="h-3 w-3" /> Re-order
+                  </Button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Supplier Products Dialog */}
+      <Dialog open={!!showProducts} onOpenChange={() => setShowProducts(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Supplier Products</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {showProducts && getSupplierProducts(showProducts).map(p => (
+              <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">{p.sku} • {p.stock_qty} in stock</p>
+                </div>
+                <span className="text-sm font-medium">{formatMoney(p.selling_price, currency)}</span>
+              </div>
+            ))}
+            {showProducts && getSupplierProducts(showProducts).length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No products linked to this supplier. Assign products in the Products page.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-md">

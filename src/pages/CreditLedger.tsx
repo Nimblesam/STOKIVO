@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Users, AlertTriangle, Clock, Phone, MessageCircle, Plus, Loader2, FileText, Send } from "lucide-react";
+import { Users, AlertTriangle, Clock, Phone, Plus, Loader2, FileText, Send, CheckCircle, Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -28,7 +28,6 @@ export default function CreditLedger() {
   const [selectedExistingCustomer, setSelectedExistingCustomer] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", whatsapp: "", email: "", address: "", notes: "", outstanding: "", alert_date: "" });
 
-  // Create invoice for debtor
   const [showCreateInvoice, setShowCreateInvoice] = useState(false);
   const [invoiceCustomerId, setInvoiceCustomerId] = useState<string | null>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -52,10 +51,9 @@ export default function CreditLedger() {
 
   useEffect(() => { fetchData(); }, [profile?.company_id]);
 
-  // Combine: customers with outstanding_balance > 0 OR customers with unpaid invoices
   const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && i.total > i.amount_paid);
   const unpaidCustomerIds = new Set(unpaidInvoices.map((i) => i.customer_id));
-  
+
   const creditCustomers = customers
     .filter((c) => c.outstanding_balance > 0 || unpaidCustomerIds.has(c.id))
     .map((c) => {
@@ -75,15 +73,19 @@ export default function CreditLedger() {
     .filter((i) => i.customer_id === selectedCustomerId)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+  // Check if customer has any unpaid debt
+  const getCustomerPaidStatus = (customer: any) => {
+    const custUnpaid = unpaidInvoices.filter((i) => i.customer_id === customer.id);
+    return customer.outstanding_balance <= 0 && custUnpaid.length === 0;
+  };
+
   const handleAddDebtor = async () => {
     if (!profile?.company_id) return;
     setSaving(true);
-
     if (debtorMode === "existing" && selectedExistingCustomer) {
       const balance = Math.round(parseFloat(form.outstanding || "0") * 100);
       const { error } = await supabase.from("customers").update({
-        outstanding_balance: balance,
-        notes: form.notes || null,
+        outstanding_balance: balance, notes: form.notes || null,
       }).eq("id", selectedExistingCustomer);
       if (error) toast.error(error.message);
       else { toast.success("Debtor updated!"); setShowAddDebtor(false); fetchData(); }
@@ -91,38 +93,52 @@ export default function CreditLedger() {
       if (!form.name.trim()) { toast.error("Name is required"); setSaving(false); return; }
       const balance = Math.round(parseFloat(form.outstanding || "0") * 100);
       const { error } = await supabase.from("customers").insert({
-        company_id: profile.company_id,
-        name: form.name,
-        phone: form.phone || null,
-        whatsapp: form.whatsapp || null,
-        email: form.email || null,
-        address: form.address || null,
-        notes: form.notes || null,
-        outstanding_balance: balance,
+        company_id: profile.company_id, name: form.name,
+        phone: form.phone || null, whatsapp: form.whatsapp || null,
+        email: form.email || null, address: form.address || null,
+        notes: form.notes || null, outstanding_balance: balance,
       });
       if (error) toast.error(error.message);
       else { toast.success("Debtor added!"); setShowAddDebtor(false); fetchData(); }
     }
-
     setForm({ name: "", phone: "", whatsapp: "", email: "", address: "", notes: "", outstanding: "", alert_date: "" });
-    setSelectedExistingCustomer("");
-    setDebtorMode("existing");
-    setSaving(false);
+    setSelectedExistingCustomer(""); setDebtorMode("existing"); setSaving(false);
   };
 
-  const sendCreditAlert = (customer: any) => {
-    const num = customer.whatsapp || customer.phone;
-    if (!num) { toast.error("Customer has no phone/WhatsApp number"); return; }
+  const sendPaymentReminder = (customer: any) => {
+    if (!customer.email) { toast.error("Customer has no email address registered"); return; }
     const debt = customer.total_debt || customer.outstanding_balance;
-    const msg = encodeURIComponent(
-      `Dear ${customer.name},\n\nThis is a reminder that you have an outstanding balance of ${formatMoney(debt, currency)} with ${company?.name || "us"}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you.`
+    const subject = encodeURIComponent(`Payment Reminder from ${company?.name || "Us"}`);
+    const body = encodeURIComponent(
+      `Dear ${customer.name},\n\n` +
+      `This is a friendly reminder that you have an outstanding balance of ${formatMoney(debt, currency)} with ${company?.name || "us"}.\n\n` +
+      `Please arrange payment at your earliest convenience.\n\n` +
+      `If you have already made this payment, please disregard this reminder.\n\n` +
+      `Thank you for your business.\n\n` +
+      `Kind regards,\n${company?.name || "The Team"}`
     );
-    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
-    toast.success("Credit alert sent via WhatsApp");
+    window.open(`mailto:${customer.email}?subject=${subject}&body=${body}`);
+    toast.success("Payment reminder email opened");
+  };
+
+  const markAsPaid = async (customerId: string) => {
+    // Mark all unpaid invoices as paid and reset outstanding balance
+    const custInvoices = unpaidInvoices.filter((i) => i.customer_id === customerId);
+    for (const inv of custInvoices) {
+      await supabase.from("invoices").update({
+        amount_paid: inv.total, status: "paid" as any,
+      }).eq("id", inv.id);
+    }
+    await supabase.from("customers").update({ outstanding_balance: 0 }).eq("id", customerId);
+    toast.success("Marked as paid!");
+    fetchData();
   };
 
   const openCreateInvoice = (customerId: string) => {
     setInvoiceCustomerId(customerId);
+    // Pre-populate with credit data
+    const customer = customers.find(c => c.id === customerId);
+    const debt = customer?.outstanding_balance || 0;
     setNewInv({ due_date: "", items: [{ product_id: "", qty: "1" }] });
     setShowCreateInvoice(true);
   };
@@ -138,23 +154,43 @@ export default function CreditLedger() {
       const qty = parseInt(i.qty) || 1;
       return { product_id: i.product_id, product_name: prod?.name || "", qty, unit_price: prod?.selling_price || 0, total: qty * (prod?.selling_price || 0) };
     });
-    const subtotal = itemDetails.reduce((s, i) => s + i.total, 0);
+
+    // If no products selected, use outstanding balance as the total
+    const customer = customers.find(c => c.id === invoiceCustomerId);
+    const subtotal = itemDetails.length > 0
+      ? itemDetails.reduce((s, i) => s + i.total, 0)
+      : (customer?.outstanding_balance || 0);
+
     const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
 
     const { data: inv, error } = await supabase.from("invoices").insert({
-      company_id: profile.company_id,
-      customer_id: invoiceCustomerId,
-      invoice_number: invNum,
-      due_date: newInv.due_date,
-      subtotal, total: subtotal,
-      status: "sent" as any,
+      company_id: profile.company_id, customer_id: invoiceCustomerId,
+      invoice_number: invNum, due_date: newInv.due_date,
+      subtotal, total: subtotal, status: "sent" as any,
     }).select("id").single();
 
     if (error || !inv) { toast.error(error?.message || "Failed"); setSavingInvoice(false); return; }
     if (itemDetails.length > 0) {
       await supabase.from("invoice_items").insert(itemDetails.map(i => ({ ...i, invoice_id: inv.id })));
     }
-    toast.success(`Invoice ${invNum} created for debtor!`);
+
+    // Send invoice email to customer
+    if (customer?.email) {
+      const subject = encodeURIComponent(`Invoice ${invNum} from ${company?.name || "Us"}`);
+      const body = encodeURIComponent(
+        `Dear ${customer.name},\n\n` +
+        `Please find your invoice details below:\n\n` +
+        `Invoice Number: ${invNum}\n` +
+        `Amount Due: ${formatMoney(subtotal, currency)}\n` +
+        `Due Date: ${newInv.due_date}\n\n` +
+        `Please arrange payment at your earliest convenience.\n\n` +
+        `Thank you for your business.\n\n` +
+        `Kind regards,\n${company?.name || "The Team"}`
+      );
+      window.open(`mailto:${customer.email}?subject=${subject}&body=${body}`);
+    }
+
+    toast.success(`Invoice ${invNum} created and sent!`);
     setShowCreateInvoice(false);
     fetchData();
     setSavingInvoice(false);
@@ -207,7 +243,7 @@ export default function CreditLedger() {
           <div className="text-center py-12 text-muted-foreground">
             <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
             <p>No debtors yet</p>
-            <p className="text-sm mt-1">Unpaid invoices will automatically appear here</p>
+            <p className="text-sm mt-1">Unpaid invoices and Pay Later sales will automatically appear here</p>
           </div>
         ) : (
           <Table>
@@ -233,7 +269,7 @@ export default function CreditLedger() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{customer.phone || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{customer.email || customer.phone || "—"}</TableCell>
                   <TableCell className="text-right">
                     <span className="text-sm font-bold text-destructive">{formatMoney(customer.total_debt, currency)}</span>
                   </TableCell>
@@ -242,17 +278,11 @@ export default function CreditLedger() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (customer.phone) window.open(`tel:${customer.phone}`); }}>
                         <Phone className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => {
-                        const num = customer.whatsapp || customer.phone;
-                        if (num) {
-                          const msg = encodeURIComponent(`Hi ${customer.name}, friendly reminder about your outstanding balance of ${formatMoney(customer.total_debt, currency)}. Please arrange payment. Thank you!`);
-                          window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
-                        }
-                      }}>
-                        <MessageCircle className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={() => sendPaymentReminder(customer)}>
+                        <Mail className="h-3 w-3" /> Send Payment Reminder
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-destructive" onClick={() => sendCreditAlert(customer)}>
-                        <Send className="h-3 w-3" /> Credit Alert
+                      <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-success" onClick={() => markAsPaid(customer.id)}>
+                        <CheckCircle className="h-3 w-3" /> Paid
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" onClick={() => openCreateInvoice(customer.id)} title="Create Invoice">
                         <FileText className="h-3.5 w-3.5" />
@@ -275,7 +305,6 @@ export default function CreditLedger() {
               <Button variant={debtorMode === "existing" ? "default" : "outline"} size="sm" onClick={() => setDebtorMode("existing")}>Existing Customer</Button>
               <Button variant={debtorMode === "new" ? "default" : "outline"} size="sm" onClick={() => setDebtorMode("new")}>New Customer</Button>
             </div>
-
             {debtorMode === "existing" ? (
               <div>
                 <Label>Select Customer *</Label>
@@ -295,7 +324,6 @@ export default function CreditLedger() {
                 <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" className="mt-1" /></div>
               </>
             )}
-
             <div><Label>Outstanding Balance</Label><Input type="number" step="0.01" value={form.outstanding} onChange={(e) => setForm({ ...form, outstanding: e.target.value })} placeholder="Amount owed" className="mt-1" /></div>
             <div><Label>Alert Date</Label><Input type="date" value={form.alert_date} onChange={(e) => setForm({ ...form, alert_date: e.target.value })} className="mt-1" /></div>
             <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" className="mt-1" /></div>
@@ -316,7 +344,7 @@ export default function CreditLedger() {
               <Input type="date" value={newInv.due_date} onChange={(e) => setNewInv({ ...newInv, due_date: e.target.value })} className="mt-1" />
             </div>
             <div>
-              <Label>Line Items</Label>
+              <Label>Line Items (optional — leave empty to use outstanding balance)</Label>
               {newInv.items.map((item, idx) => (
                 <div key={idx} className="flex gap-2 mt-2">
                   <select value={item.product_id} onChange={(e) => {
@@ -339,7 +367,7 @@ export default function CreditLedger() {
               </Button>
             </div>
             <Button onClick={handleCreateInvoice} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={savingInvoice}>
-              {savingInvoice ? "Creating..." : "Create Invoice"}
+              {savingInvoice ? "Creating..." : "Create & Send Invoice"}
             </Button>
           </div>
         </DialogContent>
@@ -361,8 +389,11 @@ export default function CreditLedger() {
                 <span className="text-lg font-bold text-destructive">{formatMoney(selectedCustomer.total_debt || selectedCustomer.outstanding_balance, currency)}</span>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="gap-1.5 text-destructive" onClick={() => sendCreditAlert(selectedCustomer)}>
-                  <Send className="h-3 w-3" /> Send Credit Alert
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => sendPaymentReminder(selectedCustomer)}>
+                  <Mail className="h-3 w-3" /> Send Payment Reminder
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5 text-success" onClick={() => { markAsPaid(selectedCustomer.id); setSelectedCustomerId(null); }}>
+                  <CheckCircle className="h-3 w-3" /> Mark Paid
                 </Button>
                 <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setSelectedCustomerId(null); openCreateInvoice(selectedCustomer.id); }}>
                   <FileText className="h-3 w-3" /> Create Invoice
@@ -374,8 +405,9 @@ export default function CreditLedger() {
                   {customerInvoices.map((inv) => {
                     const balance = inv.total - inv.amount_paid;
                     const paidPct = inv.total > 0 ? (inv.amount_paid / inv.total) * 100 : 0;
+                    const isPaid = inv.status === "paid";
                     return (
-                      <div key={inv.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                      <div key={inv.id} className={`flex items-center justify-between p-3 rounded-lg ${isPaid ? "bg-success/5 border border-success/20" : "bg-muted/30"}`}>
                         <div>
                           <p className="text-sm font-medium text-foreground">{inv.invoice_number}</p>
                           <p className="text-xs text-muted-foreground">Due: {inv.due_date}</p>
@@ -383,7 +415,11 @@ export default function CreditLedger() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-foreground">{formatMoney(inv.total, currency)}</p>
-                          <StatusBadge status={inv.status} />
+                          {isPaid ? (
+                            <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded">PAID</span>
+                          ) : (
+                            <StatusBadge status={inv.status} />
+                          )}
                           {balance > 0 && <p className="text-xs text-destructive mt-0.5">Owes: {formatMoney(balance, currency)}</p>}
                         </div>
                       </div>

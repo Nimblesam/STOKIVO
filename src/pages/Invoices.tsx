@@ -11,12 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell } from "lucide-react";
+import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
-const statusFilters = ["all", "draft", "sent", "paid", "overdue"] as const;
+const statusFilters = ["all", "draft", "sent", "paid", "partially_paid", "overdue"] as const;
 
 interface InvoiceRow {
   id: string;
@@ -43,6 +43,9 @@ export default function Invoices() {
   const [saving, setSaving] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<InvoiceRow | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
 
   const [newInv, setNewInv] = useState({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
 
@@ -65,13 +68,9 @@ export default function Invoices() {
   const filtered = filter === "all" ? invoices : invoices.filter((i) => i.status === filter);
 
   const handleCreate = async () => {
-    if (!newInv.customer_id || !newInv.due_date) {
-      toast.error("Customer and due date are required");
-      return;
-    }
+    if (!newInv.customer_id || !newInv.due_date) { toast.error("Customer and due date are required"); return; }
     if (!profile?.company_id) return;
     setSaving(true);
-
     const validItems = newInv.items.filter(i => i.product_id);
     const itemDetails = validItems.map(i => {
       const prod = products.find(p => p.id === i.product_id);
@@ -82,25 +81,15 @@ export default function Invoices() {
     const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
 
     const { data: inv, error } = await supabase.from("invoices").insert({
-      company_id: profile.company_id,
-      customer_id: newInv.customer_id,
-      invoice_number: invNum,
-      due_date: newInv.due_date,
-      subtotal,
-      total: subtotal,
-      status: "draft" as any,
+      company_id: profile.company_id, customer_id: newInv.customer_id,
+      invoice_number: invNum, due_date: newInv.due_date,
+      subtotal, total: subtotal, status: "draft" as any,
     }).select("id").single();
 
-    if (error || !inv) {
-      toast.error(error?.message || "Failed to create invoice");
-      setSaving(false);
-      return;
-    }
-
+    if (error || !inv) { toast.error(error?.message || "Failed"); setSaving(false); return; }
     if (itemDetails.length > 0) {
       await supabase.from("invoice_items").insert(itemDetails.map(i => ({ ...i, invoice_id: inv.id })));
     }
-
     toast.success(`Invoice ${invNum} created!`);
     setShowCreate(false);
     setNewInv({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
@@ -122,7 +111,6 @@ export default function Invoices() {
       `Hi ${cust.name},\n\nPlease find your invoice ${inv.invoice_number} for ${formatMoney(inv.total, currency)}.\nDue date: ${inv.due_date}\nBalance: ${formatMoney(inv.total - inv.amount_paid, currency)}\n\nThank you!`
     );
     window.open(`mailto:${cust.email}?subject=${subject}&body=${body}`);
-    // Update status to sent if draft
     if (inv.status === "draft") {
       supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
     }
@@ -132,10 +120,8 @@ export default function Invoices() {
   const sendReminder = async (inv: InvoiceRow) => {
     const cust = (inv as any).customers;
     if (!cust?.email) { toast.error("Customer has no email address registered"); return; }
-    
     const balance = inv.total - inv.amount_paid;
     if (balance <= 0) { toast.info("This invoice is fully paid"); return; }
-
     const subject = encodeURIComponent(`Payment Reminder: Invoice ${inv.invoice_number}`);
     const body = encodeURIComponent(
       `Dear ${cust.name},\n\n` +
@@ -146,25 +132,14 @@ export default function Invoices() {
       `Balance Due: ${formatMoney(balance, currency)}\n` +
       `Due Date: ${inv.due_date}\n\n` +
       `Please arrange payment at your earliest convenience.\n\n` +
-      `If you have already made this payment, please disregard this reminder.\n\n` +
-      `Thank you for your business.\n\n` +
       `Kind regards,\n${company?.name || "The Team"}`
     );
     window.open(`mailto:${cust.email}?subject=${subject}&body=${body}`);
-
-    // Log the reminder
-    await supabase.from("reminder_logs").insert({
-      invoice_id: inv.id,
-      channel: "email",
-      note: `Payment reminder sent for balance ${formatMoney(balance, currency)}`,
-    });
-
-    // Update status to overdue if past due date
+    await supabase.from("reminder_logs").insert({ invoice_id: inv.id, channel: "email", note: `Payment reminder sent for balance ${formatMoney(balance, currency)}` });
     const now = new Date().toISOString().split("T")[0];
     if (inv.due_date < now && inv.status !== "overdue" && inv.status !== "paid") {
       await supabase.from("invoices").update({ status: "overdue" as any }).eq("id", inv.id);
     }
-
     toast.success("Payment reminder email opened");
     fetchData();
   };
@@ -180,7 +155,76 @@ export default function Invoices() {
     if (inv.status === "draft") {
       supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
     }
-    toast.success("WhatsApp opened");
+  };
+
+  const openPaymentDialog = (inv: InvoiceRow) => {
+    setPaymentInvoice(inv);
+    setPaymentAmount("");
+    setShowPaymentDialog(true);
+  };
+
+  const handleMarkPayment = async () => {
+    if (!paymentInvoice) return;
+    const amountMinor = Math.round(parseFloat(paymentAmount || "0") * 100);
+    const balance = paymentInvoice.total - paymentInvoice.amount_paid;
+    if (amountMinor <= 0 || amountMinor > balance) {
+      toast.error(`Enter a valid amount between 0 and ${formatMoney(balance, currency)}`);
+      return;
+    }
+
+    const newAmountPaid = paymentInvoice.amount_paid + amountMinor;
+    const newStatus = newAmountPaid >= paymentInvoice.total ? "paid" : "partially_paid";
+
+    await supabase.from("invoices").update({
+      amount_paid: newAmountPaid, status: newStatus as any,
+    }).eq("id", paymentInvoice.id);
+
+    await supabase.from("payments").insert({
+      invoice_id: paymentInvoice.id, amount: amountMinor, payment_method: "manual",
+      note: `Manual payment of ${formatMoney(amountMinor, currency)}`,
+    });
+
+    // Update customer outstanding balance
+    if (paymentInvoice.customer_id) {
+      const { data: custData } = await supabase
+        .from("customers").select("outstanding_balance").eq("id", paymentInvoice.customer_id).single();
+      if (custData) {
+        await supabase.from("customers").update({
+          outstanding_balance: Math.max(0, custData.outstanding_balance - amountMinor),
+        }).eq("id", paymentInvoice.customer_id);
+      }
+    }
+
+    toast.success(newStatus === "paid" ? "Invoice marked as fully paid!" : "Partial payment recorded!");
+    setShowPaymentDialog(false);
+    fetchData();
+  };
+
+  const markFullyPaid = async (inv: InvoiceRow) => {
+    const balance = inv.total - inv.amount_paid;
+    await supabase.from("invoices").update({
+      amount_paid: inv.total, status: "paid" as any,
+    }).eq("id", inv.id);
+
+    if (balance > 0) {
+      await supabase.from("payments").insert({
+        invoice_id: inv.id, amount: balance, payment_method: "manual",
+        note: "Marked as fully paid",
+      });
+    }
+
+    if (inv.customer_id) {
+      const { data: custData } = await supabase
+        .from("customers").select("outstanding_balance").eq("id", inv.customer_id).single();
+      if (custData) {
+        await supabase.from("customers").update({
+          outstanding_balance: Math.max(0, custData.outstanding_balance - balance),
+        }).eq("id", inv.customer_id);
+      }
+    }
+
+    toast.success("Invoice marked as paid!");
+    fetchData();
   };
 
   const [fullCompany, setFullCompany] = useState<any>(null);
@@ -192,10 +236,8 @@ export default function Invoices() {
 
   const getInvoiceCompany = () => ({
     name: fullCompany?.name || company?.name || "",
-    address: fullCompany?.address || null,
-    phone: fullCompany?.phone || null,
-    email: fullCompany?.email || null,
-    company_number: fullCompany?.company_number || null,
+    address: fullCompany?.address || null, phone: fullCompany?.phone || null,
+    email: fullCompany?.email || null, company_number: fullCompany?.company_number || null,
     logo_url: fullCompany?.logo_url || null,
     currency: (fullCompany?.currency || company?.currency || "GBP") as any,
     brand_color: fullCompany?.brand_color || company?.brand_color || "#0d9488",
@@ -216,7 +258,7 @@ export default function Invoices() {
       <div className="flex gap-2 mb-4 flex-wrap">
         {statusFilters.map((s) => (
           <Button key={s} variant={filter === s ? "default" : "outline"} size="sm" className={filter === s ? "bg-primary text-primary-foreground" : ""} onClick={() => setFilter(s)}>
-            {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+            {s === "all" ? "All" : s.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
           </Button>
         ))}
       </div>
@@ -226,8 +268,7 @@ export default function Invoices() {
           <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <FileText className="h-10 w-10 mx-auto mb-2 opacity-40" />
-            <p>No invoices yet</p>
+            <FileText className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No invoices yet</p>
           </div>
         ) : (
           <Table>
@@ -251,7 +292,13 @@ export default function Invoices() {
                     <TableCell><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /><span className="font-medium text-sm">{inv.invoice_number}</span></div></TableCell>
                     <TableCell className="text-sm">{(inv as any).customers?.name || "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{inv.due_date}</TableCell>
-                    <TableCell><StatusBadge status={inv.status as InvoiceStatus} /></TableCell>
+                    <TableCell>
+                      {inv.status === "paid" ? (
+                        <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded">PAID</span>
+                      ) : (
+                        <StatusBadge status={inv.status as InvoiceStatus} />
+                      )}
+                    </TableCell>
                     <TableCell className="text-right text-sm font-medium">{formatMoney(inv.total, currency)}</TableCell>
                     <TableCell className="text-right text-sm text-success">{formatMoney(inv.amount_paid, currency)}</TableCell>
                     <TableCell className="text-right"><span className={`text-sm font-semibold ${balance > 0 ? "text-destructive" : "text-success"}`}>{formatMoney(balance, currency)}</span></TableCell>
@@ -259,7 +306,11 @@ export default function Invoices() {
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
                         {balance > 0 && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-warning" title="Send Payment Reminder" onClick={() => sendReminder(inv)}><Bell className="h-3.5 w-3.5" /></Button>
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-warning" title="Send Payment Reminder" onClick={() => sendReminder(inv)}><Bell className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-success" title="Record Payment" onClick={() => openPaymentDialog(inv)}><DollarSign className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" title="Mark Fully Paid" onClick={() => markFullyPaid(inv)}><CheckCircle className="h-3.5 w-3.5" /></Button>
+                          </>
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -291,27 +342,21 @@ export default function Invoices() {
                 <option value="">Select customer</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              {customers.length === 0 && <p className="text-xs text-destructive mt-1">Add customers first from the Customers page</p>}
             </div>
-            <div>
-              <Label>Due Date *</Label>
-              <Input type="date" value={newInv.due_date} onChange={(e) => setNewInv({ ...newInv, due_date: e.target.value })} className="mt-1" />
-            </div>
+            <div><Label>Due Date *</Label><Input type="date" value={newInv.due_date} onChange={(e) => setNewInv({ ...newInv, due_date: e.target.value })} className="mt-1" /></div>
             <div>
               <Label>Line Items</Label>
               {newInv.items.map((item, idx) => (
                 <div key={idx} className="flex gap-2 mt-2">
                   <select value={item.product_id} onChange={(e) => {
-                    const items = [...newInv.items];
-                    items[idx] = { ...items[idx], product_id: e.target.value };
+                    const items = [...newInv.items]; items[idx] = { ...items[idx], product_id: e.target.value };
                     setNewInv({ ...newInv, items });
                   }} className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <option value="">Select product</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.name} — {formatMoney(p.selling_price, currency)}</option>)}
                   </select>
                   <Input type="number" className="w-20" value={item.qty} onChange={(e) => {
-                    const items = [...newInv.items];
-                    items[idx] = { ...items[idx], qty: e.target.value };
+                    const items = [...newInv.items]; items[idx] = { ...items[idx], qty: e.target.value };
                     setNewInv({ ...newInv, items });
                   }} min="1" />
                   {newInv.items.length > 1 && (
@@ -330,6 +375,34 @@ export default function Invoices() {
         </DialogContent>
       </Dialog>
 
+      {/* Record Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
+          {paymentInvoice && (
+            <div className="space-y-4">
+              <div className="text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Invoice</span><span className="font-medium">{paymentInvoice.invoice_number}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span>{formatMoney(paymentInvoice.total, currency)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Already Paid</span><span className="text-success">{formatMoney(paymentInvoice.amount_paid, currency)}</span></div>
+                <div className="flex justify-between font-semibold"><span>Balance Due</span><span className="text-destructive">{formatMoney(paymentInvoice.total - paymentInvoice.amount_paid, currency)}</span></div>
+              </div>
+              <div>
+                <Label>Payment Amount</Label>
+                <Input type="number" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder={`Max: ${((paymentInvoice.total - paymentInvoice.amount_paid) / 100).toFixed(2)}`} className="mt-1" />
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={handleMarkPayment}>Record Payment</Button>
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  setPaymentAmount(((paymentInvoice.total - paymentInvoice.amount_paid) / 100).toFixed(2));
+                }}>Pay Full Balance</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Invoice Preview */}
       <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
         <DialogContent className="max-w-[900px] max-h-[90vh] overflow-y-auto">
@@ -338,9 +411,14 @@ export default function Invoices() {
               <span>{selectedInvoice?.invoice_number}</span>
               <div className="flex gap-2">
                 {selectedInvoice && (selectedInvoice.total - selectedInvoice.amount_paid) > 0 && (
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => selectedInvoice && sendReminder(selectedInvoice)}>
-                    <Bell className="h-4 w-4" /> Send Reminder
-                  </Button>
+                  <>
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => selectedInvoice && sendReminder(selectedInvoice)}>
+                      <Bell className="h-4 w-4" /> Send Reminder
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2 text-success" onClick={() => { if (selectedInvoice) { openPaymentDialog(selectedInvoice); setSelectedInvoice(null); } }}>
+                      <DollarSign className="h-4 w-4" /> Record Payment
+                    </Button>
+                  </>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
