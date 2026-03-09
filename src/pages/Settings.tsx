@@ -130,9 +130,15 @@ export default function Settings() {
   };
 
   const handleInviteUser = async () => {
-    const email = inviteEmail.trim();
+    const email = inviteEmail.trim().toLowerCase();
     if (!email) {
       toast.error("Email is required");
+      return;
+    }
+    const emailErr = validateEmail(email) ? null : null;
+    // Basic email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
     if (!company) return;
