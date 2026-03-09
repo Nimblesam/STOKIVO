@@ -90,25 +90,58 @@ export default function Suppliers() {
     const num = supplier.whatsapp || supplier.phone;
     if (!num) { toast.error("Supplier has no phone/WhatsApp number"); return; }
 
-    // Find products with low stock or frequently ordered
-    const reorderItems = supplierProducts
-      .filter(p => p.stock_qty <= p.min_stock_level || p.stock_qty < p.min_stock_level * 2)
-      .map(p => {
-        const suggestedQty = Math.max(p.min_stock_level * 2 - p.stock_qty, p.min_stock_level);
-        return { name: p.name, qty: suggestedQty, unit_type: p.unit_type };
-      });
+    // Initialize items with suggested quantities based on min stock
+    const items = supplierProducts.map(p => {
+      const isLow = p.stock_qty <= p.min_stock_level;
+      const suggestedQty = isLow ? Math.max(p.min_stock_level * 2 - p.stock_qty, p.min_stock_level) : 0;
+      return {
+        id: p.id,
+        name: p.name,
+        unit_type: p.unit_type,
+        stock_qty: p.stock_qty,
+        min_stock_level: p.min_stock_level,
+        selected: isLow,
+        qty: suggestedQty > 0 ? suggestedQty : (p.min_stock_level || 10)
+      };
+    });
 
-    // If no low stock, include all supplier products with reasonable quantities
-    const itemsToOrder = reorderItems.length > 0 ? reorderItems : supplierProducts.slice(0, 5).map(p => ({
-      name: p.name, qty: p.min_stock_level || 10, unit_type: p.unit_type,
-    }));
+    setReorderItems(items);
+    
+    // Auto-generate text for the text area based on default selected items
+    const selectedText = items.filter(i => i.selected)
+      .map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`)
+      .join("\n");
+    setCustomOrderText(`Hi ${supplier.name},\n\nI'd like to place a reorder:\n\n${selectedText || "[List your items here]"}\n\nPlease confirm availability and pricing.\n\nThank you!`);
+    
+    setOrderMode("checkboxes");
+    setReorderSupplier(supplier);
+  };
 
-    const itemsList = itemsToOrder.map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`).join("\n");
-    const msg = encodeURIComponent(
-      `Hi ${supplier.name},\n\nI'd like to place a reorder:\n\n${itemsList}\n\nPlease confirm availability and pricing.\n\nThank you!`
-    );
-    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
+  const sendOrder = () => {
+    if (!reorderSupplier) return;
+    const num = reorderSupplier.whatsapp || reorderSupplier.phone;
+    if (!num) return;
+
+    let msg = "";
+    if (orderMode === "checkboxes") {
+      const selectedItems = reorderItems.filter(i => i.selected);
+      if (selectedItems.length === 0) {
+        toast.error("Please select at least one item to order");
+        return;
+      }
+      const itemsList = selectedItems.map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`).join("\n");
+      msg = `Hi ${reorderSupplier.name},\n\nI'd like to place a reorder:\n\n${itemsList}\n\nPlease confirm availability and pricing.\n\nThank you!`;
+    } else {
+      if (!customOrderText.trim()) {
+        toast.error("Please enter your order details");
+        return;
+      }
+      msg = customOrderText;
+    }
+
+    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`);
     toast.success("Reorder message opened in WhatsApp");
+    setReorderSupplier(null);
   };
 
   if (loading) {
