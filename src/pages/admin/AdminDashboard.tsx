@@ -46,7 +46,7 @@ export default function AdminDashboard() {
       const salesData = sales.data || [];
       const subs = subscriptions.data || [];
 
-      const recentSales = salesData.filter(s => s.created_at >= thirtyDaysAgo);
+      const recentSales = salesData.filter((s: any) => s.created_at >= thirtyDaysAgo);
       const totalVolume = recentSales.reduce((sum, s) => sum + (s.total || 0), 0);
       const platformFees = Math.round(totalVolume * 0.005);
 
@@ -94,8 +94,8 @@ export default function AdminDashboard() {
       });
       setSalesTrend(Object.entries(sTrend).map(([date, amount]) => ({ date, amount: amount / 100 })));
 
-      // Recent companies
-      setRecentCompanies(comps.slice(0, 5));
+      // Recent companies (sorted by newest first)
+      setRecentCompanies([...comps].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5));
     };
     load();
   }, []);
@@ -118,9 +118,9 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Platform overview & metrics</p>
         </div>
-        <Badge variant="outline" className="text-xs">
+        <span className="text-xs text-muted-foreground border rounded-full px-3 py-1">
           {format(new Date(), "dd MMM yyyy, HH:mm")}
-        </Badge>
+        </span>
       </div>
 
       {/* KPI Grid */}

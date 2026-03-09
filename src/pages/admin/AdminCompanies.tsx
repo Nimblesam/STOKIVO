@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export default function AdminCompanies() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<any | null>(null);
   const [usage, setUsage] = useState<any>(null);
+  const [confirmAction, setConfirmAction] = useState<{ company: any; action: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -185,12 +187,12 @@ export default function AdminCompanies() {
                             </DropdownMenuItem>
                           )}
                           {c.status === "active" && (
-                            <DropdownMenuItem onClick={() => updateStatus(c, "suspended")}>
+                            <DropdownMenuItem onClick={() => setConfirmAction({ company: c, action: "suspended" })}>
                               <Ban className="h-4 w-4 mr-2 text-destructive" />Suspend
                             </DropdownMenuItem>
                           )}
                           {c.status !== "disabled" && (
-                            <DropdownMenuItem onClick={() => updateStatus(c, "disabled")} className="text-destructive">
+                            <DropdownMenuItem onClick={() => setConfirmAction({ company: c, action: "disabled" })} className="text-destructive">
                               <XCircle className="h-4 w-4 mr-2" />Disable
                             </DropdownMenuItem>
                           )}
@@ -315,6 +317,36 @@ export default function AdminCompanies() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog for destructive actions */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.action === "suspended" ? "Suspend" : "Disable"} {confirmAction?.company?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.action === "suspended"
+                ? "This will temporarily restrict the company's access. They can be re-activated later."
+                : "This will permanently disable the company. Their users will lose access immediately."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmAction) {
+                  updateStatus(confirmAction.company, confirmAction.action);
+                  setConfirmAction(null);
+                }
+              }}
+            >
+              {confirmAction?.action === "suspended" ? "Suspend" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
