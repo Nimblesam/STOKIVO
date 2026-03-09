@@ -51,7 +51,7 @@ serve(async (req) => {
     const { data: company } = await supabaseClient
       .from("companies")
       .select("stripe_account_id")
-      .eq("id", profile.company_id)
+      .eq("id", companyId)
       .single();
 
     if (!company?.stripe_account_id) {

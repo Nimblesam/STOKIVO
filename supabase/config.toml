@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.stripe-connect-status]
 verify_jwt = false
 
+[functions.team-invite]
+verify_jwt = false
+
 [functions.admin-bootstrap]
 verify_jwt = false
 
