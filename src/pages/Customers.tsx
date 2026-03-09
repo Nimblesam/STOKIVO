@@ -2,6 +2,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
+import { validateEmail, validateAddress } from "@/lib/validation";
+import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
