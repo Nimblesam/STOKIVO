@@ -46,11 +46,17 @@ export default function Onboarding() {
   // Already has company → go to dashboard
   if (profile?.company_id) return <Navigate to="/dashboard" replace />;
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
   const handleCreate = async () => {
     if (!form.name.trim()) {
       toast.error("Company name is required");
       return;
     }
+    const emailErr = validateEmail(form.companyEmail);
+    const addrErr = validateAddress(form.address);
+    setFieldErrors({ email: emailErr, address: addrErr });
+    if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
     if (!user) {
       toast.error("Not authenticated");
       return;
