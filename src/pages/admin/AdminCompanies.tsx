@@ -187,12 +187,12 @@ export default function AdminCompanies() {
                             </DropdownMenuItem>
                           )}
                           {c.status === "active" && (
-                            <DropdownMenuItem onClick={() => updateStatus(c, "suspended")}>
+                            <DropdownMenuItem onClick={() => setConfirmAction({ company: c, action: "suspended" })}>
                               <Ban className="h-4 w-4 mr-2 text-destructive" />Suspend
                             </DropdownMenuItem>
                           )}
                           {c.status !== "disabled" && (
-                            <DropdownMenuItem onClick={() => updateStatus(c, "disabled")} className="text-destructive">
+                            <DropdownMenuItem onClick={() => setConfirmAction({ company: c, action: "disabled" })} className="text-destructive">
                               <XCircle className="h-4 w-4 mr-2" />Disable
                             </DropdownMenuItem>
                           )}
