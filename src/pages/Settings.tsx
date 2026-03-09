@@ -221,8 +221,16 @@ export default function Settings() {
               <div><Label>Company Name</Label><Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} className="mt-1" /></div>
               <div><Label>Company Number</Label><Input value={companyForm.company_number} onChange={(e) => setCompanyForm({ ...companyForm, company_number: e.target.value })} placeholder="e.g. 12345678" className="mt-1" /></div>
               <div><Label>Phone</Label><Input value={companyForm.phone} onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} className="mt-1" /></div>
-              <div><Label>Email</Label><Input type="email" value={companyForm.email} onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })} className="mt-1" /></div>
-              <div className="sm:col-span-2"><Label>Address</Label><Input value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} className="mt-1" /></div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={companyForm.email} onChange={(e) => { setCompanyForm({ ...companyForm, email: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+                <FieldError message={fieldErrors.email} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Address</Label>
+                <Input value={companyForm.address} onChange={(e) => { setCompanyForm({ ...companyForm, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+                <FieldError message={fieldErrors.address} />
+              </div>
               <div>
                 <Label>Country</Label>
                 <select value={companyForm.country} onChange={(e) => {

@@ -172,8 +172,16 @@ export default function Customers() {
               <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+44..." className="mt-1" /></div>
               <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="+44..." className="mt-1" /></div>
             </div>
-            <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" className="mt-1" /></div>
-            <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" className="mt-1" /></div>
+            <div>
+              <Label>Email</Label>
+              <Input value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} placeholder="email@example.com" className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+              <FieldError message={fieldErrors.email} />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input value={form.address} onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} placeholder="Address" className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+              <FieldError message={fieldErrors.address} />
+            </div>
             <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" className="mt-1" /></div>
             <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? "Saving..." : editingId ? "Update Customer" : "Add Customer"}

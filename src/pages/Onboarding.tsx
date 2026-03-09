@@ -138,11 +138,13 @@ export default function Onboarding() {
             </div>
             <div>
               <Label>Company Email</Label>
-              <Input type="email" value={form.companyEmail} onChange={(e) => setForm({ ...form, companyEmail: e.target.value })} placeholder="info@business.com" className="mt-1" />
+              <Input type="email" value={form.companyEmail} onChange={(e) => { setForm({ ...form, companyEmail: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} placeholder="info@business.com" className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+              <FieldError message={fieldErrors.email} />
             </div>
             <div>
               <Label>Address</Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="45 Peckham High St, London" className="mt-1" />
+              <Input value={form.address} onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} placeholder="45 Peckham High St, London" className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+              <FieldError message={fieldErrors.address} />
             </div>
             <div>
               <Label>Country</Label>
