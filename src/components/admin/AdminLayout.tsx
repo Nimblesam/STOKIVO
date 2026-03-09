@@ -14,7 +14,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <Shield className="h-4 w-4 text-destructive mr-2" />
             <span className="text-xs font-semibold text-destructive uppercase tracking-wider">Admin Back Office</span>
           </header>
-          <main className="flex-1 overflow-auto p-6">{children}</main>
+          <main className="flex-1 overflow-auto p-6" id="admin-main-scroll">{children}</main>
         </div>
       </div>
     </SidebarProvider>
