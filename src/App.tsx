@@ -145,6 +145,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <AdminAuthProvider>
             <AppRoutes />
