@@ -61,8 +61,14 @@ export default function Suppliers() {
     setShowDialog(true);
   };
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Name is required"); return; }
+    const emailErr = validateEmail(form.email);
+    const addrErr = validateAddress(form.address);
+    setFieldErrors({ email: emailErr, address: addrErr });
+    if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
     if (!profile?.company_id) return;
     setSaving(true);
     const payload = { name: form.name, phone: form.phone || null, whatsapp: form.whatsapp || null, email: form.email || null, address: form.address || null };
