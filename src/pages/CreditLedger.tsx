@@ -1,6 +1,8 @@
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
+import { validateEmail, validateAddress } from "@/lib/validation";
+import { FieldError } from "@/components/FieldError";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -79,6 +81,8 @@ export default function CreditLedger() {
     return customer.outstanding_balance <= 0 && custUnpaid.length === 0;
   };
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
   const handleAddDebtor = async () => {
     if (!profile?.company_id) return;
     setSaving(true);
@@ -91,6 +95,10 @@ export default function CreditLedger() {
       else { toast.success("Debtor updated!"); setShowAddDebtor(false); fetchData(); }
     } else {
       if (!form.name.trim()) { toast.error("Name is required"); setSaving(false); return; }
+      const emailErr = validateEmail(form.email);
+      const addrErr = validateAddress(form.address);
+      setFieldErrors({ email: emailErr, address: addrErr });
+      if (emailErr || addrErr) { toast.error("Please fix validation errors"); setSaving(false); return; }
       const balance = Math.round(parseFloat(form.outstanding || "0") * 100);
       const { error } = await supabase.from("customers").insert({
         company_id: profile.company_id, name: form.name,
@@ -320,8 +328,16 @@ export default function CreditLedger() {
                   <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+44..." className="mt-1" /></div>
                   <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="+44..." className="mt-1" /></div>
                 </div>
-                <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" className="mt-1" /></div>
-                <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" className="mt-1" /></div>
+                <div>
+                  <Label>Email</Label>
+                  <Input value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} placeholder="email@example.com" className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+                  <FieldError message={fieldErrors.email} />
+                </div>
+                <div>
+                  <Label>Address</Label>
+                  <Input value={form.address} onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} placeholder="Address" className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+                  <FieldError message={fieldErrors.address} />
+                </div>
               </>
             )}
             <div><Label>Outstanding Balance</Label><Input type="number" step="0.01" value={form.outstanding} onChange={(e) => setForm({ ...form, outstanding: e.target.value })} placeholder="Amount owed" className="mt-1" /></div>

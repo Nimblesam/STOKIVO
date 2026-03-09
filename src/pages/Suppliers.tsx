@@ -2,6 +2,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
+import { validateEmail, validateAddress } from "@/lib/validation";
+import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,8 +61,14 @@ export default function Suppliers() {
     setShowDialog(true);
   };
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Name is required"); return; }
+    const emailErr = validateEmail(form.email);
+    const addrErr = validateAddress(form.address);
+    setFieldErrors({ email: emailErr, address: addrErr });
+    if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
     if (!profile?.company_id) return;
     setSaving(true);
     const payload = { name: form.name, phone: form.phone || null, whatsapp: form.whatsapp || null, email: form.email || null, address: form.address || null };
@@ -306,8 +314,16 @@ export default function Suppliers() {
               <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+44..." className="mt-1" /></div>
               <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="+44..." className="mt-1" /></div>
             </div>
-            <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" className="mt-1" /></div>
-            <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" className="mt-1" /></div>
+            <div>
+              <Label>Email</Label>
+              <Input value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} placeholder="email@example.com" className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+              <FieldError message={fieldErrors.email} />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input value={form.address} onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} placeholder="Address" className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+              <FieldError message={fieldErrors.address} />
+            </div>
             <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? "Saving..." : editingId ? "Update Supplier" : "Add Supplier"}
             </Button>

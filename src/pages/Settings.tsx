@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
 import { PLANS, STRIPE_PRICES } from "@/lib/demo-data";
+import { validateEmail, validateAddress } from "@/lib/validation";
+import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,8 +94,14 @@ export default function Settings() {
     } finally { setConnectingStripe(false); }
   };
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
   const handleSaveCompany = async () => {
     if (!company) return;
+    const emailErr = validateEmail(companyForm.email);
+    const addrErr = validateAddress(companyForm.address);
+    setFieldErrors({ email: emailErr, address: addrErr });
+    if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
     setSaving(true);
     const { error } = await supabase.from("companies").update({
       name: companyForm.name, address: companyForm.address, country: companyForm.country,
@@ -123,9 +131,15 @@ export default function Settings() {
   };
 
   const handleInviteUser = async () => {
-    const email = inviteEmail.trim();
+    const email = inviteEmail.trim().toLowerCase();
     if (!email) {
       toast.error("Email is required");
+      return;
+    }
+    const emailErr = validateEmail(email) ? null : null;
+    // Basic email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
     if (!company) return;
@@ -208,8 +222,16 @@ export default function Settings() {
               <div><Label>Company Name</Label><Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} className="mt-1" /></div>
               <div><Label>Company Number</Label><Input value={companyForm.company_number} onChange={(e) => setCompanyForm({ ...companyForm, company_number: e.target.value })} placeholder="e.g. 12345678" className="mt-1" /></div>
               <div><Label>Phone</Label><Input value={companyForm.phone} onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} className="mt-1" /></div>
-              <div><Label>Email</Label><Input type="email" value={companyForm.email} onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })} className="mt-1" /></div>
-              <div className="sm:col-span-2"><Label>Address</Label><Input value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} className="mt-1" /></div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={companyForm.email} onChange={(e) => { setCompanyForm({ ...companyForm, email: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+                <FieldError message={fieldErrors.email} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Address</Label>
+                <Input value={companyForm.address} onChange={(e) => { setCompanyForm({ ...companyForm, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+                <FieldError message={fieldErrors.address} />
+              </div>
               <div>
                 <Label>Country</Label>
                 <select value={companyForm.country} onChange={(e) => {

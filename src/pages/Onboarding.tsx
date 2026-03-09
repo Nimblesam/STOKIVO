@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { validateEmail, validateAddress } from "@/lib/validation";
+import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +25,7 @@ export default function Onboarding() {
     brandColor: "#0d9488",
     businessType: "wholesale" as "wholesale" | "retail" | "hybrid",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
 
   // Wait for auth to load
   if (authLoading) {
@@ -49,6 +52,10 @@ export default function Onboarding() {
       toast.error("Company name is required");
       return;
     }
+    const emailErr = validateEmail(form.companyEmail);
+    const addrErr = validateAddress(form.address);
+    setFieldErrors({ email: emailErr, address: addrErr });
+    if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
     if (!user) {
       toast.error("Not authenticated");
       return;
@@ -130,11 +137,13 @@ export default function Onboarding() {
             </div>
             <div>
               <Label>Company Email</Label>
-              <Input type="email" value={form.companyEmail} onChange={(e) => setForm({ ...form, companyEmail: e.target.value })} placeholder="info@business.com" className="mt-1" />
+              <Input type="email" value={form.companyEmail} onChange={(e) => { setForm({ ...form, companyEmail: e.target.value }); setFieldErrors(f => ({ ...f, email: null })); }} placeholder="info@business.com" className={`mt-1 ${fieldErrors.email ? "border-destructive" : ""}`} />
+              <FieldError message={fieldErrors.email} />
             </div>
             <div>
               <Label>Address</Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="45 Peckham High St, London" className="mt-1" />
+              <Input value={form.address} onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} placeholder="45 Peckham High St, London" className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+              <FieldError message={fieldErrors.address} />
             </div>
             <div>
               <Label>Country</Label>
