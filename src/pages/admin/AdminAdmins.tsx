@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UserPlus, Copy, CheckCircle, Loader2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { UserPlus, Copy, CheckCircle, Loader2, MoreHorizontal, Unlock, Ban, ShieldCheck } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 export default function AdminAdmins() {
-  const { isSuperAdmin, logAction } = useAdminAuth();
+  const { isSuperAdmin, logAction, adminUser } = useAdminAuth();
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -28,7 +30,7 @@ export default function AdminAdmins() {
     setLoading(true);
     const { data } = await supabase
       .from("admin_users")
-      .select("id, email, role, status, full_name, last_login_at, created_at, failed_attempts, locked_until")
+      .select("id, email, role, status, full_name, last_login_at, created_at, failed_attempts, locked_until, user_id")
       .order("created_at", { ascending: true });
     setAdmins((data as any[]) || []);
     setLoading(false);
@@ -76,6 +78,30 @@ export default function AdminAdmins() {
     setInviteLink(null);
     setInviteError(null);
   };
+
+  const unlockAdmin = async (admin: any) => {
+    await supabase.from("admin_users").update({ locked_until: null, failed_attempts: 0 } as any).eq("id", admin.id);
+    await logAction("admin_unlocked", "admin_user", admin.id, { email: admin.email });
+    toast({ title: `${admin.email} unlocked` });
+    load();
+  };
+
+  const toggleStatus = async (admin: any, newStatus: string) => {
+    await supabase.from("admin_users").update({ status: newStatus } as any).eq("id", admin.id);
+    await logAction(`admin_${newStatus}`, "admin_user", admin.id, { email: admin.email });
+    toast({ title: `Admin ${newStatus === "active" ? "activated" : "suspended"}` });
+    load();
+  };
+
+  const changeRole = async (admin: any, newRole: string) => {
+    await supabase.from("admin_users").update({ role: newRole } as any).eq("id", admin.id);
+    await logAction("admin_role_changed", "admin_user", admin.id, { email: admin.email, oldRole: admin.role, newRole });
+    toast({ title: `Role changed to ${newRole.replace("_", " ")}` });
+    load();
+  };
+
+  const isLocked = (a: any) => a.locked_until && new Date(a.locked_until) > new Date();
+  const isSelf = (a: any) => a.user_id === adminUser?.id || a.email === adminUser?.email;
 
   return (
     <div>
@@ -150,7 +176,8 @@ export default function AdminAdmins() {
               <TableHead>Status</TableHead>
               <TableHead>Last Login</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead>Failed Attempts</TableHead>
+              <TableHead>Security</TableHead>
+              {isSuperAdmin && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -175,20 +202,66 @@ export default function AdminAdmins() {
                   {format(new Date(a.created_at), "dd MMM yyyy")}
                 </TableCell>
                 <TableCell>
-                  {a.failed_attempts > 0 ? (
-                    <Badge variant="destructive">{a.failed_attempts}</Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">0</span>
-                  )}
-                  {a.locked_until && new Date(a.locked_until) > new Date() && (
-                    <Badge variant="destructive" className="ml-1">Locked</Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {a.failed_attempts > 0 && (
+                      <Badge variant="destructive" className="text-[10px]">{a.failed_attempts} fails</Badge>
+                    )}
+                    {isLocked(a) && (
+                      <Badge variant="destructive" className="text-[10px]">Locked</Badge>
+                    )}
+                    {a.failed_attempts === 0 && !isLocked(a) && (
+                      <span className="text-xs text-muted-foreground">OK</span>
+                    )}
+                  </div>
                 </TableCell>
+                {isSuperAdmin && (
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={isSelf(a)}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {isLocked(a) && (
+                          <DropdownMenuItem onClick={() => unlockAdmin(a)}>
+                            <Unlock className="h-4 w-4 mr-2" />Unlock Account
+                          </DropdownMenuItem>
+                        )}
+                        {a.failed_attempts > 0 && !isLocked(a) && (
+                          <DropdownMenuItem onClick={() => unlockAdmin(a)}>
+                            <Unlock className="h-4 w-4 mr-2" />Reset Failed Attempts
+                          </DropdownMenuItem>
+                        )}
+                        {a.role === "support_admin" && (
+                          <DropdownMenuItem onClick={() => changeRole(a, "super_admin")}>
+                            <ShieldCheck className="h-4 w-4 mr-2" />Promote to Super Admin
+                          </DropdownMenuItem>
+                        )}
+                        {a.role === "super_admin" && (
+                          <DropdownMenuItem onClick={() => changeRole(a, "support_admin")}>
+                            <ShieldCheck className="h-4 w-4 mr-2" />Demote to Support Admin
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        {a.status === "active" ? (
+                          <DropdownMenuItem onClick={() => toggleStatus(a, "suspended")} className="text-destructive">
+                            <Ban className="h-4 w-4 mr-2" />Suspend
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => toggleStatus(a, "active")}>
+                            <CheckCircle className="h-4 w-4 mr-2 text-emerald-600" />Activate
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
             {admins.length === 0 && !loading && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isSuperAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
                   No admin users yet. Bootstrap the first super admin.
                 </TableCell>
               </TableRow>
