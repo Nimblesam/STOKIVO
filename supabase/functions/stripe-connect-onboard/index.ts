@@ -19,19 +19,41 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user?.email) throw new Error("User not authenticated");
+    if (userError || !userData.user?.email) {
+      return new Response(JSON.stringify({ error: "User not authenticated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
     const user = userData.user;
 
-    // Get company_id from profile
+    // Get company_id from profile (fallback to roles)
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("company_id")
       .eq("user_id", user.id)
-      .single();
-    if (!profile?.company_id) throw new Error("No company found");
+      .maybeSingle();
+
+    const { data: roleRow } = await supabaseClient
+      .from("user_roles")
+      .select("company_id")
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+
+    const companyId = profile?.company_id ?? roleRow?.company_id;
+    if (!companyId) throw new Error("No company found");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",

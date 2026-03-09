@@ -71,7 +71,12 @@ export default function Settings() {
     if (!company) return;
     setLoadingStripeStatus(true);
     supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
-      if (!error && data) setStripeStatus(data);
+      if (error) {
+        toast.error(error.message || "Failed to check Stripe status");
+        setStripeStatus(null);
+      } else if (data) {
+        setStripeStatus(data);
+      }
       setLoadingStripeStatus(false);
     });
   }, [company]);
