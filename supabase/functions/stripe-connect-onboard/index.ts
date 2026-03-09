@@ -63,7 +63,7 @@ serve(async (req) => {
     const { data: company } = await supabaseClient
       .from("companies")
       .select("stripe_account_id, name, email")
-      .eq("id", profile.company_id)
+      .eq("id", companyId)
       .single();
 
     let accountId = company?.stripe_account_id;
