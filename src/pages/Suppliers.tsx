@@ -5,8 +5,11 @@ import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -26,6 +29,12 @@ export default function Suppliers() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [showProducts, setShowProducts] = useState<string | null>(null);
+  
+  // Reorder dialog state
+  const [reorderSupplier, setReorderSupplier] = useState<any | null>(null);
+  const [reorderItems, setReorderItems] = useState<any[]>([]);
+  const [customOrderText, setCustomOrderText] = useState("");
+  const [orderMode, setOrderMode] = useState<string>("checkboxes");
 
   const fetchData = async () => {
     if (!profile?.company_id) return;
@@ -81,25 +90,58 @@ export default function Suppliers() {
     const num = supplier.whatsapp || supplier.phone;
     if (!num) { toast.error("Supplier has no phone/WhatsApp number"); return; }
 
-    // Find products with low stock or frequently ordered
-    const reorderItems = supplierProducts
-      .filter(p => p.stock_qty <= p.min_stock_level || p.stock_qty < p.min_stock_level * 2)
-      .map(p => {
-        const suggestedQty = Math.max(p.min_stock_level * 2 - p.stock_qty, p.min_stock_level);
-        return { name: p.name, qty: suggestedQty, unit_type: p.unit_type };
-      });
+    // Initialize items with suggested quantities based on min stock
+    const items = supplierProducts.map(p => {
+      const isLow = p.stock_qty <= p.min_stock_level;
+      const suggestedQty = isLow ? Math.max(p.min_stock_level * 2 - p.stock_qty, p.min_stock_level) : 0;
+      return {
+        id: p.id,
+        name: p.name,
+        unit_type: p.unit_type,
+        stock_qty: p.stock_qty,
+        min_stock_level: p.min_stock_level,
+        selected: isLow,
+        qty: suggestedQty > 0 ? suggestedQty : (p.min_stock_level || 10)
+      };
+    });
 
-    // If no low stock, include all supplier products with reasonable quantities
-    const itemsToOrder = reorderItems.length > 0 ? reorderItems : supplierProducts.slice(0, 5).map(p => ({
-      name: p.name, qty: p.min_stock_level || 10, unit_type: p.unit_type,
-    }));
+    setReorderItems(items);
+    
+    // Auto-generate text for the text area based on default selected items
+    const selectedText = items.filter(i => i.selected)
+      .map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`)
+      .join("\n");
+    setCustomOrderText(`Hi ${supplier.name},\n\nI'd like to place a reorder:\n\n${selectedText || "[List your items here]"}\n\nPlease confirm availability and pricing.\n\nThank you!`);
+    
+    setOrderMode("checkboxes");
+    setReorderSupplier(supplier);
+  };
 
-    const itemsList = itemsToOrder.map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`).join("\n");
-    const msg = encodeURIComponent(
-      `Hi ${supplier.name},\n\nI'd like to place a reorder:\n\n${itemsList}\n\nPlease confirm availability and pricing.\n\nThank you!`
-    );
-    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
+  const sendOrder = () => {
+    if (!reorderSupplier) return;
+    const num = reorderSupplier.whatsapp || reorderSupplier.phone;
+    if (!num) return;
+
+    let msg = "";
+    if (orderMode === "checkboxes") {
+      const selectedItems = reorderItems.filter(i => i.selected);
+      if (selectedItems.length === 0) {
+        toast.error("Please select at least one item to order");
+        return;
+      }
+      const itemsList = selectedItems.map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`).join("\n");
+      msg = `Hi ${reorderSupplier.name},\n\nI'd like to place a reorder:\n\n${itemsList}\n\nPlease confirm availability and pricing.\n\nThank you!`;
+    } else {
+      if (!customOrderText.trim()) {
+        toast.error("Please enter your order details");
+        return;
+      }
+      msg = customOrderText;
+    }
+
+    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`);
     toast.success("Reorder message opened in WhatsApp");
+    setReorderSupplier(null);
   };
 
   if (loading) {
@@ -196,19 +238,61 @@ export default function Suppliers() {
       <Dialog open={!!showProducts} onOpenChange={() => setShowProducts(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Supplier Products</DialogTitle></DialogHeader>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {showProducts && getSupplierProducts(showProducts).map(p => (
-              <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">{p.sku} • {p.stock_qty} in stock</p>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                onChange={async (e) => {
+                  if (!e.target.value) return;
+                  const pid = e.target.value;
+                  const { error } = await supabase.from("products").update({ supplier_id: showProducts }).eq("id", pid);
+                  if (error) {
+                    toast.error("Failed to link product");
+                  } else {
+                    toast.success("Product linked to supplier");
+                    fetchData();
+                  }
+                  e.target.value = "";
+                }}
+              >
+                <option value="">+ Add a product to this supplier...</option>
+                {products.filter(p => p.supplier_id !== showProducts).map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {showProducts && getSupplierProducts(showProducts).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 group">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.sku} • {p.stock_qty} in stock</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">{formatMoney(p.selling_price, currency)}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                      onClick={async () => {
+                        const { error } = await supabase.from("products").update({ supplier_id: null }).eq("id", p.id);
+                        if (error) toast.error("Failed to unlink product");
+                        else {
+                          toast.success("Product unlinked");
+                          fetchData();
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-sm font-medium">{formatMoney(p.selling_price, currency)}</span>
-              </div>
-            ))}
-            {showProducts && getSupplierProducts(showProducts).length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No products linked to this supplier. Assign products in the Products page.</p>
-            )}
+              ))}
+              {showProducts && getSupplierProducts(showProducts).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No products linked to this supplier. Assign products above.</p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -228,6 +312,104 @@ export default function Suppliers() {
               {saving ? "Saving..." : editingId ? "Update Supplier" : "Add Supplier"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reorder Dialog */}
+      <Dialog open={!!reorderSupplier} onOpenChange={() => setReorderSupplier(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Re-order from {reorderSupplier?.name}</DialogTitle>
+          </DialogHeader>
+          
+          <Tabs value={orderMode} onValueChange={setOrderMode} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="checkboxes">Select Products</TabsTrigger>
+              <TabsTrigger value="custom">Custom Message</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="checkboxes" className="flex-1 overflow-y-auto min-h-0 space-y-3 pr-2">
+              {reorderItems.length > 0 ? (
+                <div className="space-y-3">
+                  {reorderItems.map((item, idx) => (
+                    <div key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border ${item.selected ? 'bg-accent/5 border-accent/20' : 'bg-card'}`}>
+                      <Checkbox 
+                        id={`item-${item.id}`} 
+                        checked={item.selected}
+                        onCheckedChange={(checked) => {
+                          const newItems = [...reorderItems];
+                          newItems[idx].selected = !!checked;
+                          setReorderItems(newItems);
+                          
+                          // Update custom text area too
+                          const selectedText = newItems.filter(i => i.selected)
+                            .map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`)
+                            .join("\n");
+                          setCustomOrderText(`Hi ${reorderSupplier?.name},\n\nI'd like to place a reorder:\n\n${selectedText || "[List your items here]"}\n\nPlease confirm availability and pricing.\n\nThank you!`);
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Label htmlFor={`item-${item.id}`} className="font-medium cursor-pointer truncate block">
+                          {item.name}
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Stock: {item.stock_qty} (Min: {item.min_stock_level})
+                        </p>
+                      </div>
+                      <div className="w-24 shrink-0 flex items-center gap-2">
+                        <Input 
+                          type="number" 
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => {
+                            const newItems = [...reorderItems];
+                            newItems[idx].qty = parseInt(e.target.value) || 0;
+                            // Auto-select if they change qty > 0
+                            if (newItems[idx].qty > 0 && !newItems[idx].selected) {
+                              newItems[idx].selected = true;
+                            }
+                            setReorderItems(newItems);
+                            
+                            // Update custom text area too
+                            const selectedText = newItems.filter(i => i.selected)
+                              .map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`)
+                              .join("\n");
+                            setCustomOrderText(`Hi ${reorderSupplier?.name},\n\nI'd like to place a reorder:\n\n${selectedText || "[List your items here]"}\n\nPlease confirm availability and pricing.\n\nThank you!`);
+                          }}
+                          className="h-8"
+                          disabled={!item.selected}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-3 opacity-40" />
+                  <p>No products are linked to this supplier.</p>
+                  <Button variant="link" onClick={() => { setReorderSupplier(null); setShowProducts(reorderSupplier?.id); }}>
+                    Link products from inventory
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="custom" className="flex-1 flex flex-col min-h-0">
+              <Textarea 
+                value={customOrderText}
+                onChange={(e) => setCustomOrderText(e.target.value)}
+                className="flex-1 min-h-[300px] resize-none font-mono text-sm"
+                placeholder="Type your complete order list here..."
+              />
+            </TabsContent>
+          </Tabs>
+          
+          <DialogFooter className="mt-6 pt-4 border-t shrink-0">
+            <Button variant="outline" onClick={() => setReorderSupplier(null)}>Cancel</Button>
+            <Button onClick={sendOrder} className="bg-[#25D366] hover:bg-[#25D366]/90 text-white gap-2">
+              <MessageCircle className="h-4 w-4" /> Send on WhatsApp
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
