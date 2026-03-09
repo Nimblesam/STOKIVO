@@ -238,19 +238,61 @@ export default function Suppliers() {
       <Dialog open={!!showProducts} onOpenChange={() => setShowProducts(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Supplier Products</DialogTitle></DialogHeader>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {showProducts && getSupplierProducts(showProducts).map(p => (
-              <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">{p.sku} • {p.stock_qty} in stock</p>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                onChange={async (e) => {
+                  if (!e.target.value) return;
+                  const pid = e.target.value;
+                  const { error } = await supabase.from("products").update({ supplier_id: showProducts }).eq("id", pid);
+                  if (error) {
+                    toast.error("Failed to link product");
+                  } else {
+                    toast.success("Product linked to supplier");
+                    fetchData();
+                  }
+                  e.target.value = "";
+                }}
+              >
+                <option value="">+ Add a product to this supplier...</option>
+                {products.filter(p => p.supplier_id !== showProducts).map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {showProducts && getSupplierProducts(showProducts).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 group">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.sku} • {p.stock_qty} in stock</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">{formatMoney(p.selling_price, currency)}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                      onClick={async () => {
+                        const { error } = await supabase.from("products").update({ supplier_id: null }).eq("id", p.id);
+                        if (error) toast.error("Failed to unlink product");
+                        else {
+                          toast.success("Product unlinked");
+                          fetchData();
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-sm font-medium">{formatMoney(p.selling_price, currency)}</span>
-              </div>
-            ))}
-            {showProducts && getSupplierProducts(showProducts).length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No products linked to this supplier. Assign products in the Products page.</p>
-            )}
+              ))}
+              {showProducts && getSupplierProducts(showProducts).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No products linked to this supplier. Assign products above.</p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
