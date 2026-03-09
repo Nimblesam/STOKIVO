@@ -46,7 +46,7 @@ export default function AdminDashboard() {
       const salesData = sales.data || [];
       const subs = subscriptions.data || [];
 
-      const recentSales = salesData.filter(s => s.created_at >= thirtyDaysAgo);
+      const recentSales = salesData.filter((s: any) => s.created_at >= thirtyDaysAgo);
       const totalVolume = recentSales.reduce((sum, s) => sum + (s.total || 0), 0);
       const platformFees = Math.round(totalVolume * 0.005);
 
