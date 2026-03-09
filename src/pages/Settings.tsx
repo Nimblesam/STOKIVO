@@ -71,7 +71,12 @@ export default function Settings() {
     if (!company) return;
     setLoadingStripeStatus(true);
     supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
-      if (!error && data) setStripeStatus(data);
+      if (error) {
+        toast.error(error.message || "Failed to check Stripe status");
+        setStripeStatus(null);
+      } else if (data) {
+        setStripeStatus(data);
+      }
       setLoadingStripeStatus(false);
     });
   }, [company]);
@@ -118,17 +123,34 @@ export default function Settings() {
   };
 
   const handleInviteUser = async () => {
-    if (!inviteEmail.trim()) { toast.error("Email is required"); return; }
+    const email = inviteEmail.trim();
+    if (!email) {
+      toast.error("Email is required");
+      return;
+    }
     if (!company) return;
+
     setInviting(true);
-    // For now, show the invite link approach since we can't create users directly
-    toast.success(`Invitation ready for ${inviteEmail}`, {
-      description: `Share the signup link with them. They'll join as "${inviteRole}" after registering.`,
-      duration: 6000,
-    });
-    setShowInvite(false);
-    setInviteEmail("");
-    setInviting(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("team-invite", {
+        body: { email, role: inviteRole },
+      });
+      if (error) throw error;
+
+      toast.success("Invitation email sent", {
+        description: data?.mode === "magiclink"
+          ? "They'll receive a sign-in link and be added to your team automatically."
+          : "They'll receive an invite email to join your workspace.",
+        duration: 6000,
+      });
+
+      setShowInvite(false);
+      setInviteEmail("");
+    } catch (err: any) {
+      toast.error(err?.context?.error || err.message || "Failed to send invitation");
+    } finally {
+      setInviting(false);
+    }
   };
 
   const handleSubscribe = async (tier: string) => {

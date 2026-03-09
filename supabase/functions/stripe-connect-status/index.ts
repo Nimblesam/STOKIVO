@@ -19,7 +19,14 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("User not authenticated");
@@ -28,13 +35,23 @@ serve(async (req) => {
       .from("profiles")
       .select("company_id")
       .eq("user_id", userData.user.id)
-      .single();
-    if (!profile?.company_id) throw new Error("No company found");
+      .maybeSingle();
+
+    const { data: roleRow } = await supabaseClient
+      .from("user_roles")
+      .select("company_id")
+      .eq("user_id", userData.user.id)
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+
+    const companyId = profile?.company_id ?? roleRow?.company_id;
+    if (!companyId) throw new Error("No company found");
 
     const { data: company } = await supabaseClient
       .from("companies")
       .select("stripe_account_id")
-      .eq("id", profile.company_id)
+      .eq("id", companyId)
       .single();
 
     if (!company?.stripe_account_id) {
@@ -60,9 +77,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    const message = (error as Error).message;
+    const status = message.includes("authorization") || message.includes("authenticated") ? 401 : 500;
+
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status,
     });
   }
 });
