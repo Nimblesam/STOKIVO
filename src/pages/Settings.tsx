@@ -102,6 +102,7 @@ export default function Settings() {
     const addrErr = validateAddress(companyForm.address);
     setFieldErrors({ email: emailErr, address: addrErr });
     if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
+    setSaving(true);
     const { error } = await supabase.from("companies").update({
       name: companyForm.name, address: companyForm.address, country: companyForm.country,
       currency: companyForm.currency as any, brand_color: companyForm.brand_color,
