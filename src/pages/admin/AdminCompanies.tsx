@@ -317,6 +317,36 @@ export default function AdminCompanies() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog for destructive actions */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.action === "suspended" ? "Suspend" : "Disable"} {confirmAction?.company?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.action === "suspended"
+                ? "This will temporarily restrict the company's access. They can be re-activated later."
+                : "This will permanently disable the company. Their users will lose access immediately."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmAction) {
+                  updateStatus(confirmAction.company, confirmAction.action);
+                  setConfirmAction(null);
+                }
+              }}
+            >
+              {confirmAction?.action === "suspended" ? "Suspend" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
