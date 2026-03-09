@@ -1,6 +1,8 @@
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
+import { validateEmail, validateAddress } from "@/lib/validation";
+import { FieldError } from "@/components/FieldError";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
