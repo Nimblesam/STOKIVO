@@ -5,13 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoreHorizontal, Search, UserX, UserCheck, Users, ShieldCheck, Eye, Mail, Phone, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 export default function AdminUsers() {
   const { logAction, isSuperAdmin } = useAdminAuth();
@@ -22,6 +23,8 @@ export default function AdminUsers() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDetail, setUserDetail] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const load = async () => {
     setLoading(true);
@@ -48,6 +51,7 @@ export default function AdminUsers() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { setPage(1); }, [search, roleFilter, statusFilter]);
 
   const toggleActive = async (userRole: any) => {
     const newActive = !userRole.active;
@@ -86,8 +90,14 @@ export default function AdminUsers() {
     return matchSearch && matchRole && matchStatus;
   });
 
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
   const totalActive = users.filter(u => u.active).length;
   const totalOwners = users.filter(u => u.role === "owner").length;
+
+  const handlePageChange = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="space-y-4">
@@ -154,9 +164,9 @@ export default function AdminUsers() {
           <TableBody>
             {loading ? (
               <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-            ) : filtered.length === 0 ? (
+            ) : paged.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
-            ) : filtered.map((u) => (
+            ) : paged.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.name}</TableCell>
                 <TableCell>{u.companyName}</TableCell>
@@ -212,7 +222,14 @@ export default function AdminUsers() {
           </TableBody>
         </Table>
       </div>
-      <p className="text-xs text-muted-foreground">Showing {filtered.length} of {users.length} users</p>
+
+      <AdminPagination
+        currentPage={page}
+        totalItems={filtered.length}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       {/* User Detail Dialog */}
       <Dialog open={!!selectedUser} onOpenChange={() => { setSelectedUser(null); setUserDetail(null); }}>

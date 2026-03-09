@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Download, DollarSign, TrendingUp, Receipt, Building2, CreditCard, Eye } from "lucide-react";
 import { format } from "date-fns";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 const PLATFORM_FEE_RATE = 0.005; // 0.5%
 
@@ -22,6 +23,8 @@ export default function AdminTransactions() {
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [saleItems, setSaleItems] = useState<any[]>([]);
   const [salePayments, setSalePayments] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     const load = async () => {
@@ -30,7 +33,7 @@ export default function AdminTransactions() {
           .from("sales")
           .select("*, companies(name, currency, plan, stripe_account_id)")
           .order("created_at", { ascending: false })
-          .limit(500),
+          .limit(1000),
         supabase
           .from("subscriptions")
           .select("*, companies(name, currency)")
@@ -41,7 +44,6 @@ export default function AdminTransactions() {
       setSales(salesData);
       setSubscriptions(subsRes.data || []);
 
-      // Aggregate fees by company
       const companyFees: Record<string, { name: string; total: number; fees: number; net: number; currency: string; salesCount: number; stripeConnected: boolean }> = {};
       salesData.forEach((s: any) => {
         const cid = s.company_id;
@@ -62,6 +64,8 @@ export default function AdminTransactions() {
     };
     load();
   }, []);
+
+  useEffect(() => { setPage(1); }, [search, companyFilter]);
 
   const viewSaleDetail = async (sale: any) => {
     setSelectedSale(sale);
@@ -97,8 +101,7 @@ export default function AdminTransactions() {
   const totalFees = Math.round(totalVolume * PLATFORM_FEE_RATE);
   const totalNet = totalVolume - totalFees;
 
-  // Subscription revenue calculation
-  const planPrices: Record<string, number> = { starter: 0, growth: 2900, pro: 7900 }; // pence/month
+  const planPrices: Record<string, number> = { starter: 0, growth: 2900, pro: 7900 };
   const activeSubRevenue = subscriptions.reduce((sum, sub) => {
     const isActive = !sub.expires_at || new Date(sub.expires_at) > new Date();
     return sum + (isActive ? (planPrices[sub.plan] || 0) : 0);
@@ -112,6 +115,13 @@ export default function AdminTransactions() {
     const matchesCompany = companyFilter === "all" || name === companyFilter;
     return matchesSearch && matchesCompany;
   });
+
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  const handlePageChange = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="space-y-6">
@@ -147,7 +157,7 @@ export default function AdminTransactions() {
         </Card>
       </div>
 
-      <Tabs defaultValue="transactions">
+      <Tabs defaultValue="transactions" onValueChange={() => setPage(1)}>
         <TabsList>
           <TabsTrigger value="transactions">All Transactions</TabsTrigger>
           <TabsTrigger value="fees">Revenue by Company</TabsTrigger>
@@ -186,7 +196,7 @@ export default function AdminTransactions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.slice(0, 100).map((s) => {
+                {paged.map((s) => {
                   const fee = Math.round(s.total * PLATFORM_FEE_RATE);
                   return (
                     <TableRow key={s.id}>
@@ -212,7 +222,13 @@ export default function AdminTransactions() {
               </TableBody>
             </Table>
           </div>
-          {filtered.length > 100 && <p className="text-xs text-muted-foreground text-center">Showing 100 of {filtered.length} transactions</p>}
+          <AdminPagination
+            currentPage={page}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+          />
         </TabsContent>
 
         <TabsContent value="fees">
