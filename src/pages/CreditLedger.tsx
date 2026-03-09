@@ -81,6 +81,8 @@ export default function CreditLedger() {
     return customer.outstanding_balance <= 0 && custUnpaid.length === 0;
   };
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
   const handleAddDebtor = async () => {
     if (!profile?.company_id) return;
     setSaving(true);
@@ -93,6 +95,10 @@ export default function CreditLedger() {
       else { toast.success("Debtor updated!"); setShowAddDebtor(false); fetchData(); }
     } else {
       if (!form.name.trim()) { toast.error("Name is required"); setSaving(false); return; }
+      const emailErr = validateEmail(form.email);
+      const addrErr = validateAddress(form.address);
+      setFieldErrors({ email: emailErr, address: addrErr });
+      if (emailErr || addrErr) { toast.error("Please fix validation errors"); setSaving(false); return; }
       const balance = Math.round(parseFloat(form.outstanding || "0") * 100);
       const { error } = await supabase.from("customers").insert({
         company_id: profile.company_id, name: form.name,
