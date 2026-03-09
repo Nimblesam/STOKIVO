@@ -272,6 +272,104 @@ export default function Suppliers() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Reorder Dialog */}
+      <Dialog open={!!reorderSupplier} onOpenChange={() => setReorderSupplier(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Re-order from {reorderSupplier?.name}</DialogTitle>
+          </DialogHeader>
+          
+          <Tabs value={orderMode} onValueChange={setOrderMode} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="checkboxes">Select Products</TabsTrigger>
+              <TabsTrigger value="custom">Custom Message</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="checkboxes" className="flex-1 overflow-y-auto min-h-0 space-y-3 pr-2">
+              {reorderItems.length > 0 ? (
+                <div className="space-y-3">
+                  {reorderItems.map((item, idx) => (
+                    <div key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border ${item.selected ? 'bg-accent/5 border-accent/20' : 'bg-card'}`}>
+                      <Checkbox 
+                        id={`item-${item.id}`} 
+                        checked={item.selected}
+                        onCheckedChange={(checked) => {
+                          const newItems = [...reorderItems];
+                          newItems[idx].selected = !!checked;
+                          setReorderItems(newItems);
+                          
+                          // Update custom text area too
+                          const selectedText = newItems.filter(i => i.selected)
+                            .map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`)
+                            .join("\n");
+                          setCustomOrderText(`Hi ${reorderSupplier?.name},\n\nI'd like to place a reorder:\n\n${selectedText || "[List your items here]"}\n\nPlease confirm availability and pricing.\n\nThank you!`);
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Label htmlFor={`item-${item.id}`} className="font-medium cursor-pointer truncate block">
+                          {item.name}
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Stock: {item.stock_qty} (Min: {item.min_stock_level})
+                        </p>
+                      </div>
+                      <div className="w-24 shrink-0 flex items-center gap-2">
+                        <Input 
+                          type="number" 
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => {
+                            const newItems = [...reorderItems];
+                            newItems[idx].qty = parseInt(e.target.value) || 0;
+                            // Auto-select if they change qty > 0
+                            if (newItems[idx].qty > 0 && !newItems[idx].selected) {
+                              newItems[idx].selected = true;
+                            }
+                            setReorderItems(newItems);
+                            
+                            // Update custom text area too
+                            const selectedText = newItems.filter(i => i.selected)
+                              .map(i => `- ${i.name}: ${i.qty} ${i.unit_type}s`)
+                              .join("\n");
+                            setCustomOrderText(`Hi ${reorderSupplier?.name},\n\nI'd like to place a reorder:\n\n${selectedText || "[List your items here]"}\n\nPlease confirm availability and pricing.\n\nThank you!`);
+                          }}
+                          className="h-8"
+                          disabled={!item.selected}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-3 opacity-40" />
+                  <p>No products are linked to this supplier.</p>
+                  <Button variant="link" onClick={() => { setReorderSupplier(null); setShowProducts(reorderSupplier?.id); }}>
+                    Link products from inventory
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="custom" className="flex-1 flex flex-col min-h-0">
+              <Textarea 
+                value={customOrderText}
+                onChange={(e) => setCustomOrderText(e.target.value)}
+                className="flex-1 min-h-[300px] resize-none font-mono text-sm"
+                placeholder="Type your complete order list here..."
+              />
+            </TabsContent>
+          </Tabs>
+          
+          <DialogFooter className="mt-6 pt-4 border-t shrink-0">
+            <Button variant="outline" onClick={() => setReorderSupplier(null)}>Cancel</Button>
+            <Button onClick={sendOrder} className="bg-[#25D366] hover:bg-[#25D366]/90 text-white gap-2">
+              <MessageCircle className="h-4 w-4" /> Send on WhatsApp
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
