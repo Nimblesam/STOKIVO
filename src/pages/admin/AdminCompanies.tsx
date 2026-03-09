@@ -21,6 +21,7 @@ export default function AdminCompanies() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<any | null>(null);
   const [usage, setUsage] = useState<any>(null);
+  const [confirmAction, setConfirmAction] = useState<{ company: any; action: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
