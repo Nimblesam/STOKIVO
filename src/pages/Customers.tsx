@@ -52,6 +52,7 @@ export default function Customers() {
     const addrErr = validateAddress(form.address);
     setFieldErrors({ email: emailErr, address: addrErr });
     if (emailErr || addrErr) { toast.error("Please fix validation errors"); return; }
+    if (!profile?.company_id) return;
     setSaving(true);
     const payload = {
       name: form.name,
