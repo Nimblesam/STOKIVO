@@ -5,8 +5,11 @@ import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -26,6 +29,12 @@ export default function Suppliers() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [showProducts, setShowProducts] = useState<string | null>(null);
+  
+  // Reorder dialog state
+  const [reorderSupplier, setReorderSupplier] = useState<any | null>(null);
+  const [reorderItems, setReorderItems] = useState<any[]>([]);
+  const [customOrderText, setCustomOrderText] = useState("");
+  const [orderMode, setOrderMode] = useState<string>("checkboxes");
 
   const fetchData = async () => {
     if (!profile?.company_id) return;
