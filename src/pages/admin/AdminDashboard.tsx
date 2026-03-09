@@ -94,8 +94,8 @@ export default function AdminDashboard() {
       });
       setSalesTrend(Object.entries(sTrend).map(([date, amount]) => ({ date, amount: amount / 100 })));
 
-      // Recent companies
-      setRecentCompanies(comps.slice(0, 5));
+      // Recent companies (sorted by newest first)
+      setRecentCompanies([...comps].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5));
     };
     load();
   }, []);
