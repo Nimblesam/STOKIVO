@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle, Mail, Phone, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 export default function AdminCompanies() {
   const { logAction, isSuperAdmin } = useAdminAuth();
@@ -22,6 +23,8 @@ export default function AdminCompanies() {
   const [detail, setDetail] = useState<any | null>(null);
   const [usage, setUsage] = useState<any>(null);
   const [confirmAction, setConfirmAction] = useState<{ company: any; action: string } | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const load = async () => {
     setLoading(true);
@@ -32,6 +35,9 @@ export default function AdminCompanies() {
 
   useEffect(() => { load(); }, []);
 
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
+
   const updateStatus = async (company: any, newStatus: string) => {
     await supabase.from("companies").update({ status: newStatus } as any).eq("id", company.id);
     await logAction(`company_${newStatus}`, "company", company.id, { name: company.name, previousStatus: company.status });
@@ -40,7 +46,6 @@ export default function AdminCompanies() {
   };
 
   const changePlan = async (companyId: string, plan: string) => {
-    // Update both companies and subscriptions tables
     await supabase.from("companies").update({ plan } as any).eq("id", companyId);
     await supabase.from("subscriptions").update({ plan } as any).eq("company_id", companyId);
     await logAction("company_plan_change", "company", companyId, { plan });
@@ -87,6 +92,13 @@ export default function AdminCompanies() {
     return matchesSearch && matchesStatus;
   });
 
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  const handlePageChange = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -127,7 +139,11 @@ export default function AdminCompanies() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((c) => (
+            {loading ? (
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+            ) : paged.length === 0 ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No companies found</TableCell></TableRow>
+            ) : paged.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>
                   <div>
@@ -208,12 +224,17 @@ export default function AdminCompanies() {
                 </TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No companies found</TableCell></TableRow>
-            )}
           </TableBody>
         </Table>
       </div>
+
+      <AdminPagination
+        currentPage={page}
+        totalItems={filtered.length}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={() => { setDetail(null); setUsage(null); }}>
