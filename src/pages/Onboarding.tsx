@@ -25,6 +25,7 @@ export default function Onboarding() {
     brandColor: "#0d9488",
     businessType: "wholesale" as "wholesale" | "retail" | "hybrid",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
 
   // Wait for auth to load
   if (authLoading) {
@@ -45,8 +46,6 @@ export default function Onboarding() {
 
   // Already has company → go to dashboard
   if (profile?.company_id) return <Navigate to="/dashboard" replace />;
-
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
 
   const handleCreate = async () => {
     if (!form.name.trim()) {
