@@ -118,9 +118,9 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Platform overview & metrics</p>
         </div>
-        <Badge variant="outline" className="text-xs">
+        <span className="text-xs text-muted-foreground border rounded-full px-3 py-1">
           {format(new Date(), "dd MMM yyyy, HH:mm")}
-        </Badge>
+        </span>
       </div>
 
       {/* KPI Grid */}
