@@ -416,28 +416,30 @@ export default function Cashier() {
           ) : (
             <div className="divide-y">
               {cart.map((item) => (
-                <div key={item.product_id} className="p-3 flex gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatMoney(item.unit_price, currency)} each</p>
-                    {item.qty > item.stock_qty && (
-                      <p className="text-xs text-destructive font-medium mt-0.5">Only {item.stock_qty} in stock!</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, -1)}>
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center font-semibold text-sm">{item.qty}</span>
-                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, 1)}>
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-col items-end justify-between">
-                    <span className="font-semibold text-sm">{formatMoney(item.line_total, currency)}</span>
-                    <button onClick={() => removeItem(item.product_id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                <div key={item.product_id} className="p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatMoney(item.unit_price, currency)} each</p>
+                    </div>
+                    <button onClick={() => removeItem(item.product_id)} className="text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-0.5">
                       <X className="h-4 w-4" />
                     </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, -1)}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-8 text-center font-semibold text-sm">{item.qty}</span>
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, 1)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      {item.qty > item.stock_qty && (
+                        <span className="text-[10px] text-destructive font-medium ml-1">Only {item.stock_qty}!</span>
+                      )}
+                    </div>
+                    <span className="font-semibold text-sm">{formatMoney(item.line_total, currency)}</span>
                   </div>
                 </div>
               ))}
