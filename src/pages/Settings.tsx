@@ -31,7 +31,6 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
   const [inviting, setInviting] = useState(false);
-  const [connectingStripe, setConnectingStripe] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
     connected: boolean; charges_enabled?: boolean; payouts_enabled?: boolean; details_submitted?: boolean;
   } | null>(null);
