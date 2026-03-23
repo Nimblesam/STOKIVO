@@ -199,7 +199,7 @@ export default function Settings() {
     <div className="max-w-4xl mx-auto">
       <PageHeader title="Settings" subtitle="Manage your company, billing, and integrations" />
 
-      <Tabs defaultValue="company" className="space-y-6">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "company"} className="space-y-6">
         <TabsList className="bg-muted/50">
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>
           <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
