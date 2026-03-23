@@ -21,6 +21,7 @@ import type { Currency } from "@/lib/types";
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
   cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5",
+  supplier_id: "",
 };
 
 export default function Products() {
@@ -36,6 +37,7 @@ export default function Products() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
+  const [suppliers, setSuppliers] = useState<any[]>([]);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -54,6 +56,13 @@ export default function Products() {
   };
 
   useEffect(() => { fetchProducts(); }, [profile?.company_id]);
+
+  // Fetch suppliers
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    supabase.from("suppliers").select("id, name").eq("company_id", profile.company_id)
+      .order("name").then(({ data }) => setSuppliers(data || []));
+  }, [profile?.company_id]);
 
   const filtered = products.filter(
     (p) =>
@@ -82,6 +91,7 @@ export default function Products() {
       selling_price: (product.selling_price / 100).toFixed(2),
       stock_qty: String(product.stock_qty),
       min_stock_level: String(product.min_stock_level),
+      supplier_id: product.supplier_id || "",
     });
     setShowDialog(true);
   };
@@ -119,6 +129,7 @@ export default function Products() {
       selling_price: sellingPrice,
       stock_qty: parseInt(form.stock_qty || "0"),
       min_stock_level: parseInt(form.min_stock_level || "5"),
+      supplier_id: form.supplier_id || null,
     };
 
     let error;
@@ -407,6 +418,20 @@ export default function Products() {
                   <option value="tin">Tin</option>
                 </select>
               </div>
+            </div>
+            <div>
+              <Label>Supplier</Label>
+              <select
+                value={form.supplier_id}
+                onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
+                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">No supplier</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">Link to a supplier for reorder & price tracking</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
