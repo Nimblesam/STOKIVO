@@ -56,6 +56,15 @@ serve(async (req) => {
     const companyId = profile?.company_id ?? roleRow?.company_id;
     if (!companyId) throw new Error("No company found");
 
+    // Parse request body for account preferences
+    let businessType = "individual";
+    let selectedCountry = "GB";
+    try {
+      const body = await req.json();
+      if (body.business_type) businessType = body.business_type;
+      if (body.country) selectedCountry = body.country;
+    } catch { /* no body is fine */ }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -73,7 +82,9 @@ serve(async (req) => {
       // Create a new Stripe Connect Express account
       const account = await stripe.accounts.create({
         type: "express",
+        country: selectedCountry,
         email: company?.email || user.email,
+        business_type: businessType as any,
         business_profile: {
           name: company?.name || undefined,
         },
