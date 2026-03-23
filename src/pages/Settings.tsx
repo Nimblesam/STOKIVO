@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/currency";
 import { PLANS, STRIPE_PRICES } from "@/lib/demo-data";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
+import { PayoutOnboarding } from "@/components/PayoutOnboarding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -294,91 +295,25 @@ export default function Settings() {
         <TabsContent value="payments">
           <div className="space-y-6">
             <div className="zentra-card p-6">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-6">
                 <Banknote className="h-5 w-5 text-accent" />
                 <div>
-                  <h3 className="font-display font-semibold text-foreground">Payment Gateway</h3>
+                  <h3 className="font-display font-semibold text-foreground">Set Up Payouts</h3>
                   <p className="text-sm text-muted-foreground">Connect your bank account to receive customer payments directly</p>
                 </div>
               </div>
-              <Separator className="my-4" />
-
-              {/* Stripe Connect Status */}
-              {loadingStripeStatus ? (
-                <div className="p-4 rounded-lg border bg-muted/20 flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Checking Stripe Connect status...</span>
-                </div>
-              ) : stripeStatus?.connected && stripeStatus.details_submitted ? (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-lg border-2 border-green-500/30 bg-green-500/5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                          <Check className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">Stripe Connect Active</p>
-                          <p className="text-xs text-muted-foreground">
-                            Charges: {stripeStatus.charges_enabled ? "✅ Enabled" : "⏳ Pending"} • Payouts: {stripeStatus.payouts_enabled ? "✅ Enabled" : "⏳ Pending"}
-                          </p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={handleConnectStripe} disabled={connectingStripe} className="gap-2">
-                        {connectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                        Manage
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : stripeStatus?.connected && !stripeStatus.details_submitted ? (
-                <div className="p-4 rounded-lg border-2 border-yellow-500/30 bg-yellow-500/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                        <Loader2 className="h-5 w-5 text-yellow-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Onboarding Incomplete</p>
-                        <p className="text-xs text-muted-foreground">Complete your Stripe account setup to start receiving payments</p>
-                      </div>
-                    </div>
-                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={handleConnectStripe} disabled={connectingStripe}>
-                      {connectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                      Continue Setup
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 rounded-lg border-2 border-dashed border-accent/30 bg-accent/5 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-accent" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Connect Stripe</p>
-                        <p className="text-xs text-muted-foreground">Set up your bank account to receive payments via Stripe</p>
-                      </div>
-                    </div>
-                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={handleConnectStripe} disabled={connectingStripe}>
-                      {connectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                      Connect Stripe Account
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-
-              <div className="mt-6 p-4 rounded-lg bg-accent/5 border border-accent/20">
-                <h4 className="text-sm font-semibold text-foreground mb-2">How payments work</h4>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <p>1. Connect your Stripe account to receive payments</p>
-                  <p>2. Send payment links to customers for invoices</p>
-                  <p>3. Customer pays → funds go directly to your bank</p>
-                  <p>4. Platform fee: <strong className="text-foreground">0.5%</strong> per transaction</p>
-                </div>
-              </div>
+              <Separator className="mb-6" />
+              <PayoutOnboarding
+                stripeStatus={stripeStatus}
+                loadingStripeStatus={loadingStripeStatus}
+                onRefreshStatus={() => {
+                  setLoadingStripeStatus(true);
+                  supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
+                    if (!error && data) setStripeStatus(data);
+                    setLoadingStripeStatus(false);
+                  });
+                }}
+              />
             </div>
 
             <div className="zentra-card p-6">
