@@ -83,16 +83,6 @@ export default function Settings() {
     });
   }, [company]);
 
-  const handleConnectStripe = async () => {
-    setConnectingStripe(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to start Stripe Connect onboarding");
-    } finally { setConnectingStripe(false); }
-  };
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
 
