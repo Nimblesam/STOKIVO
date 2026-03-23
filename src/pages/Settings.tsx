@@ -83,6 +83,18 @@ export default function Settings() {
     });
   }, [company]);
 
+  // Handle Stripe redirect return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("stripe_connected") === "true") {
+      toast.success("Bank account connected successfully!", { description: "Your payout setup is complete." });
+      window.history.replaceState({}, "", window.location.pathname + "?tab=payments");
+    }
+    if (params.get("stripe_refresh") === "true") {
+      toast.info("Please complete your bank account setup");
+      window.history.replaceState({}, "", window.location.pathname + "?tab=payments");
+    }
+  }, []);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
 
