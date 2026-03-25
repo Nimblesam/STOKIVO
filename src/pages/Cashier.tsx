@@ -381,11 +381,12 @@ export default function Cashier() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{p.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{p.sku}</span><span>•</span><span>{p.stock_qty} in stock</span>
-                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{p.sku}</p>
                   </div>
-                  <span className="font-semibold text-sm whitespace-nowrap">{formatMoney(p.selling_price, currency)}</span>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-sm">{formatMoney(p.selling_price, currency)}</p>
+                    <p className="text-xs text-muted-foreground">{p.stock_qty} in stock</p>
+                  </div>
                 </button>
               ))}
             </div>
