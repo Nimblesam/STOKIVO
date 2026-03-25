@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { LowStockNotification } from "@/components/LowStockNotification";
+import { DailyEarningsSummary } from "@/components/DailyEarningsSummary";
+import { SmartSuggestions } from "@/components/SmartSuggestions";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PageHeader } from "@/components/PageHeader";
@@ -110,6 +112,8 @@ export default function Dashboard() {
       />
 
       <LowStockNotification />
+      <DailyEarningsSummary />
+      <SmartSuggestions />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <KPICard title="Stock Value" value={formatMoney(totalStockValue, currency)} icon={<Package className="h-4 w-4" />} subtitle={`${products.length} products`} />

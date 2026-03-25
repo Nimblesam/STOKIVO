@@ -21,6 +21,7 @@ import InventoryMovements from "./pages/InventoryMovements";
 import CreditLedger from "./pages/CreditLedger";
 import Payouts from "./pages/Payouts";
 import Cashier from "./pages/Cashier";
+import Accounting from "./pages/Accounting";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
@@ -130,6 +131,7 @@ const AppRoutes = () => (
             <Route path="credit-ledger" element={<CreditLedger />} />
             <Route path="payouts" element={<Payouts />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="accounting" element={<Accounting />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
