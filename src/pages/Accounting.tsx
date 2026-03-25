@@ -125,7 +125,7 @@ export default function Accounting() {
       <PageHeader
         title="Accounting"
         subtitle="Profit & loss overview with exportable reports"
-        action={
+        actions={
           <div className="flex items-center gap-3">
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-[140px]">
