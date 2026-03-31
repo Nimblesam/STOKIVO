@@ -254,6 +254,7 @@ export default function Products() {
                   <TableHead className="text-right">Margin</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Expiry</TableHead>
                   <TableHead>Barcode</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
