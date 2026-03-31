@@ -92,6 +92,7 @@ export default function Products() {
       stock_qty: String(product.stock_qty),
       min_stock_level: String(product.min_stock_level),
       supplier_id: product.supplier_id || "",
+      expiry_date: product.expiry_date || "",
     });
     setShowDialog(true);
   };
