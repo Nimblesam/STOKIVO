@@ -22,6 +22,8 @@ import CreditLedger from "./pages/CreditLedger";
 import Payouts from "./pages/Payouts";
 import Cashier from "./pages/Cashier";
 import Accounting from "./pages/Accounting";
+import Integrations from "./pages/Integrations";
+import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
@@ -50,7 +52,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-xl zentra-gradient flex items-center justify-center animate-pulse-subtle">
-            <span className="text-accent-foreground font-display font-bold">Z</span>
+            <span className="text-accent-foreground font-display font-bold">S</span>
           </div>
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
@@ -83,7 +85,7 @@ function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/" element={<Landing />} />
     <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/onboarding" element={<Onboarding />} />
@@ -132,6 +134,7 @@ const AppRoutes = () => (
             <Route path="payouts" element={<Payouts />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="accounting" element={<Accounting />} />
+            <Route path="integrations" element={<Integrations />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

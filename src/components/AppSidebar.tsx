@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -31,6 +31,7 @@ const alertNav = [
 const otherNav = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Accounting", url: "/accounting", icon: Calculator },
+  { title: "Integrations", url: "/integrations", icon: Globe },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -54,12 +55,12 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-lg zentra-gradient flex items-center justify-center shrink-0">
-            <span className="text-accent-foreground font-display font-bold text-sm">Z</span>
+            <span className="text-accent-foreground font-display font-bold text-sm">S</span>
           </div>
           {!collapsed && (
             <div className="animate-fade-in">
-              <h1 className="font-display font-bold text-base text-sidebar-primary-foreground leading-none">Zentra</h1>
-              <p className="text-[11px] text-sidebar-foreground/60 mt-0.5 truncate">{company?.name || "Wholesale OS"}</p>
+              <h1 className="font-display font-bold text-base text-sidebar-primary-foreground leading-none">Stokivo</h1>
+              <p className="text-[11px] text-sidebar-foreground/60 mt-0.5 truncate">{company?.name || "Smart Stock"}</p>
             </div>
           )}
         </div>

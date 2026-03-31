@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, ScanBarcode } from "lucide-react";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, ScanBarcode, CalendarClock, Tag, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -21,7 +21,7 @@ import type { Currency } from "@/lib/types";
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
   cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5",
-  supplier_id: "",
+  supplier_id: "", expiry_date: "",
 };
 
 export default function Products() {
@@ -92,6 +92,7 @@ export default function Products() {
       stock_qty: String(product.stock_qty),
       min_stock_level: String(product.min_stock_level),
       supplier_id: product.supplier_id || "",
+      expiry_date: product.expiry_date || "",
     });
     setShowDialog(true);
   };
@@ -130,6 +131,7 @@ export default function Products() {
       stock_qty: parseInt(form.stock_qty || "0"),
       min_stock_level: parseInt(form.min_stock_level || "5"),
       supplier_id: form.supplier_id || null,
+      expiry_date: form.expiry_date || null,
     };
 
     let error;
@@ -252,6 +254,7 @@ export default function Products() {
                   <TableHead className="text-right">Margin</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Expiry</TableHead>
                   <TableHead>Barcode</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
@@ -293,6 +296,16 @@ export default function Products() {
                       </TableCell>
                       <TableCell className="text-right font-medium text-sm">{product.stock_qty}</TableCell>
                       <TableCell><StatusBadge status={stockStatus} /></TableCell>
+                      <TableCell>
+                        {product.expiry_date ? (() => {
+                          const daysLeft = Math.ceil((new Date(product.expiry_date).getTime() - Date.now()) / 86400000);
+                          return (
+                            <span className={`text-xs font-medium ${daysLeft <= 0 ? "text-destructive" : daysLeft <= 30 ? "text-warning" : "text-muted-foreground"}`}>
+                              {daysLeft <= 0 ? "Expired" : daysLeft <= 30 ? `${daysLeft}d left` : new Date(product.expiry_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                            </span>
+                          );
+                        })() : <span className="text-xs text-muted-foreground">—</span>}
+                      </TableCell>
                       <TableCell>
                         {product.barcode ? (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
@@ -452,6 +465,10 @@ export default function Products() {
                 <Label>Min Stock Level</Label>
                 <Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="5" className="mt-1" />
               </div>
+            </div>
+            <div>
+              <Label>Expiry Date <span className="text-muted-foreground font-normal">(optional — for perishable items)</span></Label>
+              <Input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="mt-1" />
             </div>
             <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
