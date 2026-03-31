@@ -88,9 +88,9 @@ export default function Login() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="h-12 w-12 rounded-xl zentra-gradient flex items-center justify-center mx-auto mb-3">
-              <span className="text-accent-foreground font-display font-bold text-lg">Z</span>
+              <span className="text-accent-foreground font-display font-bold text-lg">S</span>
             </div>
-            <h1 className="text-2xl font-display font-bold text-foreground">Zentra</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground">Stokivo</h1>
           </div>
 
           <div className="mb-8">
