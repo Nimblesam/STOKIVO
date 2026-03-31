@@ -69,9 +69,9 @@ export default function Register() {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <div className="h-12 w-12 rounded-xl zentra-gradient flex items-center justify-center mx-auto mb-4">
-            <span className="text-accent-foreground font-display font-bold text-lg">Z</span>
+            <span className="text-accent-foreground font-display font-bold text-lg">S</span>
           </div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Create your Zentra account</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Create your Stokivo account</h1>
           <p className="text-sm text-muted-foreground mt-1">Enter your details to get started</p>
         </div>
 
