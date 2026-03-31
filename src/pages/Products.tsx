@@ -466,6 +466,10 @@ export default function Products() {
                 <Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="5" className="mt-1" />
               </div>
             </div>
+            <div>
+              <Label>Expiry Date <span className="text-muted-foreground font-normal">(optional — for perishable items)</span></Label>
+              <Input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="mt-1" />
+            </div>
             <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
             </Button>
