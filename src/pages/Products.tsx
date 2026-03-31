@@ -21,7 +21,7 @@ import type { Currency } from "@/lib/types";
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
   cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5",
-  supplier_id: "",
+  supplier_id: "", expiry_date: "",
 };
 
 export default function Products() {
