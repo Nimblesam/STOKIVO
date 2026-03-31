@@ -22,6 +22,8 @@ import CreditLedger from "./pages/CreditLedger";
 import Payouts from "./pages/Payouts";
 import Cashier from "./pages/Cashier";
 import Accounting from "./pages/Accounting";
+import Integrations from "./pages/Integrations";
+import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
