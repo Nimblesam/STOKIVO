@@ -297,6 +297,16 @@ export default function Products() {
                       <TableCell className="text-right font-medium text-sm">{product.stock_qty}</TableCell>
                       <TableCell><StatusBadge status={stockStatus} /></TableCell>
                       <TableCell>
+                        {product.expiry_date ? (() => {
+                          const daysLeft = Math.ceil((new Date(product.expiry_date).getTime() - Date.now()) / 86400000);
+                          return (
+                            <span className={`text-xs font-medium ${daysLeft <= 0 ? "text-destructive" : daysLeft <= 30 ? "text-warning" : "text-muted-foreground"}`}>
+                              {daysLeft <= 0 ? "Expired" : daysLeft <= 30 ? `${daysLeft}d left` : new Date(product.expiry_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                            </span>
+                          );
+                        })() : <span className="text-xs text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell>
                         {product.barcode ? (
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                             setBarcodeProduct(product);
