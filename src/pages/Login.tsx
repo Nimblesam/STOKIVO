@@ -46,11 +46,11 @@ export default function Login() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <span className="font-display font-bold text-lg">Z</span>
+              <span className="font-display font-bold text-lg">S</span>
               </div>
-              <span className="font-display font-bold text-2xl tracking-tight">Zentra</span>
+              <span className="font-display font-bold text-2xl tracking-tight">Stokivo</span>
             </div>
-            <p className="text-white/70 text-sm">Wholesale Business OS</p>
+            <p className="text-white/70 text-sm">Smart Stock. Strong Business.</p>
           </div>
 
           <div className="space-y-8">
