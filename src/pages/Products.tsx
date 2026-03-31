@@ -131,6 +131,7 @@ export default function Products() {
       stock_qty: parseInt(form.stock_qty || "0"),
       min_stock_level: parseInt(form.min_stock_level || "5"),
       supplier_id: form.supplier_id || null,
+      expiry_date: form.expiry_date || null,
     };
 
     let error;
