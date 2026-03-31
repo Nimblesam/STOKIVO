@@ -31,6 +31,7 @@ const alertNav = [
 const otherNav = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Accounting", url: "/accounting", icon: Calculator },
+  { title: "Integrations", url: "/integrations", icon: Globe },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

@@ -78,7 +78,7 @@ export default function Login() {
             </div>
           </div>
 
-          <p className="text-white/40 text-xs">© {new Date().getFullYear()} Zentra. Built for wholesale businesses globally.</p>
+          <p className="text-white/40 text-xs">© {new Date().getFullYear()} Stokivo. Smart Stock. Strong Business.</p>
         </div>
       </div>
 
