@@ -69,26 +69,26 @@ export default function PriceChangeAlerts() {
       <PageHeader title="Price Change Center" subtitle="Track supplier cost changes, margin impact, and pricing intelligence" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="zentra-card p-4">
+        <div className="stokivo-card p-4">
           <p className="text-xs text-muted-foreground font-medium">Total Changes</p>
           <p className="text-2xl font-display font-bold text-foreground mt-1">{priceHistory.length}</p>
         </div>
-        <div className="zentra-card p-4 border-destructive/20">
+        <div className="stokivo-card p-4 border-destructive/20">
           <p className="text-xs text-muted-foreground font-medium">Price Increases</p>
           <p className="text-2xl font-display font-bold text-destructive mt-1">{totalIncreases}</p>
         </div>
-        <div className="zentra-card p-4 border-success/20">
+        <div className="stokivo-card p-4 border-success/20">
           <p className="text-xs text-muted-foreground font-medium">Price Decreases</p>
           <p className="text-2xl font-display font-bold text-success mt-1">{totalDecreases}</p>
         </div>
-        <div className="zentra-card p-4 border-warning/20">
+        <div className="stokivo-card p-4 border-warning/20">
           <p className="text-xs text-muted-foreground font-medium">Margin at Risk</p>
           <p className="text-2xl font-display font-bold text-warning mt-1">{marginRiskProducts.length}</p>
         </div>
       </div>
 
       {priceHistory.length === 0 ? (
-        <div className="zentra-card p-12 text-center text-muted-foreground">
+        <div className="stokivo-card p-12 text-center text-muted-foreground">
           <BarChart3 className="h-10 w-10 mx-auto mb-2 opacity-40" />
           <p>No price changes recorded yet</p>
           <p className="text-sm mt-1">Price changes are tracked automatically when product cost prices are updated</p>
@@ -105,7 +105,7 @@ export default function PriceChangeAlerts() {
             const suggestedPrice = product ? Math.ceil((change.new_cost / 0.7)) : 0;
 
             return (
-              <div key={change.id} className={`zentra-card p-5 transition-all ${marginRisk ? "border-destructive/30 bg-destructive/[0.02]" : isIncrease ? "border-warning/30 bg-warning/[0.02]" : "border-success/30 bg-success/[0.02]"}`}>
+              <div key={change.id} className={`stokivo-card p-5 transition-all ${marginRisk ? "border-destructive/30 bg-destructive/[0.02]" : isIncrease ? "border-warning/30 bg-warning/[0.02]" : "border-success/30 bg-success/[0.02]"}`}>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${marginRisk ? "bg-destructive/10" : isIncrease ? "bg-warning/10" : "bg-success/10"}`}>
                     {isIncrease ? <TrendingUp className={`h-5 w-5 ${marginRisk ? "text-destructive" : "text-warning"}`} /> : <TrendingDown className="h-5 w-5 text-success" />}

@@ -85,7 +85,7 @@ export function LowStockNotification() {
   const criticalCount = alerts.filter(a => a.severity === "critical").length;
 
   return (
-    <div className="zentra-card border-l-4 border-l-destructive p-4 mb-6 animate-fade-in">
+    <div className="stokivo-card border-l-4 border-l-destructive p-4 mb-6 animate-fade-in">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-destructive" />

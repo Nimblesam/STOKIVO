@@ -19,7 +19,7 @@ export function KPICard({ title, value, subtitle, icon, trend, variant = "defaul
   };
 
   return (
-    <div className={cn("zentra-card p-5", variantStyles[variant])}>
+    <div className={cn("stokivo-card p-5", variantStyles[variant])}>
       <div className="flex items-start justify-between mb-3">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
         <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">

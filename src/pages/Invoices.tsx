@@ -263,7 +263,7 @@ export default function Invoices() {
         ))}
       </div>
 
-      <div className="zentra-card overflow-hidden">
+      <div className="stokivo-card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : filtered.length === 0 ? (

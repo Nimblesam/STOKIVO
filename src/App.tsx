@@ -51,7 +51,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 rounded-xl zentra-gradient flex items-center justify-center animate-pulse-subtle">
+          <div className="h-10 w-10 rounded-xl stokivo-gradient flex items-center justify-center animate-pulse-subtle">
             <span className="text-accent-foreground font-display font-bold">S</span>
           </div>
           <p className="text-sm text-muted-foreground">Loading...</p>

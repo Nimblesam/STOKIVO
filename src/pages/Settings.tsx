@@ -210,7 +210,7 @@ export default function Settings() {
 
         {/* COMPANY TAB */}
         <TabsContent value="company">
-          <div className="zentra-card p-6 space-y-6">
+          <div className="stokivo-card p-6 space-y-6">
             <div className="flex items-center gap-4 mb-6">
               <div className="h-16 w-16 rounded-xl flex items-center justify-center" style={{ backgroundColor: companyForm.brand_color + "20" }}>
                 <Building2 className="h-8 w-8" style={{ color: companyForm.brand_color }} />
@@ -269,7 +269,7 @@ export default function Settings() {
 
         {/* TEAM TAB */}
         <TabsContent value="team">
-          <div className="zentra-card p-6">
+          <div className="stokivo-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-display font-semibold text-foreground">Team Members</h3>
               <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => setShowInvite(true)}>
@@ -295,7 +295,7 @@ export default function Settings() {
         {/* PAYMENTS TAB */}
         <TabsContent value="payments">
           <div className="space-y-6">
-            <div className="zentra-card p-6">
+            <div className="stokivo-card p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Banknote className="h-5 w-5 text-accent" />
                 <div>
@@ -317,7 +317,7 @@ export default function Settings() {
               />
             </div>
 
-            <div className="zentra-card p-6">
+            <div className="stokivo-card p-6">
               <h3 className="font-display font-semibold text-foreground mb-4">Payment Fee Example</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Customer pays</span><span className="font-medium">£100.00</span></div>
@@ -332,7 +332,7 @@ export default function Settings() {
 
         {/* DOMAIN TAB */}
         <TabsContent value="domain">
-          <div className="zentra-card p-6 space-y-6">
+          <div className="stokivo-card p-6 space-y-6">
             <div className="flex items-center gap-3 mb-2">
               <Globe className="h-5 w-5 text-accent" />
               <div>
@@ -361,7 +361,7 @@ export default function Settings() {
         {/* BILLING TAB */}
         <TabsContent value="billing">
           <div className="space-y-6">
-            <div className="zentra-card p-6">
+            <div className="stokivo-card p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5 text-accent" />
@@ -383,7 +383,7 @@ export default function Settings() {
                 const Icon = planIcons[plan.tier as keyof typeof planIcons] || Zap;
                 const isPopular = plan.tier === "growth";
                 return (
-                  <div key={plan.tier} className={`zentra-card p-6 relative ${isCurrent ? "border-accent border-2" : ""} ${isPopular ? "ring-2 ring-accent/20" : ""}`}>
+                  <div key={plan.tier} className={`stokivo-card p-6 relative ${isCurrent ? "border-accent border-2" : ""} ${isPopular ? "ring-2 ring-accent/20" : ""}`}>
                     {isPopular && <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">Most Popular</Badge>}
                     {isCurrent && <Badge className="absolute -top-2.5 right-4 bg-accent text-accent-foreground">Your Plan</Badge>}
                     <div className="flex items-center gap-2 mb-3">
