@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.admin-setup]
 verify_jwt = false
+
+[functions.channel-sync]
+verify_jwt = false
