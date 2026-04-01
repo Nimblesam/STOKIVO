@@ -341,7 +341,13 @@ export default function Cashier() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-5rem)]">
       <div className="flex-1 flex flex-col gap-4 min-w-0">
-        <Card className="p-4">
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <ScanBarcode className="h-4 w-4" /> Barcode Scanner
+            </div>
+            <ScannerStatus />
+          </div>
           <form onSubmit={handleScan} className="flex gap-3">
             <div className="relative flex-1">
               <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
