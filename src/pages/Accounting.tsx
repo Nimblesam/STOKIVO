@@ -111,7 +111,7 @@ export default function Accounting() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `zentra-accounting-${period}days.csv`;
+    a.download = `stokivo-accounting-${period}days.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

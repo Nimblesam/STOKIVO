@@ -87,7 +87,7 @@ export default function Login() {
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="h-12 w-12 rounded-xl zentra-gradient flex items-center justify-center mx-auto mb-3">
+            <div className="h-12 w-12 rounded-xl stokivo-gradient flex items-center justify-center mx-auto mb-3">
               <span className="text-accent-foreground font-display font-bold text-lg">S</span>
             </div>
             <h1 className="text-2xl font-display font-bold text-foreground">Stokivo</h1>

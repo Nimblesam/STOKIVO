@@ -279,7 +279,7 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
             <div>
               <p className="text-sm font-semibold text-foreground">Your data is safe</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Bank details are collected and stored securely by Stripe. Zentra never sees or stores your banking information.
+                Bank details are collected and stored securely by Stripe. Stokivo never sees or stores your banking information.
               </p>
             </div>
           </div>
@@ -344,7 +344,7 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
 
       {/* How it works */}
       <div className="p-4 rounded-xl bg-accent/5 border border-accent/20">
-        <h4 className="text-sm font-semibold text-foreground mb-2">How Zentra payouts work</h4>
+        <h4 className="text-sm font-semibold text-foreground mb-2">How Stokivo payouts work</h4>
         <div className="space-y-2 text-xs text-muted-foreground">
           <p>1. Connect your bank account securely through Stripe</p>
           <p>2. Send payment links to customers for invoices</p>

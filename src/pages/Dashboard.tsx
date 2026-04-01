@@ -125,7 +125,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 zentra-card p-5">
+        <div className="lg:col-span-2 stokivo-card p-5">
           <h3 className="font-display font-semibold text-foreground mb-4">Revenue Trend</h3>
           {salesData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
@@ -142,7 +142,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold text-foreground mb-4">Products by Category</h3>
           {categoryData.length > 0 ? (
             <>
@@ -170,7 +170,7 @@ export default function Dashboard() {
 
       {/* Reorder Suggestions + Critical Stock + Credit */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
               <RefreshCw className="h-4 w-4 text-accent" /> Reorder Suggestions
@@ -191,7 +191,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" /> Critical Stock
@@ -221,7 +221,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-warning" /> Outstanding Payments
@@ -251,7 +251,7 @@ export default function Dashboard() {
 
       {/* Recent Invoices + Active Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground">Recent Invoices</h3>
             <button onClick={() => navigate("/invoices")} className="text-xs text-accent hover:underline font-medium">View all</button>
@@ -273,7 +273,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground">Active Alerts</h3>
             <button onClick={() => navigate("/alerts/low-stock")} className="text-xs text-accent hover:underline font-medium">View all</button>

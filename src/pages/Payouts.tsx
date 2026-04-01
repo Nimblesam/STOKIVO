@@ -85,22 +85,22 @@ export default function Payouts() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <p className="text-xs text-muted-foreground mb-1">Total Received</p>
           <p className="text-2xl font-display font-bold text-foreground">{formatMoney(totalPaid, currency)}</p>
         </div>
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <p className="text-xs text-muted-foreground mb-1">Transactions</p>
           <p className="text-2xl font-display font-bold text-foreground">{filtered.length}</p>
         </div>
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <p className="text-xs text-muted-foreground mb-1">Platform Fee (0.5%)</p>
           <p className="text-2xl font-display font-bold text-destructive">-{formatMoney(Math.round(totalPaid * 0.005), currency)}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="zentra-card p-4 mb-4">
+      <div className="stokivo-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">Filters</span>
@@ -119,7 +119,7 @@ export default function Payouts() {
         </div>
       </div>
 
-      <div className="zentra-card">
+      <div className="stokivo-card">
         <div className="p-4 border-b flex items-center gap-2">
           <ArrowDownToLine className="h-4 w-4 text-accent" />
           <h3 className="font-semibold text-foreground">Payment History</h3>

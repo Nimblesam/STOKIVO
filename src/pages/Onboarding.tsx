@@ -32,7 +32,7 @@ export default function Onboarding() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 rounded-xl zentra-gradient flex items-center justify-center animate-pulse-subtle">
+          <div className="h-10 w-10 rounded-xl stokivo-gradient flex items-center justify-center animate-pulse-subtle">
             <span className="text-accent-foreground font-display font-bold">Z</span>
           </div>
           <p className="text-sm text-muted-foreground">Loading...</p>
@@ -101,7 +101,7 @@ export default function Onboarding() {
       if (subErr) throw subErr;
 
       await refreshProfile();
-      toast.success("Company created! Welcome to Zentra 🎉");
+      toast.success("Company created! Welcome to Stokivo 🎉");
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Failed to create company");
@@ -114,14 +114,14 @@ export default function Onboarding() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-lg animate-fade-in">
         <div className="text-center mb-8">
-          <div className="h-14 w-14 rounded-xl zentra-gradient flex items-center justify-center mx-auto mb-4">
+          <div className="h-14 w-14 rounded-xl stokivo-gradient flex items-center justify-center mx-auto mb-4">
             <Building2 className="h-7 w-7 text-accent-foreground" />
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground">Set up your workspace</h1>
           <p className="text-sm text-muted-foreground mt-1">Tell us about your business to get started</p>
         </div>
 
-        <div className="zentra-card p-6 space-y-5">
+        <div className="stokivo-card p-6 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <Label>Company Name *</Label>

@@ -111,21 +111,21 @@ export default function LowStockAlerts() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="zentra-card p-4 border-destructive/20">
+        <div className="stokivo-card p-4 border-destructive/20">
           <p className="text-xs text-muted-foreground font-medium">Critical</p>
           <p className="text-2xl font-display font-bold text-destructive mt-1">{criticalCount}</p>
           <p className="text-[10px] text-muted-foreground">≤50% of minimum</p>
         </div>
-        <div className="zentra-card p-4 border-warning/20">
+        <div className="stokivo-card p-4 border-warning/20">
           <p className="text-xs text-muted-foreground font-medium">Warning</p>
           <p className="text-2xl font-display font-bold text-warning mt-1">{warningCount}</p>
           <p className="text-[10px] text-muted-foreground">Below minimum</p>
         </div>
-        <div className="zentra-card p-4">
+        <div className="stokivo-card p-4">
           <p className="text-xs text-muted-foreground font-medium">Categories Affected</p>
           <p className="text-2xl font-display font-bold text-foreground mt-1">{categoriesWithIssues.length}</p>
         </div>
-        <div className="zentra-card p-4">
+        <div className="stokivo-card p-4">
           <p className="text-xs text-muted-foreground font-medium">Reorder Cost (Est.)</p>
           <p className="text-2xl font-display font-bold text-foreground mt-1">{formatMoney(totalReorderCost, currency)}</p>
         </div>
@@ -133,7 +133,7 @@ export default function LowStockAlerts() {
 
       {/* Category Alerts */}
       {categoriesWithIssues.length > 0 && (
-        <div className="zentra-card p-5 mb-6">
+        <div className="stokivo-card p-5 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Layers className="h-4 w-4 text-accent" />
             <h3 className="font-display font-semibold text-foreground text-sm">Category Overview</h3>
@@ -165,7 +165,7 @@ export default function LowStockAlerts() {
           return (
             <div
               key={product.id}
-              className={`zentra-card p-5 flex flex-col sm:flex-row sm:items-center gap-4 ${
+              className={`stokivo-card p-5 flex flex-col sm:flex-row sm:items-center gap-4 ${
                 severity === "critical" ? "border-destructive/30 bg-destructive/[0.02]" : "border-warning/30 bg-warning/[0.02]"
               }`}
             >
@@ -199,7 +199,7 @@ export default function LowStockAlerts() {
           );
         })}
         {lowStockProducts.length === 0 && (
-          <div className="zentra-card p-12 text-center text-muted-foreground">
+          <div className="stokivo-card p-12 text-center text-muted-foreground">
             <Package className="h-10 w-10 mx-auto mb-2 opacity-40" />
             <p>All products are well-stocked!</p>
           </div>
@@ -208,7 +208,7 @@ export default function LowStockAlerts() {
 
       {/* Reorder Suggestion List */}
       {reorderList.length > 0 && (
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 text-accent" />

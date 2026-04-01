@@ -82,7 +82,7 @@ export function DailyEarningsSummary() {
   ];
 
   return (
-    <div className="zentra-card p-5 mb-6">
+    <div className="stokivo-card p-5 mb-6">
       <h3 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
         📊 Today's Earnings
       </h3>

@@ -36,7 +36,7 @@ export default function InventoryMovements() {
     <div className="max-w-7xl mx-auto">
       <PageHeader title="Stock Movements" subtitle="Audit trail of all inventory changes" />
 
-      <div className="zentra-card overflow-hidden">
+      <div className="stokivo-card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : movements.length === 0 ? (

@@ -61,7 +61,7 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold mb-4 text-foreground">Daily Sales (Last 2 Weeks)</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={dailySales}>
@@ -74,7 +74,7 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
 
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold mb-4 text-foreground">Profit Margin Trend</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={marginTrend}>
@@ -89,7 +89,7 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold mb-4 text-foreground">Profit by Category</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={profitByCategory} layout="vertical">
@@ -103,7 +103,7 @@ export default function Analytics() {
         </div>
 
         {/* Supplier Price Change Trends */}
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold mb-4 text-foreground flex items-center gap-2">
             <TrendingDown className="h-4 w-4 text-warning" /> Supplier Price Changes
           </h3>
@@ -134,7 +134,7 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Selling Products */}
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold mb-4 text-foreground">Top Selling Products</h3>
           <div className="space-y-3">
             {topProducts.map((p, i) => (
@@ -153,7 +153,7 @@ export default function Analytics() {
         </div>
 
         {/* Dead Stock Detection */}
-        <div className="zentra-card p-5">
+        <div className="stokivo-card p-5">
           <h3 className="font-display font-semibold mb-4 text-foreground flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-muted-foreground" /> Dead Stock Detection
           </h3>

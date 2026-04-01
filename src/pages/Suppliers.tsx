@@ -169,7 +169,7 @@ export default function Suppliers() {
       />
 
       {suppliers.length === 0 ? (
-        <div className="zentra-card p-12 text-center text-muted-foreground">
+        <div className="stokivo-card p-12 text-center text-muted-foreground">
           <Truck className="h-10 w-10 mx-auto mb-2 opacity-40" />
           <p>No suppliers yet. Add your first supplier!</p>
         </div>
@@ -179,7 +179,7 @@ export default function Suppliers() {
             const supplierProducts = getSupplierProducts(supplier.id);
             const lowStockCount = supplierProducts.filter(p => p.stock_qty <= p.min_stock_level).length;
             return (
-              <div key={supplier.id} className="zentra-card p-5">
+              <div key={supplier.id} className="stokivo-card p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-3">
                     <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">

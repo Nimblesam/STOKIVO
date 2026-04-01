@@ -110,13 +110,13 @@
 }
 
 @layer utilities {
-  .zentra-card {
+  .stokivo-card {
     @apply bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200;
   }
-  .zentra-gradient {
+  .stokivo-gradient {
     background: var(--gradient-accent);
   }
-  .zentra-gradient-primary {
+  .stokivo-gradient-primary {
     background: var(--gradient-primary);
   }
   .status-paid { @apply bg-success/10 text-success; }

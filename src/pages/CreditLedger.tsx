@@ -222,26 +222,26 @@ export default function CreditLedger() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="zentra-card p-4 border-destructive/20">
+        <div className="stokivo-card p-4 border-destructive/20">
           <p className="text-xs text-muted-foreground font-medium">Total Outstanding</p>
           <p className="text-2xl font-display font-bold text-destructive mt-1">{formatMoney(totalOutstanding, currency)}</p>
         </div>
-        <div className="zentra-card p-4 border-warning/20">
+        <div className="stokivo-card p-4 border-warning/20">
           <p className="text-xs text-muted-foreground font-medium">Overdue Amount</p>
           <p className="text-2xl font-display font-bold text-warning mt-1">{formatMoney(totalOverdue, currency)}</p>
         </div>
-        <div className="zentra-card p-4">
+        <div className="stokivo-card p-4">
           <p className="text-xs text-muted-foreground font-medium">Debtors</p>
           <p className="text-2xl font-display font-bold text-foreground mt-1">{creditCustomers.length}</p>
         </div>
-        <div className="zentra-card p-4">
+        <div className="stokivo-card p-4">
           <p className="text-xs text-muted-foreground font-medium">Unpaid Invoices</p>
           <p className="text-2xl font-display font-bold text-foreground mt-1">{unpaidInvoices.length}</p>
         </div>
       </div>
 
       {/* Debtors Table */}
-      <div className="zentra-card overflow-hidden mb-6">
+      <div className="stokivo-card overflow-hidden mb-6">
         <div className="p-4 border-b">
           <h3 className="font-display font-semibold text-foreground text-sm flex items-center gap-2">
             <Users className="h-4 w-4 text-accent" /> Who Owes Money
