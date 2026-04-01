@@ -349,7 +349,7 @@ export default function Settings() {
               <Label>Subdomain</Label>
               <div className="flex items-center gap-2 mt-1">
                 <Input value={companyForm.custom_domain} onChange={(e) => setCompanyForm({ ...companyForm, custom_domain: e.target.value })} placeholder="your-business" className="flex-1" disabled={!isPro} />
-                <span className="text-sm text-muted-foreground whitespace-nowrap">.zentra.app</span>
+                <span className="text-sm text-muted-foreground whitespace-nowrap"><span className="text-sm text-muted-foreground whitespace-nowrap">.stokivo.app</span></span>
               </div>
             </div>
             <Button onClick={handleSaveDomain} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving || !isPro}>

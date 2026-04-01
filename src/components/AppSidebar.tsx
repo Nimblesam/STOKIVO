@@ -54,9 +54,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg zentra-gradient flex items-center justify-center shrink-0">
-            <span className="text-accent-foreground font-display font-bold text-sm">S</span>
-          </div>
+          <img src={stokivoLogo} alt="Stokivo" className="h-9 w-9 rounded-lg shrink-0" />
           {!collapsed && (
             <div className="animate-fade-in">
               <h1 className="font-display font-bold text-base text-sidebar-primary-foreground leading-none">Stokivo</h1>
