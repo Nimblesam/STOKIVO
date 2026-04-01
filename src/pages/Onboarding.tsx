@@ -101,7 +101,7 @@ export default function Onboarding() {
       if (subErr) throw subErr;
 
       await refreshProfile();
-      toast.success("Company created! Welcome to Zentra 🎉");
+      toast.success("Company created! Welcome to Stokivo 🎉");
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Failed to create company");
