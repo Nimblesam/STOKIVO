@@ -14,6 +14,7 @@ import {
   Search, Package, Trash2, CheckCircle2, Printer, RotateCcw,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
+import { ScannerStatus } from "@/components/ScannerStatus";
 import { PosReceipt } from "@/components/pos/PosReceipt";
 import type { Currency } from "@/lib/types";
 
