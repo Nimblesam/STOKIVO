@@ -1,37 +1,29 @@
 project_id = "lsujpckltpgrydbfuadt"
 
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.create-payment-link]
-verify_jwt = false
-
-[functions.stripe-connect-onboard]
-verify_jwt = false
-
-[functions.stripe-connect-status]
-verify_jwt = false
-
-[functions.team-invite]
-verify_jwt = false
-
-[functions.admin-bootstrap]
-verify_jwt = false
-
-[functions.admin-auth]
-verify_jwt = false
-
-[functions.admin-invite]
-verify_jwt = false
-
-[functions.admin-setup]
-verify_jwt = false
-
-[functions.channel-sync]
-verify_jwt = false
+[functions]
+  [functions.admin-auth]
+    verify_jwt = false
+  [functions.admin-bootstrap]
+    verify_jwt = false
+  [functions.admin-invite]
+    verify_jwt = false
+  [functions.admin-setup]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.channel-sync]
+    verify_jwt = false
+  [functions.check-subscription]
+    verify_jwt = false
+  [functions.create-checkout]
+    verify_jwt = false
+  [functions.create-payment-link]
+    verify_jwt = false
+  [functions.customer-portal]
+    verify_jwt = false
+  [functions.stripe-connect-onboard]
+    verify_jwt = false
+  [functions.stripe-connect-status]
+    verify_jwt = false
+  [functions.team-invite]
+    verify_jwt = false
