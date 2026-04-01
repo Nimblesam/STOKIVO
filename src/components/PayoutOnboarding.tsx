@@ -279,7 +279,7 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
             <div>
               <p className="text-sm font-semibold text-foreground">Your data is safe</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Bank details are collected and stored securely by Stripe. Zentra never sees or stores your banking information.
+                Bank details are collected and stored securely by Stripe. Stokivo never sees or stores your banking information.
               </p>
             </div>
           </div>
