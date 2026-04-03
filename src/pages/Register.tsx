@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, MailCheck, Check, X } from "lucide-react";
-import { PASSWORD_RULES, validatePassword } from "@/lib/validation";
+import { PASSWORD_RULES, validatePassword, getPasswordStrength } from "@/lib/validation";
+import { Progress } from "@/components/ui/progress";
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
