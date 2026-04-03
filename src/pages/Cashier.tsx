@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   ScanBarcode, ShoppingCart, Plus, Minus, X, CreditCard, Banknote,
-  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw,
+  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, Star,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
