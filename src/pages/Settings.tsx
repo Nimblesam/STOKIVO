@@ -266,7 +266,8 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* TEAM TAB */}
+        {/* TEAM TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="team">
           <div className="stokivo-card p-6">
             <div className="flex items-center justify-between mb-6">
@@ -276,20 +277,61 @@ export default function Settings() {
               </Button>
             </div>
             <div className="space-y-3">
-              {teamMembers.map((member) => (
-                <div key={member.user_id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
-                  <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
-                    {member.name.split(" ").map((n: string) => n[0]).join("")}
+              {teamMembers.map((member) => {
+                const isSelf = member.user_id === user?.id;
+                return (
+                  <div key={member.user_id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
+                    <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
+                      {member.name.split(" ").map((n: string) => n[0]).join("")}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">{member.name}{isSelf ? " (You)" : ""}</p>
+                    </div>
+                    {!isSelf ? (
+                      <select
+                        value={member.role}
+                        onChange={async (e) => {
+                          const newRole = e.target.value;
+                          const { error } = await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", member.user_id).eq("company_id", company!.id);
+                          if (error) { toast.error(error.message); return; }
+                          setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, role: newRole } : m));
+                          toast.success(`Role updated to ${newRole}`);
+                        }}
+                        className="text-xs font-medium bg-muted px-2 py-1 rounded border border-input"
+                      >
+                        <option value="owner">Owner</option>
+                        <option value="manager">Manager</option>
+                        <option value="staff">Staff</option>
+                      </select>
+                    ) : (
+                      <span className="text-xs font-medium text-muted-foreground capitalize bg-muted px-2 py-1 rounded">{member.role}</span>
+                    )}
+                    {!isSelf ? (
+                      <Button
+                        variant={member.active ? "outline" : "default"}
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={async () => {
+                          const newActive = !member.active;
+                          const { error } = await supabase.from("user_roles").update({ active: newActive }).eq("user_id", member.user_id).eq("company_id", company!.id);
+                          if (error) { toast.error(error.message); return; }
+                          setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, active: newActive } : m));
+                          toast.success(newActive ? "Member activated" : "Member deactivated");
+                        }}
+                      >
+                        {member.active ? "Deactivate" : "Activate"}
+                      </Button>
+                    ) : (
+                      <StatusBadge status={member.active ? "active" : "inactive"} />
+                    )}
                   </div>
-                  <div className="flex-1"><p className="text-sm font-medium text-foreground">{member.name}</p></div>
-                  <span className="text-xs font-medium text-muted-foreground capitalize bg-muted px-2 py-1 rounded">{member.role}</span>
-                  <StatusBadge status={member.active ? "active" : "inactive"} />
-                </div>
-              ))}
+                );
+              })}
               {teamMembers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No team members found</p>}
             </div>
           </div>
         </TabsContent>
+        )}
 
         {/* WAREHOUSES TAB */}
         <TabsContent value="warehouses">
