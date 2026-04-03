@@ -207,6 +207,7 @@ export default function Settings() {
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
           {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
           {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
+          <TabsTrigger value="data-privacy" className="gap-2"><Database className="h-4 w-4" /> Data & Privacy</TabsTrigger>
         </TabsList>
 
         {/* COMPANY TAB */}
