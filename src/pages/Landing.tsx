@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Package, BarChart3, Bell, Users, ShoppingCart,
   CheckCircle2, ArrowRight, Star, Globe,
