@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { LowStockNotification } from "@/components/LowStockNotification";
+import { TwoFactorReminder } from "@/components/TwoFactorSetup";
 import { DailyEarningsSummary } from "@/components/DailyEarningsSummary";
 import { SmartSuggestions } from "@/components/SmartSuggestions";
 import { KPICard } from "@/components/KPICard";
