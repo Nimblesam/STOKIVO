@@ -15,8 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, Plus, UserPlus,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, Plus, UserPlus, ShieldCheck, Warehouse,
 } from "lucide-react";
+import { WarehouseManager } from "@/components/WarehouseManager";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -200,9 +202,11 @@ export default function Settings() {
       <PageHeader title="Settings" subtitle="Manage your company, billing, and integrations" />
 
       <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "company"} className="space-y-6">
-        <TabsList className="bg-muted/50">
+        <TabsList className="bg-muted/50 flex flex-wrap">
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>
           <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
+          <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>
+          <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
           <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>
           <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>
           <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>
@@ -289,6 +293,20 @@ export default function Settings() {
               ))}
               {teamMembers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No team members found</p>}
             </div>
+          </div>
+        </TabsContent>
+
+        {/* WAREHOUSES TAB */}
+        <TabsContent value="warehouses">
+          <div className="stokivo-card p-6">
+            <WarehouseManager />
+          </div>
+        </TabsContent>
+
+        {/* SECURITY TAB */}
+        <TabsContent value="security">
+          <div className="stokivo-card p-6">
+            <TwoFactorSetup />
           </div>
         </TabsContent>
 

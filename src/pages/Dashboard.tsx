@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { LowStockNotification } from "@/components/LowStockNotification";
+import { TwoFactorReminder } from "@/components/TwoFactorSetup";
 import { DailyEarningsSummary } from "@/components/DailyEarningsSummary";
 import { SmartSuggestions } from "@/components/SmartSuggestions";
 import { KPICard } from "@/components/KPICard";
@@ -106,6 +107,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <TwoFactorReminder />
       <PageHeader
         title="Dashboard"
         subtitle={`Welcome back${profile?.full_name ? `, ${profile.full_name}` : ""}. Here's your business overview.`}
