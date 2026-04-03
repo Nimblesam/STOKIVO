@@ -405,7 +405,7 @@ export default function Landing() {
             <p className="text-muted-foreground mt-2 max-w-md mx-auto text-sm sm:text-base">Choose the plan that fits your business. Upgrade anytime.</p>
 
             {/* Billing toggle — fixed */}
-            <div className="flex items-center justify-center gap-4 mt-8">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8">
               <span className={`text-sm font-medium transition-colors ${!annual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
               <button
                 onClick={() => setAnnual(!annual)}
