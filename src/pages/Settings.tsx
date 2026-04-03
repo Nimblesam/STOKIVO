@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database,
 } from "lucide-react";
 import { WarehouseManager } from "@/components/WarehouseManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
@@ -207,6 +207,7 @@ export default function Settings() {
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
           {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
           {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
+          <TabsTrigger value="data-privacy" className="gap-2"><Database className="h-4 w-4" /> Data & Privacy</TabsTrigger>
         </TabsList>
 
         {/* COMPANY TAB */}
@@ -576,6 +577,93 @@ export default function Settings() {
           </div>
         </TabsContent>
         )}
+        {/* DATA & PRIVACY TAB */}
+        <TabsContent value="data-privacy">
+          <div className="stokivo-card p-6 space-y-8">
+            <div>
+              <h3 className="font-display font-bold text-lg text-foreground mb-1">Data & Privacy</h3>
+              <p className="text-sm text-muted-foreground">Manage your data in accordance with UK GDPR. Export or delete your data at any time.</p>
+            </div>
+
+            <Separator />
+
+            {/* Data Export */}
+            <div className="space-y-3">
+              <h4 className="font-display font-semibold text-foreground flex items-center gap-2"><Download className="h-4 w-4" /> Export Your Data</h4>
+              <p className="text-sm text-muted-foreground">Download a complete copy of all your business data in CSV format. This includes products, sales, customers, invoices, inventory movements, and team information.</p>
+              <Button variant="outline" className="gap-2" onClick={async () => {
+                if (!company) return;
+                toast.info("Preparing your data export...");
+                try {
+                  const tables = [
+                    { name: "products", query: supabase.from("products").select("*").eq("company_id", company.id) },
+                    { name: "sales", query: supabase.from("sales").select("*").eq("company_id", company.id) },
+                    { name: "sale_items", query: supabase.from("sale_items").select("*, sales!inner(company_id)").eq("sales.company_id", company.id) },
+                    { name: "customers", query: supabase.from("customers").select("*").eq("company_id", company.id) },
+                    { name: "invoices", query: supabase.from("invoices").select("*").eq("company_id", company.id) },
+                    { name: "suppliers", query: supabase.from("suppliers").select("*").eq("company_id", company.id) },
+                    { name: "inventory_movements", query: supabase.from("inventory_movements").select("*").eq("company_id", company.id) },
+                  ];
+
+                  for (const table of tables) {
+                    const { data, error } = await table.query;
+                    if (error || !data || data.length === 0) continue;
+                    const headers = Object.keys(data[0]);
+                    const csv = [headers.join(","), ...data.map(row => headers.map(h => {
+                      const val = (row as any)[h];
+                      const str = val === null || val === undefined ? "" : String(val);
+                      return str.includes(",") || str.includes('"') || str.includes("\n") ? `"${str.replace(/"/g, '""')}"` : str;
+                    }).join(","))].join("\n");
+                    const blob = new Blob([csv], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = `stokivo-${table.name}-export.csv`; a.click();
+                    URL.revokeObjectURL(url);
+                  }
+                  toast.success("Data exported successfully!");
+                } catch (err) {
+                  toast.error("Failed to export data. Please try again.");
+                }
+              }}>
+                <Download className="h-4 w-4" /> Export All Data (CSV)
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Account Deletion */}
+            {isOwner && (
+              <div className="space-y-3">
+                <h4 className="font-display font-semibold text-destructive flex items-center gap-2"><Trash2 className="h-4 w-4" /> Delete Account & Data</h4>
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete your Stokivo account and all associated business data. This action is <strong>irreversible</strong> and will:
+                  </p>
+                  <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1">
+                    <li>Delete all products, sales, and inventory records</li>
+                    <li>Delete all customer and supplier data</li>
+                    <li>Cancel your subscription</li>
+                    <li>Remove all team members' access</li>
+                    <li>Financial records may be retained for up to 7 years as required by HMRC</li>
+                  </ul>
+                  <p className="text-sm text-muted-foreground">To request account deletion, please contact <strong>privacy@stokivo.com</strong> from your registered email address. We will process your request within 30 days as required by UK GDPR.</p>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Legal Links */}
+            <div className="space-y-2">
+              <h4 className="font-display font-semibold text-foreground">Legal</h4>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <a href="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</a>
+                <a href="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</a>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
       </Tabs>
 
       {/* Invite User Dialog */}

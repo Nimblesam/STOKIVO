@@ -564,6 +564,8 @@ export default function Landing() {
               <a href="#features" className="hover:text-foreground transition-colors">Features</a>
               <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
               <Link to="/login" className="hover:text-foreground transition-colors">Login</Link>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             </div>
             <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Stokivo. All rights reserved.</p>
           </div>
