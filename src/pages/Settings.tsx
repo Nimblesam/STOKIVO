@@ -388,10 +388,10 @@ export default function Settings() {
         </TabsContent>
         )}
 
-        {/* DOMAIN TAB */}
+        {/* DOMAIN TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="domain">
           <div className="space-y-6">
-            {/* Auto subdomain - all plans */}
             <div className="stokivo-card p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Globe className="h-5 w-5 text-accent" />
@@ -412,7 +412,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Custom domain - Pro only */}
             <div className="stokivo-card p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Crown className="h-5 w-5 text-amber-500" />
@@ -506,6 +505,7 @@ export default function Settings() {
             </div>
           </div>
         </TabsContent>
+        )}
 
         {/* BILLING TAB */}
         <TabsContent value="billing">
