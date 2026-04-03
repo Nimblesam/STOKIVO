@@ -107,6 +107,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <TwoFactorReminder />
       <PageHeader
         title="Dashboard"
         subtitle={`Welcome back${profile?.full_name ? `, ${profile.full_name}` : ""}. Here's your business overview.`}
