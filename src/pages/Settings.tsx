@@ -349,7 +349,8 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* PAYMENTS TAB */}
+        {/* PAYMENTS TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="payments">
           <div className="space-y-6">
             <div className="stokivo-card p-6">
@@ -385,6 +386,7 @@ export default function Settings() {
             </div>
           </div>
         </TabsContent>
+        )}
 
         {/* DOMAIN TAB */}
         <TabsContent value="domain">
