@@ -37,14 +37,31 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // Check if customer already has an active subscription (no trial for existing subscribers)
+    let hasActiveSubscription = false;
+    if (customerId) {
+      const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+      hasActiveSubscription = subs.data.length > 0;
+    }
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/settings?tab=billing&success=true`,
       cancel_url: `${req.headers.get("origin")}/settings?tab=billing`,
-    });
+      payment_method_collection: "always",
+    };
+
+    // Add 30-day free trial for new subscribers only
+    if (!hasActiveSubscription) {
+      sessionParams.subscription_data = {
+        trial_period_days: 30,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

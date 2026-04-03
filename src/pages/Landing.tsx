@@ -175,7 +175,7 @@ export default function Landing() {
             <div className="flex flex-wrap justify-center gap-3 mt-6 sm:mt-8">
               <Link to="/register">
                 <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 sm:px-8 h-12 sm:h-13 font-semibold gap-2 text-base shadow-lg shadow-primary/20">
-                  Start Free 14-Day Trial <ArrowRight className="h-4 w-4" />
+                  Start Free 30-Day Trial <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <a href="#product">
