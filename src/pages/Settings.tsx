@@ -201,12 +201,12 @@ export default function Settings() {
       <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "company"} className="space-y-6">
         <TabsList className="bg-muted/50 flex flex-wrap">
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>
-          <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
-          <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>
+          {isOwner && <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>}
+          {(isOwner || isManager) && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
-          <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>
-          <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>
-          <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>
+          {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
+          {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
+          {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
         </TabsList>
 
         {/* COMPANY TAB */}
