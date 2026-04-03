@@ -296,6 +296,20 @@ export default function Settings() {
           </div>
         </TabsContent>
 
+        {/* WAREHOUSES TAB */}
+        <TabsContent value="warehouses">
+          <div className="stokivo-card p-6">
+            <WarehouseManager />
+          </div>
+        </TabsContent>
+
+        {/* SECURITY TAB */}
+        <TabsContent value="security">
+          <div className="stokivo-card p-6">
+            <TwoFactorSetup />
+          </div>
+        </TabsContent>
+
         {/* PAYMENTS TAB */}
         <TabsContent value="payments">
           <div className="space-y-6">
