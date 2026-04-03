@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe, Brain,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { NavLink } from "@/components/NavLink";
@@ -31,6 +31,7 @@ const alertNav = [
 
 const otherNav = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "AI Insights", url: "/ai-insights", icon: Brain },
   { title: "Accounting", url: "/accounting", icon: Calculator },
   { title: "Integrations", url: "/integrations", icon: Globe },
   { title: "Settings", url: "/settings", icon: Settings },

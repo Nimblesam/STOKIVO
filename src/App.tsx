@@ -23,6 +23,7 @@ import Payouts from "./pages/Payouts";
 import Cashier from "./pages/Cashier";
 import Accounting from "./pages/Accounting";
 import Integrations from "./pages/Integrations";
+import AIInsights from "./pages/AIInsights";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -135,6 +136,7 @@ const AppRoutes = () => (
             <Route path="analytics" element={<Analytics />} />
             <Route path="accounting" element={<Accounting />} />
             <Route path="integrations" element={<Integrations />} />
+            <Route path="ai-insights" element={<AIInsights />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
