@@ -160,7 +160,12 @@ export default function Register() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            By creating an account, you agree to our{" "}
+            <Link to="/terms" className="text-accent hover:underline">Terms of Service</Link> and{" "}
+            <Link to="/privacy" className="text-accent hover:underline">Privacy Policy</Link>.
+          </p>
+          <p className="text-center text-sm text-muted-foreground mt-2">
             Already have an account? <Link to="/login" className="text-accent hover:underline font-medium">Sign in</Link>
           </p>
         </div>
