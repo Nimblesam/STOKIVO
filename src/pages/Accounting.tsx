@@ -204,8 +204,8 @@ export default function Accounting() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(215,20%,90%)" />
-              <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="hsl(215,15%,50%)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} />
+              <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} width={65} />
               <Tooltip formatter={(v: number) => formatMoney(v, currency)} />
               <Legend />
               <Bar dataKey="revenue" name="Revenue" fill="hsl(170,60%,40%)" radius={[3, 3, 0, 0]} />
