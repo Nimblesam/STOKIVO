@@ -507,7 +507,8 @@ export default function Settings() {
         </TabsContent>
         )}
 
-        {/* BILLING TAB */}
+        {/* BILLING TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="billing">
           <div className="space-y-6">
             <div className="stokivo-card p-6">
@@ -526,7 +527,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Billing toggle */}
             <div className="flex items-center justify-center gap-3">
               <span className={`text-sm font-medium ${!billingAnnual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
               <Switch checked={billingAnnual} onCheckedChange={setBillingAnnual} />
@@ -575,6 +575,7 @@ export default function Settings() {
             </div>
           </div>
         </TabsContent>
+        )}
       </Tabs>
 
       {/* Invite User Dialog */}
