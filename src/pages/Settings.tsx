@@ -334,11 +334,13 @@ export default function Settings() {
         )}
 
         {/* WAREHOUSES TAB */}
+        {(isOwner || isManager) && (
         <TabsContent value="warehouses">
           <div className="stokivo-card p-6">
             <WarehouseManager />
           </div>
         </TabsContent>
+        )}
 
         {/* SECURITY TAB */}
         <TabsContent value="security">
