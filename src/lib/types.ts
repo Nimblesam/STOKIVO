@@ -135,4 +135,5 @@ export interface PlanConfig {
   maxUsers: number;
   features: string[];
   price: Record<string, number>;
+  annualPrice?: Record<string, number>;
 }
