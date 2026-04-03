@@ -198,7 +198,7 @@ export default function Accounting() {
       </div>
 
       {/* Revenue vs Cost Chart */}
-      <Card className="p-5 mb-8">
+      <Card className="p-4 sm:p-5 mb-6 sm:mb-8">
         <h3 className="font-display font-semibold text-foreground mb-4">Revenue vs Cost of Goods</h3>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
