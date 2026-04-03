@@ -2,37 +2,43 @@ import type { Company, User, Product, Supplier, Customer, Invoice, InventoryMove
 
 export const STRIPE_PRICES = {
   starter: {
-    gbp: "price_1T7eFYGB56wrZn9RoOoNEZiW", // £5/mo
+    monthly: "price_1THytsGB56wrZn9R5V78l3lA",
+    annual: "price_1THyukGB56wrZn9RmJxC8huP",
   },
   growth: {
-    gbp: "price_1T7eFZGB56wrZn9RmwJTpRCI", // £12/mo
+    monthly: "price_1THyttGB56wrZn9RY3BmR1tU",
+    annual: "price_1THyvAGB56wrZn9RtQxwrHmw",
   },
   pro: {
-    gbp: "price_1T7eFaGB56wrZn9R9wCI4g7o", // £25/mo
+    monthly: "price_1THytuGB56wrZn9RI6cLF8YC",
+    annual: "price_1THyvoGB56wrZn9RmptVm4E0",
   },
 } as const;
 
 export const STRIPE_PRODUCTS = {
-  starter: "prod_U5pvfaoKTFT1LL",
-  growth: "prod_U5pv34xjesA8Qj",
-  pro: "prod_U5pvGcCZdYGpGc",
+  starter: "prod_UGVv3rDBxqXHc1",
+  growth: "prod_UGVvOTV3HZmlOO",
+  pro: "prod_UGVvG4c88bv2kE",
 } as const;
 
 export const PLANS: PlanConfig[] = [
   {
-    name: 'Starter', tier: 'starter', maxProducts: 200, maxUsers: 1,
-    price: { GBP: 500, NGN: 250000 },
-    features: ['Up to 200 products', '1 user', 'Basic inventory', 'POS cashier system', 'Low stock alerts', 'Basic dashboard'],
+    name: 'Starter', tier: 'starter', maxProducts: 500, maxUsers: 2,
+    price: { GBP: 1900, NGN: 950000 },
+    annualPrice: { GBP: 1500, NGN: 750000 },
+    features: ['Up to 500 products', '2 users', 'Basic inventory', 'POS cashier system', 'Low stock alerts', 'Basic dashboard', 'Subdomain included'],
   },
   {
-    name: 'Growth', tier: 'growth', maxProducts: 2000, maxUsers: 3,
-    price: { GBP: 1200, NGN: 600000 },
-    features: ['Up to 2,000 products', '3 staff users', 'Barcode generation', 'Invoicing + reminders', 'Supplier management', 'Analytics dashboard', 'Customer database', 'Reorder suggestions'],
+    name: 'Growth', tier: 'growth', maxProducts: Infinity, maxUsers: 8,
+    price: { GBP: 3900, NGN: 1950000 },
+    annualPrice: { GBP: 3100, NGN: 1550000 },
+    features: ['Unlimited products', '8 users', 'Multi-location', 'Expiry alerts', 'AI insights', 'Barcode generation', 'Invoicing + reminders', 'Analytics dashboard'],
   },
   {
     name: 'Pro', tier: 'pro', maxProducts: Infinity, maxUsers: Infinity,
-    price: { GBP: 2500, NGN: 1200000 },
-    features: ['Unlimited products', 'Unlimited staff', 'Multi-branch support', 'Supplier price intelligence', 'Advanced analytics', 'Custom domain', 'Payment gateway integrations', 'Priority alerts'],
+    price: { GBP: 7900, NGN: 3950000 },
+    annualPrice: { GBP: 6300, NGN: 3150000 },
+    features: ['Unlimited products', 'Unlimited users', 'Multi-warehouse', 'AI forecasting', 'Full automation', 'Custom domains', 'Priority support', 'Advanced analytics'],
   },
 ];
 

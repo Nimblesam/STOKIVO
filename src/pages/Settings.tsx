@@ -14,17 +14,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, Plus, UserPlus, ShieldCheck, Warehouse,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2,
 } from "lucide-react";
 import { WarehouseManager } from "@/components/WarehouseManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { StatusBadge } from "@/components/StatusBadge";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
 export default function Settings() {
   const { company, profile, user, refreshProfile } = useAuth();
+  const { currentPlan, isPro } = usePlanFeatures();
   const currency = (company?.currency || "GBP") as Currency;
   const [saving, setSaving] = useState(false);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
@@ -33,16 +36,19 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
   const [inviting, setInviting] = useState(false);
+  const [billingAnnual, setBillingAnnual] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
     connected: boolean; charges_enabled?: boolean; payouts_enabled?: boolean; details_submitted?: boolean;
   } | null>(null);
   const [loadingStripeStatus, setLoadingStripeStatus] = useState(false);
   const [companyForm, setCompanyForm] = useState({
     name: "", address: "", country: "", currency: "GBP", brand_color: "#0d9488",
-    business_type: "wholesale", company_number: "", phone: "", email: "", custom_domain: "",
+    business_type: "wholesale", company_number: "", phone: "", email: "",
+    custom_domain: "", subdomain: "",
   });
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const isPro = company?.plan === "pro";
+  const [domainStep, setDomainStep] = useState<"input" | "dns" | "verifying">("input");
+  const [copiedRecord, setCopiedRecord] = useState<string | null>(null);
 
   useEffect(() => {
     if (company) {
@@ -54,6 +60,7 @@ export default function Settings() {
             business_type: data.business_type || "wholesale",
             company_number: (data as any).company_number || "", phone: (data as any).phone || "",
             email: (data as any).email || "", custom_domain: (data as any).custom_domain || "",
+            subdomain: (data as any).subdomain || "",
           });
         }
       });
@@ -70,22 +77,15 @@ export default function Settings() {
     }
   }, [company]);
 
-  // Fetch Stripe Connect status
   useEffect(() => {
     if (!company) return;
     setLoadingStripeStatus(true);
     supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
-      if (error) {
-        toast.error(error.message || "Failed to check Stripe status");
-        setStripeStatus(null);
-      } else if (data) {
-        setStripeStatus(data);
-      }
+      if (error) { setStripeStatus(null); } else if (data) { setStripeStatus(data); }
       setLoadingStripeStatus(false);
     });
   }, [company]);
 
-  // Handle Stripe redirect return
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("stripe_connected") === "true") {
@@ -119,60 +119,48 @@ export default function Settings() {
     else {
       toast.success("Company details saved!");
       await refreshProfile();
-      // Apply brand color to CSS
       document.documentElement.style.setProperty("--brand-color", companyForm.brand_color);
     }
   };
 
-  const handleSaveDomain = async () => {
+  const handleSaveCustomDomain = async () => {
     if (!company || !isPro) return;
     setSaving(true);
     const { error } = await supabase.from("companies")
       .update({ custom_domain: companyForm.custom_domain || null } as any).eq("id", company.id);
     setSaving(false);
     if (error) toast.error(error.message);
-    else toast.success("Subdomain saved!");
+    else {
+      toast.success("Custom domain saved!");
+      setDomainStep("dns");
+    }
   };
 
   const handleInviteUser = async () => {
     const email = inviteEmail.trim().toLowerCase();
-    if (!email) {
-      toast.error("Email is required");
-      return;
-    }
-    const emailErr = validateEmail(email) ? null : null;
-    // Basic email format check
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address"); return;
     }
     if (!company) return;
-
     setInviting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("team-invite", {
-        body: { email, role: inviteRole },
-      });
+      const { data, error } = await supabase.functions.invoke("team-invite", { body: { email, role: inviteRole } });
       if (error) throw error;
-
       toast.success("Invitation email sent", {
         description: data?.mode === "magiclink"
           ? "They'll receive a sign-in link and be added to your team automatically."
           : "They'll receive an invite email to join your workspace.",
         duration: 6000,
       });
-
-      setShowInvite(false);
-      setInviteEmail("");
+      setShowInvite(false); setInviteEmail("");
     } catch (err: any) {
       toast.error(err?.context?.error || err.message || "Failed to send invitation");
-    } finally {
-      setInviting(false);
-    }
+    } finally { setInviting(false); }
   };
 
   const handleSubscribe = async (tier: string) => {
-    const priceId = STRIPE_PRICES[tier as keyof typeof STRIPE_PRICES]?.gbp;
+    const prices = STRIPE_PRICES[tier as keyof typeof STRIPE_PRICES];
+    const priceId = billingAnnual ? prices?.annual : prices?.monthly;
     if (!priceId) { toast.error("Price not configured for this plan."); return; }
     setCheckingOut(tier);
     try {
@@ -195,7 +183,14 @@ export default function Settings() {
     } finally { setManagingPortal(false); }
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedRecord(label);
+    setTimeout(() => setCopiedRecord(null), 2000);
+  };
+
   const planIcons = { starter: Zap, growth: Star, pro: Crown };
+  const subdomain = companyForm.subdomain || companyForm.name?.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -257,9 +252,7 @@ export default function Settings() {
               <div>
                 <Label>Brand Color</Label>
                 <div className="flex gap-2 mt-1">
-                  <div className="relative">
-                    <Input type="color" value={companyForm.brand_color} onChange={(e) => setCompanyForm({ ...companyForm, brand_color: e.target.value })} className="w-12 h-10 p-1 cursor-pointer border-2" />
-                  </div>
+                  <Input type="color" value={companyForm.brand_color} onChange={(e) => setCompanyForm({ ...companyForm, brand_color: e.target.value })} className="w-12 h-10 p-1 cursor-pointer border-2" />
                   <Input value={companyForm.brand_color} onChange={(e) => setCompanyForm({ ...companyForm, brand_color: e.target.value })} className="flex-1" />
                   <div className="h-10 w-10 rounded-md border" style={{ backgroundColor: companyForm.brand_color }} />
                 </div>
@@ -334,7 +327,6 @@ export default function Settings() {
                 }}
               />
             </div>
-
             <div className="stokivo-card p-6">
               <h3 className="font-display font-semibold text-foreground mb-4">Payment Fee Example</h3>
               <div className="space-y-2 text-sm">
@@ -342,7 +334,7 @@ export default function Settings() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Stripe processing fee (~1.4%)</span><span className="text-destructive">-£1.40</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Platform fee (0.5%)</span><span className="text-destructive">-£0.50</span></div>
                 <Separator />
-                <div className="flex justify-between font-bold"><span>You receive</span><span className="text-success">£98.10</span></div>
+                <div className="flex justify-between font-bold"><span>You receive</span><span className="text-green-600">£98.10</span></div>
               </div>
             </div>
           </div>
@@ -350,29 +342,120 @@ export default function Settings() {
 
         {/* DOMAIN TAB */}
         <TabsContent value="domain">
-          <div className="stokivo-card p-6 space-y-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Globe className="h-5 w-5 text-accent" />
-              <div>
-                <h3 className="font-display font-semibold text-foreground">Custom Subdomain</h3>
-                <p className="text-sm text-muted-foreground">{isPro ? "Set a custom subdomain for your workspace" : "Upgrade to Pro to unlock custom subdomains"}</p>
+          <div className="space-y-6">
+            {/* Auto subdomain - all plans */}
+            <div className="stokivo-card p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Globe className="h-5 w-5 text-accent" />
+                <div>
+                  <h3 className="font-display font-semibold text-foreground">Your Stokivo Subdomain</h3>
+                  <p className="text-sm text-muted-foreground">Available on all plans — automatically generated from your business name</p>
+                </div>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{subdomain}.stokivo.com</p>
+                  <p className="text-xs text-muted-foreground mt-1">This is your default store URL</p>
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => copyToClipboard(`${subdomain}.stokivo.com`, "subdomain")}>
+                  {copiedRecord === "subdomain" ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedRecord === "subdomain" ? "Copied" : "Copy"}
+                </Button>
               </div>
             </div>
-            {!isPro && (
-              <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 text-sm text-warning-foreground">
-                <strong>Pro plan required.</strong> Custom subdomains are only available on the Pro plan.
+
+            {/* Custom domain - Pro only */}
+            <div className="stokivo-card p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Crown className="h-5 w-5 text-amber-500" />
+                <div>
+                  <h3 className="font-display font-semibold text-foreground">Custom Domain</h3>
+                  <p className="text-sm text-muted-foreground">Connect your own domain (Pro plan only)</p>
+                </div>
+                <Badge variant={isPro ? "default" : "secondary"} className="ml-auto">{isPro ? "Available" : "Pro Only"}</Badge>
               </div>
-            )}
-            <div>
-              <Label>Subdomain</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input value={companyForm.custom_domain} onChange={(e) => setCompanyForm({ ...companyForm, custom_domain: e.target.value })} placeholder="your-business" className="flex-1" disabled={!isPro} />
-                <span className="text-sm text-muted-foreground whitespace-nowrap"><span className="text-sm text-muted-foreground whitespace-nowrap">.stokivo.app</span></span>
-              </div>
+
+              {!isPro && (
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Upgrade to Pro to use custom domains</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Custom domains let you use your own domain like freshmart.com</p>
+                    <Button size="sm" className="mt-3" onClick={() => handleSubscribe("pro")}>Upgrade to Pro</Button>
+                  </div>
+                </div>
+              )}
+
+              {isPro && (
+                <>
+                  {domainStep === "input" && (
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Domain Name</Label>
+                        <Input
+                          value={companyForm.custom_domain}
+                          onChange={(e) => setCompanyForm({ ...companyForm, custom_domain: e.target.value })}
+                          placeholder="e.g. freshmart.com or shop.freshmart.com"
+                          className="mt-1"
+                        />
+                      </div>
+                      <Button onClick={handleSaveCustomDomain} disabled={saving || !companyForm.custom_domain} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2">
+                        {saving && <Loader2 className="h-4 w-4 animate-spin" />} Connect Domain
+                      </Button>
+                    </div>
+                  )}
+
+                  {domainStep === "dns" && companyForm.custom_domain && (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">Add these DNS records at your domain registrar:</p>
+                        <div className="space-y-3">
+                          <div className="bg-background rounded p-3 text-xs font-mono space-y-1">
+                            <p className="text-muted-foreground">TXT Record (Verification)</p>
+                            <div className="flex items-center justify-between">
+                              <span>Name: <strong>_stokivo</strong> → Value: <strong>verify={company?.id?.slice(0, 8)}</strong></span>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard(`verify=${company?.id?.slice(0, 8)}`, "txt")}>
+                                {copiedRecord === "txt" ? <CheckCircle2 className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="bg-background rounded p-3 text-xs font-mono space-y-1">
+                            <p className="text-muted-foreground">CNAME Record</p>
+                            <div className="flex items-center justify-between">
+                              <span>Name: <strong>@</strong> → Value: <strong>app.stokivo.com</strong></span>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard("app.stokivo.com", "cname")}>
+                                {copiedRecord === "cname" ? <CheckCircle2 className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setDomainStep("input")}>Back</Button>
+                        <Button onClick={() => { setDomainStep("verifying"); toast.success("Domain verification started — this may take up to 24 hours."); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                          I've Added the Records
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {domainStep === "verifying" && (
+                    <div className="bg-muted/50 rounded-lg p-6 text-center space-y-2">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-accent" />
+                      <p className="text-sm font-medium text-foreground">Verifying {companyForm.custom_domain}…</p>
+                      <p className="text-xs text-muted-foreground">DNS propagation can take up to 24 hours</p>
+                      <Button variant="outline" size="sm" className="mt-3" onClick={() => setDomainStep("input")}>Change Domain</Button>
+                    </div>
+                  )}
+
+                  {companyForm.custom_domain && (
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Priority: Custom domain → Stokivo subdomain ({subdomain}.stokivo.com)
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-            <Button onClick={handleSaveDomain} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving || !isPro}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save Subdomain
-            </Button>
           </div>
         </TabsContent>
 
@@ -384,8 +467,8 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5 text-accent" />
                   <div>
-                    <h3 className="font-display font-semibold text-foreground">Current Plan: <span className="text-accent">{(company?.plan || "starter").toUpperCase()}</span></h3>
-                    <p className="text-sm text-muted-foreground">Your plan renews monthly</p>
+                    <h3 className="font-display font-semibold text-foreground">Current Plan: <span className="text-accent">{currentPlan.toUpperCase()}</span></h3>
+                    <p className="text-sm text-muted-foreground">Your plan renews {billingAnnual ? "annually" : "monthly"}</p>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" className="gap-2" onClick={handleManageSubscription} disabled={managingPortal}>
@@ -395,11 +478,22 @@ export default function Settings() {
               </div>
             </div>
 
+            {/* Billing toggle */}
+            <div className="flex items-center justify-center gap-3">
+              <span className={`text-sm font-medium ${!billingAnnual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
+              <Switch checked={billingAnnual} onCheckedChange={setBillingAnnual} />
+              <span className={`text-sm font-medium ${billingAnnual ? "text-foreground" : "text-muted-foreground"}`}>Annual</span>
+              {billingAnnual && <Badge variant="secondary" className="text-green-600 bg-green-50 dark:bg-green-950/30">Save ~20%</Badge>}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {PLANS.map((plan) => {
-                const isCurrent = plan.tier === (company?.plan || "starter");
+                const isCurrent = plan.tier === currentPlan;
                 const Icon = planIcons[plan.tier as keyof typeof planIcons] || Zap;
                 const isPopular = plan.tier === "growth";
+                const displayPrice = billingAnnual && plan.annualPrice
+                  ? plan.annualPrice[currency] || plan.annualPrice["GBP"]
+                  : plan.price[currency] || plan.price["GBP"];
                 return (
                   <div key={plan.tier} className={`stokivo-card p-6 relative ${isCurrent ? "border-accent border-2" : ""} ${isPopular ? "ring-2 ring-accent/20" : ""}`}>
                     {isPopular && <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">Most Popular</Badge>}
@@ -409,9 +503,14 @@ export default function Settings() {
                       <h4 className="font-display font-bold text-lg text-foreground">{plan.name}</h4>
                     </div>
                     <p className="text-3xl font-display font-bold text-foreground">
-                      {formatMoney(plan.price[currency] || plan.price["GBP"], currency)}
+                      {formatMoney(displayPrice, currency)}
                       <span className="text-sm font-normal text-muted-foreground">/mo</span>
                     </p>
+                    {billingAnnual && plan.annualPrice && (
+                      <p className="text-xs text-muted-foreground mt-1 line-through">
+                        {formatMoney(plan.price[currency] || plan.price["GBP"], currency)}/mo
+                      </p>
+                    )}
                     <ul className="mt-4 space-y-2">
                       {plan.features.map((f) => (
                         <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">

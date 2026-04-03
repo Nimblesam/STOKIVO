@@ -1,0 +1,53 @@
+import { useAuth } from "@/contexts/AuthContext";
+import type { PlanTier } from "@/lib/types";
+
+const PLAN_HIERARCHY: Record<PlanTier, number> = {
+  starter: 0,
+  growth: 1,
+  pro: 2,
+};
+
+export type Feature =
+  | "multi_location"
+  | "expiry_alerts"
+  | "ai_insights"
+  | "ai_forecasting"
+  | "custom_domain"
+  | "multi_warehouse"
+  | "full_automation"
+  | "advanced_analytics"
+  | "barcode_generation"
+  | "invoicing"
+  | "supplier_management";
+
+const FEATURE_MIN_PLAN: Record<Feature, PlanTier> = {
+  multi_location: "growth",
+  expiry_alerts: "growth",
+  ai_insights: "growth",
+  barcode_generation: "growth",
+  invoicing: "growth",
+  supplier_management: "growth",
+  ai_forecasting: "pro",
+  custom_domain: "pro",
+  multi_warehouse: "pro",
+  full_automation: "pro",
+  advanced_analytics: "pro",
+};
+
+export function usePlanFeatures() {
+  const { company } = useAuth();
+  const currentPlan: PlanTier = (company?.plan as PlanTier) || "starter";
+  const currentLevel = PLAN_HIERARCHY[currentPlan];
+
+  const hasFeature = (feature: Feature): boolean => {
+    const requiredPlan = FEATURE_MIN_PLAN[feature];
+    return currentLevel >= PLAN_HIERARCHY[requiredPlan];
+  };
+
+  const requiredPlanFor = (feature: Feature): PlanTier => FEATURE_MIN_PLAN[feature];
+
+  const isPro = currentPlan === "pro";
+  const isGrowthOrAbove = currentLevel >= 1;
+
+  return { currentPlan, hasFeature, requiredPlanFor, isPro, isGrowthOrAbove };
+}
