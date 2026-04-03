@@ -61,3 +61,15 @@ export function validatePassword(value: string): { valid: boolean; results: Reco
   }
   return { valid: Object.values(results).every(Boolean), results };
 }
+
+export type PasswordStrength = "weak" | "medium" | "strong";
+
+export function getPasswordStrength(value: string): { strength: PasswordStrength; percent: number; passed: number } {
+  const { results } = validatePassword(value);
+  const passed = Object.values(results).filter(Boolean).length;
+  const total = PASSWORD_RULES.length;
+
+  if (passed <= 2) return { strength: "weak", percent: Math.round((passed / total) * 100), passed };
+  if (passed <= 4) return { strength: "medium", percent: Math.round((passed / total) * 100), passed };
+  return { strength: "strong", percent: 100, passed };
+}
