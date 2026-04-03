@@ -26,8 +26,10 @@ import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
 export default function Settings() {
-  const { company, profile, user, refreshProfile } = useAuth();
+  const { company, profile, user, refreshProfile, role } = useAuth();
   const { currentPlan, isPro } = usePlanFeatures();
+  const isOwner = role === "owner";
+  const isManager = role === "manager";
   const currency = (company?.currency || "GBP") as Currency;
   const [saving, setSaving] = useState(false);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
