@@ -407,13 +407,12 @@ export default function Landing() {
             {/* Billing toggle — fixed */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8">
               <span className={`text-sm font-medium transition-colors ${!annual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
-              <button
-                onClick={() => setAnnual(!annual)}
-                className={`relative h-8 w-14 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${annual ? "bg-primary" : "bg-muted-foreground/30"}`}
+              <Switch
+                checked={annual}
+                onCheckedChange={setAnnual}
                 aria-label="Toggle annual billing"
-              >
-                <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-transform duration-200 ${annual ? "translate-x-7" : "translate-x-1"}`} />
-              </button>
+                className="data-[state=checked]:bg-primary"
+              />
               <span className={`text-sm font-medium transition-colors ${annual ? "text-foreground" : "text-muted-foreground"}`}>
                 Annual
               </span>
