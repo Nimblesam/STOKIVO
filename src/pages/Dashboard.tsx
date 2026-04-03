@@ -126,8 +126,8 @@ export default function Dashboard() {
         <KPICard title="Price Changes" value={String(priceChangeCount)} icon={<TrendingDown className="h-4 w-4" />} variant={priceChangeCount > 0 ? "warning" : "default"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 stokivo-card p-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="lg:col-span-2 stokivo-card p-4 sm:p-5">
           <h3 className="font-display font-semibold text-foreground mb-4">Revenue Trend</h3>
           {salesData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
