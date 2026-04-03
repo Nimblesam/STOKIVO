@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package } from "lucide-react";
+import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package, Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -219,19 +219,26 @@ export default function Suppliers() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs"
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs"
+                    disabled={!supplier.phone}
                     onClick={() => { if (supplier.phone) window.open(`tel:${supplier.phone}`); }}>
                     <Phone className="h-3 w-3" /> Call
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs text-success border-success/20 hover:bg-success/5"
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs text-success border-success/20 hover:bg-success/5"
+                    disabled={!supplier.whatsapp && !supplier.phone}
                     onClick={() => {
                       const num = supplier.whatsapp || supplier.phone;
                       if (num) window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}`);
                     }}>
                     <MessageCircle className="h-3 w-3" /> WhatsApp
                   </Button>
-                  <Button size="sm" className="flex-1 gap-1.5 text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs"
+                    disabled={!supplier.email}
+                    onClick={() => { if (supplier.email) window.open(`mailto:${supplier.email}?subject=Order Inquiry - ${company?.name || ""}`); }}>
+                    <Mail className="h-3 w-3" /> Email
+                  </Button>
+                  <Button size="sm" className="gap-1.5 text-xs bg-accent text-accent-foreground hover:bg-accent/90"
                     onClick={() => handleReorder(supplier)}>
                     <RefreshCw className="h-3 w-3" /> Re-order
                   </Button>

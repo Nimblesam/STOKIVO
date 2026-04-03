@@ -19,14 +19,14 @@ export function KPICard({ title, value, subtitle, icon, trend, variant = "defaul
   };
 
   return (
-    <div className={cn("stokivo-card p-5", variantStyles[variant])}>
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
-        <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+    <div className={cn("stokivo-card p-3 sm:p-5", variantStyles[variant])}>
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
+        <span className="text-xs sm:text-sm font-medium text-muted-foreground leading-tight">{title}</span>
+        <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0 ml-2">
           {icon}
         </div>
       </div>
-      <p className="text-2xl font-display font-bold text-foreground">{value}</p>
+      <p className="text-lg sm:text-2xl font-display font-bold text-foreground">{value}</p>
       <div className="flex items-center gap-2 mt-1">
         {trend && (
           <span

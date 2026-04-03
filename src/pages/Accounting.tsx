@@ -146,7 +146,7 @@ export default function Accounting() {
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Card className="p-5">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -198,14 +198,14 @@ export default function Accounting() {
       </div>
 
       {/* Revenue vs Cost Chart */}
-      <Card className="p-5 mb-8">
+      <Card className="p-4 sm:p-5 mb-6 sm:mb-8">
         <h3 className="font-display font-semibold text-foreground mb-4">Revenue vs Cost of Goods</h3>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(215,20%,90%)" />
-              <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="hsl(215,15%,50%)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} />
+              <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} width={65} />
               <Tooltip formatter={(v: number) => formatMoney(v, currency)} />
               <Legend />
               <Bar dataKey="revenue" name="Revenue" fill="hsl(170,60%,40%)" radius={[3, 3, 0, 0]} />

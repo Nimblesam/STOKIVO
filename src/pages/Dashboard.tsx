@@ -117,7 +117,7 @@ export default function Dashboard() {
       <DailyEarningsSummary />
       <SmartSuggestions />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <KPICard title="Stock Value" value={formatMoney(totalStockValue, currency)} icon={<Package className="h-4 w-4" />} subtitle={`${products.length} products`} />
         <KPICard title="Sales Revenue" value={formatMoney(monthlyRevenue, currency)} icon={<TrendingUp className="h-4 w-4" />} subtitle={`${sales.length} sales`} />
         <KPICard title="Profit Margin" value={`${avgMargin.toFixed(1)}%`} icon={<DollarSign className="h-4 w-4" />} variant="success" />
@@ -126,15 +126,15 @@ export default function Dashboard() {
         <KPICard title="Price Changes" value={String(priceChangeCount)} icon={<TrendingDown className="h-4 w-4" />} variant={priceChangeCount > 0 ? "warning" : "default"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 stokivo-card p-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="lg:col-span-2 stokivo-card p-4 sm:p-5">
           <h3 className="font-display font-semibold text-foreground mb-4">Revenue Trend</h3>
           {salesData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={salesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(215,20%,90%)" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(215,15%,50%)" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} width={65} />
                 <Tooltip formatter={(v: number) => formatMoney(v, currency)} />
                 <Bar dataKey="revenue" fill="hsl(170,60%,40%)" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -144,7 +144,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="stokivo-card p-5">
+        <div className="stokivo-card p-4 sm:p-5">
           <h3 className="font-display font-semibold text-foreground mb-4">Products by Category</h3>
           {categoryData.length > 0 ? (
             <>
@@ -171,7 +171,7 @@ export default function Dashboard() {
       </div>
 
       {/* Reorder Suggestions + Critical Stock + Credit */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
@@ -252,7 +252,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Invoices + Active Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground">Recent Invoices</h3>
