@@ -144,7 +144,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="stokivo-card p-5">
+        <div className="stokivo-card p-4 sm:p-5">
           <h3 className="font-display font-semibold text-foreground mb-4">Products by Category</h3>
           {categoryData.length > 0 ? (
             <>
