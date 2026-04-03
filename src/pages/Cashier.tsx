@@ -410,7 +410,25 @@ export default function Cashier() {
                 <Package className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No products found</p>
               </div>
             )}
-            {products.length === 0 && searchQuery.length === 0 && (
+            {products.length === 0 && searchQuery.length === 0 && bestSellers.length > 0 && (
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Star className="h-4 w-4" /> Best Sellers — Quick Add
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {bestSellers.map((p) => (
+                    <button key={p.id} onClick={() => addToCart(p)}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-lg border border-dashed border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-colors text-center group">
+                      <Package className="h-5 w-5 text-primary/60 group-hover:text-primary transition-colors" />
+                      <p className="font-medium text-xs leading-tight truncate w-full">{p.name}</p>
+                      <p className="text-xs font-semibold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">Click any product to add to cart instantly</p>
+              </div>
+            )}
+            {products.length === 0 && searchQuery.length === 0 && bestSellers.length === 0 && (
               <div className="p-8 text-center text-muted-foreground">
                 <ScanBarcode className="h-10 w-10 mx-auto mb-2 opacity-40" />
                 <p className="font-medium">Ready to scan</p>
