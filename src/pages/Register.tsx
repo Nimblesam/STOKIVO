@@ -20,6 +20,7 @@ export default function Register() {
   });
 
   const pwCheck = validatePassword(form.password);
+  const pwStrength = getPasswordStrength(form.password);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
