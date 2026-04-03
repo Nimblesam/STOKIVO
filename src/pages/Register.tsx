@@ -123,17 +123,36 @@ export default function Register() {
               <Label htmlFor="password">Password *</Label>
               <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Create a strong password" className="mt-1" />
               {form.password.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {PASSWORD_RULES.map((rule) => {
-                    const passed = pwCheck.results[rule.key];
-                    return (
-                      <li key={rule.key} className={`flex items-center gap-1.5 text-xs ${passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-                        {passed ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                        {rule.label}
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Progress
+                      value={pwStrength.percent}
+                      className={`h-2 flex-1 ${
+                        pwStrength.strength === "weak" ? "[&>div]:bg-destructive" :
+                        pwStrength.strength === "medium" ? "[&>div]:bg-yellow-500" :
+                        "[&>div]:bg-green-500"
+                      }`}
+                    />
+                    <span className={`text-xs font-medium capitalize ${
+                      pwStrength.strength === "weak" ? "text-destructive" :
+                      pwStrength.strength === "medium" ? "text-yellow-600 dark:text-yellow-400" :
+                      "text-green-600 dark:text-green-400"
+                    }`}>
+                      {pwStrength.strength}
+                    </span>
+                  </div>
+                  <ul className="space-y-1">
+                    {PASSWORD_RULES.map((rule) => {
+                      const passed = pwCheck.results[rule.key];
+                      return (
+                        <li key={rule.key} className={`flex items-center gap-1.5 text-xs ${passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                          {passed ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          {rule.label}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               )}
             </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={loading || !pwCheck.valid}>
