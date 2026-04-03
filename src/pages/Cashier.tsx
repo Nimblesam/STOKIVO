@@ -57,6 +57,7 @@ export default function Cashier() {
   const [completedSale, setCompletedSale] = useState<SaleRecord | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [bestSellers, setBestSellers] = useState<any[]>([]);
   const scanRef = useRef<HTMLInputElement>(null);
 
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
@@ -65,6 +66,43 @@ export default function Cashier() {
   const grandTotal = subtotal - discount + tax;
 
   useEffect(() => { scanRef.current?.focus(); }, [cart]);
+
+  // Load best sellers on mount
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    const loadBestSellers = async () => {
+      const { data: saleItems } = await supabase
+        .from("sale_items")
+        .select("product_id, product_name, qty, sale_id, sales!inner(company_id)")
+        .eq("sales.company_id", profile.company_id!);
+      if (!saleItems || saleItems.length === 0) return;
+
+      // Aggregate qty by product_id
+      const totals = new Map<string, { id: string; name: string; totalQty: number }>();
+      saleItems.forEach((si: any) => {
+        if (!si.product_id) return;
+        const existing = totals.get(si.product_id);
+        if (existing) { existing.totalQty += si.qty; }
+        else { totals.set(si.product_id, { id: si.product_id, name: si.product_name, totalQty: si.qty }); }
+      });
+
+      const topIds = [...totals.values()].sort((a, b) => b.totalQty - a.totalQty).slice(0, 12);
+      if (topIds.length === 0) return;
+
+      // Fetch current prices & stock for those products
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty, sku")
+        .in("id", topIds.map((t) => t.id));
+      if (!prods) return;
+
+      // Sort by sales volume
+      const prodMap = new Map(prods.map((p) => [p.id, p]));
+      const sorted = topIds.map((t) => prodMap.get(t.id)).filter(Boolean);
+      setBestSellers(sorted);
+    };
+    loadBestSellers();
+  }, [profile?.company_id]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
