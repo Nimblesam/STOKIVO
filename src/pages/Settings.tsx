@@ -15,8 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, Plus, UserPlus,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, Plus, UserPlus, ShieldCheck, Warehouse,
 } from "lucide-react";
+import { WarehouseManager } from "@/components/WarehouseManager";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
