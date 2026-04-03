@@ -133,8 +133,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={salesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(215,20%,90%)" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(215,15%,50%)" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,15%,50%)" tickFormatter={(v) => formatMoney(v, currency)} width={65} />
                 <Tooltip formatter={(v: number) => formatMoney(v, currency)} />
                 <Bar dataKey="revenue" fill="hsl(170,60%,40%)" radius={[4, 4, 0, 0]} />
               </BarChart>
