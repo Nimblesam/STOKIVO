@@ -252,7 +252,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Invoices + Active Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div className="stokivo-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-foreground">Recent Invoices</h3>
