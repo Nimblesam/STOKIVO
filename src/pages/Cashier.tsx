@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   ScanBarcode, ShoppingCart, Plus, Minus, X, CreditCard, Banknote,
-  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw,
+  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, Star,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
@@ -57,6 +57,7 @@ export default function Cashier() {
   const [completedSale, setCompletedSale] = useState<SaleRecord | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [bestSellers, setBestSellers] = useState<any[]>([]);
   const scanRef = useRef<HTMLInputElement>(null);
 
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
@@ -65,6 +66,43 @@ export default function Cashier() {
   const grandTotal = subtotal - discount + tax;
 
   useEffect(() => { scanRef.current?.focus(); }, [cart]);
+
+  // Load best sellers on mount
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    const loadBestSellers = async () => {
+      const { data: saleItems } = await supabase
+        .from("sale_items")
+        .select("product_id, product_name, qty, sale_id, sales!inner(company_id)")
+        .eq("sales.company_id", profile.company_id!);
+      if (!saleItems || saleItems.length === 0) return;
+
+      // Aggregate qty by product_id
+      const totals = new Map<string, { id: string; name: string; totalQty: number }>();
+      saleItems.forEach((si: any) => {
+        if (!si.product_id) return;
+        const existing = totals.get(si.product_id);
+        if (existing) { existing.totalQty += si.qty; }
+        else { totals.set(si.product_id, { id: si.product_id, name: si.product_name, totalQty: si.qty }); }
+      });
+
+      const topIds = [...totals.values()].sort((a, b) => b.totalQty - a.totalQty).slice(0, 12);
+      if (topIds.length === 0) return;
+
+      // Fetch current prices & stock for those products
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty, sku")
+        .in("id", topIds.map((t) => t.id));
+      if (!prods) return;
+
+      // Sort by sales volume
+      const prodMap = new Map(prods.map((p) => [p.id, p]));
+      const sorted = topIds.map((t) => prodMap.get(t.id)).filter(Boolean);
+      setBestSellers(sorted);
+    };
+    loadBestSellers();
+  }, [profile?.company_id]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -372,7 +410,25 @@ export default function Cashier() {
                 <Package className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No products found</p>
               </div>
             )}
-            {products.length === 0 && searchQuery.length === 0 && (
+            {products.length === 0 && searchQuery.length === 0 && bestSellers.length > 0 && (
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Star className="h-4 w-4" /> Best Sellers — Quick Add
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {bestSellers.map((p) => (
+                    <button key={p.id} onClick={() => addToCart(p)}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-lg border border-dashed border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-colors text-center group">
+                      <Package className="h-5 w-5 text-primary/60 group-hover:text-primary transition-colors" />
+                      <p className="font-medium text-xs leading-tight truncate w-full">{p.name}</p>
+                      <p className="text-xs font-semibold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">Click any product to add to cart instantly</p>
+              </div>
+            )}
+            {products.length === 0 && searchQuery.length === 0 && bestSellers.length === 0 && (
               <div className="p-8 text-center text-muted-foreground">
                 <ScanBarcode className="h-10 w-10 mx-auto mb-2 opacity-40" />
                 <p className="font-medium">Ready to scan</p>
