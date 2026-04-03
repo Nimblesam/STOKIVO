@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package } from "lucide-react";
+import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash2, RefreshCw, Package, Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
