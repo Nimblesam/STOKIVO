@@ -12,30 +12,42 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
-const mainNav = [
+type AppRole = "owner" | "manager" | "staff";
+
+interface NavItem {
+  title: string;
+  url: string;
+  icon: any;
+  roles?: AppRole[]; // if omitted, visible to all roles
+}
+
+const mainNav: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Cashier (POS)", url: "/pos", icon: ScanBarcode },
   { title: "Products", url: "/products", icon: Package },
   { title: "Stock Movements", url: "/inventory/movements", icon: ArrowLeftRight },
-  { title: "Suppliers", url: "/suppliers", icon: Truck },
-  { title: "Customers", url: "/customers", icon: Users },
-  { title: "Invoices", url: "/invoices", icon: FileText },
-  { title: "Credit Ledger", url: "/credit-ledger", icon: CreditCard },
-  { title: "Payouts", url: "/payouts", icon: Banknote },
+  { title: "Suppliers", url: "/suppliers", icon: Truck, roles: ["owner", "manager"] },
+  { title: "Customers", url: "/customers", icon: Users, roles: ["owner", "manager"] },
+  { title: "Invoices", url: "/invoices", icon: FileText, roles: ["owner", "manager"] },
+  { title: "Credit Ledger", url: "/credit-ledger", icon: CreditCard, roles: ["owner", "manager"] },
+  { title: "Payouts", url: "/payouts", icon: Banknote, roles: ["owner"] },
 ];
 
-const alertNav = [
+const alertNav: NavItem[] = [
   { title: "Low Stock", url: "/alerts/low-stock", icon: AlertTriangle },
-  { title: "Price Changes", url: "/alerts/price-changes", icon: TrendingDown },
+  { title: "Price Changes", url: "/alerts/price-changes", icon: TrendingDown, roles: ["owner", "manager"] },
 ];
 
-const otherNav = [
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "AI Insights", url: "/ai-insights", icon: Brain },
-  { title: "Accounting", url: "/accounting", icon: Calculator },
-  { title: "Integrations", url: "/integrations", icon: Globe },
-  { title: "Settings", url: "/settings", icon: Settings },
+const otherNav: NavItem[] = [
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["owner", "manager"] },
+  { title: "AI Insights", url: "/ai-insights", icon: Brain, roles: ["owner", "manager"] },
+  { title: "Accounting", url: "/accounting", icon: Calculator, roles: ["owner", "manager"] },
+  { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"] },
+  { title: "Settings", url: "/settings", icon: Settings, roles: ["owner", "manager"] },
 ];
+
+const filterByRole = (items: NavItem[], userRole: string | null) =>
+  items.filter((item) => !item.roles || item.roles.includes((userRole || "staff") as AppRole));
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -71,7 +83,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map((item) => (
+              {filterByRole(mainNav, role).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink to={item.url} end={item.url === "/dashboard"} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
@@ -91,7 +103,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {alertNav.map((item) => (
+              {filterByRole(alertNav, role).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink to={item.url} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
@@ -109,7 +121,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">More</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {otherNav.map((item) => (
+              {filterByRole(otherNav, role).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink to={item.url} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">

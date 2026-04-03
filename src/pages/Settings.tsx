@@ -26,8 +26,10 @@ import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
 export default function Settings() {
-  const { company, profile, user, refreshProfile } = useAuth();
+  const { company, profile, user, refreshProfile, role } = useAuth();
   const { currentPlan, isPro } = usePlanFeatures();
+  const isOwner = role === "owner";
+  const isManager = role === "manager";
   const currency = (company?.currency || "GBP") as Currency;
   const [saving, setSaving] = useState(false);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
@@ -199,12 +201,12 @@ export default function Settings() {
       <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "company"} className="space-y-6">
         <TabsList className="bg-muted/50 flex flex-wrap">
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>
-          <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
-          <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>
+          {isOwner && <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>}
+          {(isOwner || isManager) && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
-          <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>
-          <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>
-          <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>
+          {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
+          {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
+          {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
         </TabsList>
 
         {/* COMPANY TAB */}
@@ -264,7 +266,8 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* TEAM TAB */}
+        {/* TEAM TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="team">
           <div className="stokivo-card p-6">
             <div className="flex items-center justify-between mb-6">
@@ -274,27 +277,70 @@ export default function Settings() {
               </Button>
             </div>
             <div className="space-y-3">
-              {teamMembers.map((member) => (
-                <div key={member.user_id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
-                  <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
-                    {member.name.split(" ").map((n: string) => n[0]).join("")}
+              {teamMembers.map((member) => {
+                const isSelf = member.user_id === user?.id;
+                return (
+                  <div key={member.user_id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
+                    <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
+                      {member.name.split(" ").map((n: string) => n[0]).join("")}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">{member.name}{isSelf ? " (You)" : ""}</p>
+                    </div>
+                    {!isSelf ? (
+                      <select
+                        value={member.role}
+                        onChange={async (e) => {
+                          const newRole = e.target.value;
+                          const { error } = await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", member.user_id).eq("company_id", company!.id);
+                          if (error) { toast.error(error.message); return; }
+                          setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, role: newRole } : m));
+                          toast.success(`Role updated to ${newRole}`);
+                        }}
+                        className="text-xs font-medium bg-muted px-2 py-1 rounded border border-input"
+                      >
+                        <option value="owner">Owner</option>
+                        <option value="manager">Manager</option>
+                        <option value="staff">Staff</option>
+                      </select>
+                    ) : (
+                      <span className="text-xs font-medium text-muted-foreground capitalize bg-muted px-2 py-1 rounded">{member.role}</span>
+                    )}
+                    {!isSelf ? (
+                      <Button
+                        variant={member.active ? "outline" : "default"}
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={async () => {
+                          const newActive = !member.active;
+                          const { error } = await supabase.from("user_roles").update({ active: newActive }).eq("user_id", member.user_id).eq("company_id", company!.id);
+                          if (error) { toast.error(error.message); return; }
+                          setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, active: newActive } : m));
+                          toast.success(newActive ? "Member activated" : "Member deactivated");
+                        }}
+                      >
+                        {member.active ? "Deactivate" : "Activate"}
+                      </Button>
+                    ) : (
+                      <StatusBadge status={member.active ? "active" : "inactive"} />
+                    )}
                   </div>
-                  <div className="flex-1"><p className="text-sm font-medium text-foreground">{member.name}</p></div>
-                  <span className="text-xs font-medium text-muted-foreground capitalize bg-muted px-2 py-1 rounded">{member.role}</span>
-                  <StatusBadge status={member.active ? "active" : "inactive"} />
-                </div>
-              ))}
+                );
+              })}
               {teamMembers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No team members found</p>}
             </div>
           </div>
         </TabsContent>
+        )}
 
         {/* WAREHOUSES TAB */}
+        {(isOwner || isManager) && (
         <TabsContent value="warehouses">
           <div className="stokivo-card p-6">
             <WarehouseManager />
           </div>
         </TabsContent>
+        )}
 
         {/* SECURITY TAB */}
         <TabsContent value="security">
@@ -303,7 +349,8 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* PAYMENTS TAB */}
+        {/* PAYMENTS TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="payments">
           <div className="space-y-6">
             <div className="stokivo-card p-6">
@@ -339,11 +386,12 @@ export default function Settings() {
             </div>
           </div>
         </TabsContent>
+        )}
 
-        {/* DOMAIN TAB */}
+        {/* DOMAIN TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="domain">
           <div className="space-y-6">
-            {/* Auto subdomain - all plans */}
             <div className="stokivo-card p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Globe className="h-5 w-5 text-accent" />
@@ -364,7 +412,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Custom domain - Pro only */}
             <div className="stokivo-card p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Crown className="h-5 w-5 text-amber-500" />
@@ -458,8 +505,10 @@ export default function Settings() {
             </div>
           </div>
         </TabsContent>
+        )}
 
-        {/* BILLING TAB */}
+        {/* BILLING TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="billing">
           <div className="space-y-6">
             <div className="stokivo-card p-6">
@@ -478,7 +527,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Billing toggle */}
             <div className="flex items-center justify-center gap-3">
               <span className={`text-sm font-medium ${!billingAnnual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
               <Switch checked={billingAnnual} onCheckedChange={setBillingAnnual} />
@@ -527,6 +575,7 @@ export default function Settings() {
             </div>
           </div>
         </TabsContent>
+        )}
       </Tabs>
 
       {/* Invite User Dialog */}
