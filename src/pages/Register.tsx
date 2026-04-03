@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, MailCheck } from "lucide-react";
+import { ArrowRight, MailCheck, Check, X } from "lucide-react";
+import { PASSWORD_RULES, validatePassword } from "@/lib/validation";
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -17,10 +18,16 @@ export default function Register() {
     password: "",
   });
 
+  const pwCheck = validatePassword(form.password);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullName.trim() || !form.email.trim() || form.password.length < 6) {
-      toast.error("Please fill all fields. Password must be at least 6 characters.");
+    if (!form.fullName.trim() || !form.email.trim()) {
+      toast.error("Please fill all fields.");
+      return;
+    }
+    if (!pwCheck.valid) {
+      toast.error("Password does not meet all requirements.");
       return;
     }
     setLoading(true);
@@ -112,9 +119,22 @@ export default function Register() {
             </div>
             <div>
               <Label htmlFor="password">Password *</Label>
-              <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 6 characters" className="mt-1" />
+              <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Create a strong password" className="mt-1" />
+              {form.password.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {PASSWORD_RULES.map((rule) => {
+                    const passed = pwCheck.results[rule.key];
+                    return (
+                      <li key={rule.key} className={`flex items-center gap-1.5 text-xs ${passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                        {passed ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                        {rule.label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={loading}>
+            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={loading || !pwCheck.valid}>
               {loading ? "Creating..." : "Create Account"}
               <ArrowRight className="h-4 w-4" />
             </Button>
