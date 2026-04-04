@@ -81,6 +81,10 @@ export default function Products() {
   );
 
   const openAdd = () => {
+    if (!canAddProduct(products.length)) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setEditingProduct(null);
     setForm(emptyForm);
     setBarcodeFormat("EAN13");
