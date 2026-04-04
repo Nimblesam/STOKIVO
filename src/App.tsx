@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -157,25 +156,25 @@ const AppRoutes = () => (
 );
 
 
-const App = forwardRef<HTMLDivElement>((_props, _ref) => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <AuthProvider>
-          <StoreProvider>
-            <AdminAuthProvider>
-              <AppRoutes />
-            </AdminAuthProvider>
-          </StoreProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-));
-
-App.displayName = "App";
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <AuthProvider>
+            <StoreProvider>
+              <AdminAuthProvider>
+                <AppRoutes />
+              </AdminAuthProvider>
+            </StoreProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
