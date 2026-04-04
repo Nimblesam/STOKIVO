@@ -116,6 +116,7 @@ const channels: Channel[] = [
 
 export default function Integrations() {
   const { profile } = useAuth();
+  const { currentPlan, isPro, requiredPlanFor } = usePlanFeatures();
   const [channelStatuses, setChannelStatuses] = useState<Record<string, ChannelStatus>>({});
   const [connectDialog, setConnectDialog] = useState<Channel | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
