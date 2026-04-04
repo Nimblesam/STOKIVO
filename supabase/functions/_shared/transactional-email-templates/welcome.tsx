@@ -22,7 +22,7 @@ const WelcomeEmail = ({ ownerName, companyName, plan }: WelcomeProps) => (
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
-          <div style={logoBadge}>S</div>
+          <Img src={LOGO_URL} alt={SITE_NAME} width="48" height="48" style={logoImg} />
         </Section>
         <Heading style={h1}>
           {ownerName ? `Hey ${ownerName}, welcome to ${SITE_NAME}!` : `Welcome to ${SITE_NAME}!`}
