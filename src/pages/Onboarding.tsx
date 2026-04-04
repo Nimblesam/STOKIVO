@@ -124,18 +124,18 @@ export default function Onboarding() {
       });
       if (compErr) throw compErr;
 
-      // Update profile
+      // Create owner role BEFORE updating profile (RLS requires company_id IS NULL on profile)
+      const { error: roleErr } = await supabase
+        .from("user_roles")
+        .insert({ user_id: user.id, company_id: companyId, role: "owner" });
+      if (roleErr) throw roleErr;
+
+      // Update profile with company_id
       const { error: profileErr } = await supabase
         .from("profiles")
         .update({ company_id: companyId })
         .eq("user_id", user.id);
       if (profileErr) throw profileErr;
-
-      // Create owner role
-      const { error: roleErr } = await supabase
-        .from("user_roles")
-        .insert({ user_id: user.id, company_id: companyId, role: "owner" });
-      if (roleErr) throw roleErr;
 
       // Create subscription
       const { error: subErr } = await supabase
