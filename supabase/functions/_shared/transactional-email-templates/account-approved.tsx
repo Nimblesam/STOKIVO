@@ -21,7 +21,7 @@ const AccountApprovedEmail = ({ companyName, ownerName, plan }: AccountApprovedP
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
-          <div style={logoBadge}>S</div>
+          <Img src={LOGO_URL} alt={SITE_NAME} width="48" height="48" style={logoImg} />
         </Section>
         <Heading style={h1}>
           {ownerName ? `Welcome aboard, ${ownerName}!` : 'Your account is approved!'}
