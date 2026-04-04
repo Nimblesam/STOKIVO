@@ -277,9 +277,21 @@ export default function Settings() {
           <div className="stokivo-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-display font-semibold text-foreground">Team Members</h3>
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => setShowInvite(true)}>
-                <UserPlus className="h-4 w-4" /> Invite User
-              </Button>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  {teamMembers.length} / {limits.maxUsers === Infinity ? "∞" : limits.maxUsers} users
+                </span>
+                <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => {
+                  if (!canAddUser(teamMembers.length)) {
+                    const neededPlan = currentPlan === "starter" ? "multi_location" : "rbac_advanced";
+                    setUpgradeModal({ open: true, feature: neededPlan as Feature, label: `More than ${limits.maxUsers} team members` });
+                    return;
+                  }
+                  setShowInvite(true);
+                }}>
+                  <UserPlus className="h-4 w-4" /> Invite User
+                </Button>
+              </div>
             </div>
             <div className="space-y-3">
               {teamMembers.map((member) => {
