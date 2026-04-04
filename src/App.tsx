@@ -163,9 +163,11 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
-          <AdminAuthProvider>
-            <AppRoutes />
-          </AdminAuthProvider>
+          <StoreProvider>
+            <AdminAuthProvider>
+              <AppRoutes />
+            </AdminAuthProvider>
+          </StoreProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
