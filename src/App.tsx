@@ -96,6 +96,8 @@ const AppRoutes = () => (
     <Route path="/onboarding" element={<Onboarding />} />
     <Route path="/privacy" element={<PrivacyPolicy />} />
     <Route path="/terms" element={<TermsOfService />} />
+    <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+    <Route path="/reset-password" element={<ResetPassword />} />
 
     {/* Admin routes - public */}
     <Route path="/admin/login" element={<AdminLogin />} />
