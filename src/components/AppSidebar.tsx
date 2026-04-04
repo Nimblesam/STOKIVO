@@ -1,10 +1,10 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe, Brain,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe, Brain, Lock,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
@@ -12,6 +12,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { StoreSwitcher } from "@/components/StoreSwitcher";
 import { Button } from "@/components/ui/button";
+import { usePlanFeatures, type Feature } from "@/hooks/use-plan-features";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 type AppRole = "owner" | "manager" | "staff";
 
@@ -19,7 +23,8 @@ interface NavItem {
   title: string;
   url: string;
   icon: any;
-  roles?: AppRole[]; // if omitted, visible to all roles
+  roles?: AppRole[];
+  requiredFeature?: Feature;
 }
 
 const mainNav: NavItem[] = [
@@ -31,7 +36,7 @@ const mainNav: NavItem[] = [
   { title: "Customers", url: "/customers", icon: Users, roles: ["owner", "manager"] },
   { title: "Invoices", url: "/invoices", icon: FileText, roles: ["owner", "manager"] },
   { title: "Credit Ledger", url: "/credit-ledger", icon: CreditCard, roles: ["owner", "manager"] },
-  { title: "Payouts", url: "/payouts", icon: Banknote, roles: ["owner"] },
+  { title: "Payouts", url: "/payouts", icon: Banknote, roles: ["owner"], requiredFeature: "stripe_payouts" },
 ];
 
 const alertNav: NavItem[] = [
@@ -40,8 +45,8 @@ const alertNav: NavItem[] = [
 ];
 
 const otherNav: NavItem[] = [
-  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["owner", "manager"] },
-  { title: "AI Insights", url: "/ai-insights", icon: Brain, roles: ["owner", "manager"] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["owner", "manager"], requiredFeature: "advanced_analytics" },
+  { title: "AI Insights", url: "/ai-insights", icon: Brain, roles: ["owner", "manager"], requiredFeature: "ai_insights" },
   { title: "Accounting", url: "/accounting", icon: Calculator, roles: ["owner", "manager"] },
   { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"] },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["owner", "manager"] },
@@ -54,7 +59,12 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
   const { profile, company, role, signOut } = useAuth();
+  const { hasFeature, requiredPlanFor, currentPlan, canUseMultiStore } = usePlanFeatures();
+  const [upgradeModal, setUpgradeModal] = useState<{ open: boolean; feature: Feature; label: string }>({
+    open: false, feature: "ai_insights", label: "",
+  });
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -64,6 +74,47 @@ export function AppSidebar() {
     .map((n) => n[0])
     .join("")
     .slice(0, 2) || "?";
+
+  const renderNavItem = (item: NavItem) => {
+    const locked = item.requiredFeature && !hasFeature(item.requiredFeature);
+
+    if (locked && item.requiredFeature) {
+      return (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton
+            tooltip={`${item.title} — Upgrade to unlock`}
+            onClick={() =>
+              setUpgradeModal({
+                open: true,
+                feature: item.requiredFeature!,
+                label: item.title,
+              })
+            }
+            className="opacity-60 hover:opacity-80 cursor-pointer"
+          >
+            <item.icon className="h-4 w-4" />
+            {!collapsed && (
+              <>
+                <span className="flex-1">{item.title}</span>
+                <Lock className="h-3 w-3 text-muted-foreground" />
+              </>
+            )}
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
+
+    return (
+      <SidebarMenuItem key={item.title}>
+        <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+          <NavLink to={item.url} end={item.url === "/dashboard"} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
+            <item.icon className="h-4 w-4" />
+            {!collapsed && <span>{item.title}</span>}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -77,7 +128,7 @@ export function AppSidebar() {
             </div>
           )}
         </div>
-        {!collapsed && (
+        {!collapsed && canUseMultiStore && (
           <div className="mt-2">
             <StoreSwitcher />
           </div>
@@ -89,16 +140,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filterByRole(mainNav, role).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <NavLink to={item.url} end={item.url === "/dashboard"} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {filterByRole(mainNav, role).map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -109,16 +151,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filterByRole(alertNav, role).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <NavLink to={item.url} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {filterByRole(alertNav, role).map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -127,16 +160,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">More</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filterByRole(otherNav, role).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <NavLink to={item.url} className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {filterByRole(otherNav, role).map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -160,6 +184,14 @@ export function AppSidebar() {
           )}
         </div>
       </SidebarFooter>
+
+      <UpgradeModal
+        open={upgradeModal.open}
+        onOpenChange={(open) => setUpgradeModal((prev) => ({ ...prev, open }))}
+        requiredPlan={requiredPlanFor(upgradeModal.feature)}
+        featureLabel={upgradeModal.label}
+        currentPlan={currentPlan}
+      />
     </Sidebar>
   );
 }
