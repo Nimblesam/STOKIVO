@@ -102,9 +102,12 @@ export default function AdminDashboard() {
     load();
   }, []);
 
+  const navigate = useNavigate();
+
   const kpis = [
     { label: "Total Companies", value: stats.totalCompanies, icon: Building2, accent: "bg-blue-500/10 text-blue-600" },
     { label: "Active Companies", value: stats.activeCompanies, icon: CheckCircle, accent: "bg-emerald-500/10 text-emerald-600" },
+    { label: "Pending Approval", value: stats.pendingCompanies, icon: Clock, accent: "bg-warning/10 text-warning", highlight: stats.pendingCompanies > 0, onClick: () => navigate("/admin/companies") },
     { label: "Suspended", value: stats.suspendedCompanies, icon: AlertTriangle, accent: "bg-destructive/10 text-destructive" },
     { label: "New (30d)", value: stats.newCompanies30d, icon: TrendingUp, accent: "bg-purple-500/10 text-purple-600" },
     { label: "Total Users", value: stats.totalUsers, icon: Users, accent: "bg-orange-500/10 text-orange-600" },
