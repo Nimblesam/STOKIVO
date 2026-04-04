@@ -640,6 +640,7 @@ export default function Onboarding() {
               </div>
               <div className="rounded-2xl border bg-card p-6 space-y-4">
                 {[
+                  { label: "Plan Selected", done: true, detail: `${PLANS.find(p => p.id === selectedPlan)?.name} — 30-day free trial` },
                   { label: "Business Setup", done: !!biz.name.trim(), detail: biz.name || "—" },
                   { label: "Locations Created", done: locations.some((l) => l.name.trim()), detail: `${locations.filter((l) => l.name.trim()).length} location(s)` },
                   { label: "Payments Enabled", done: stripeConnected, detail: stripeConnected ? "Connected" : "Skipped — set up later" },
