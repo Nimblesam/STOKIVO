@@ -4,8 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { PageHeader } from "@/components/PageHeader";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { useAuth } from "@/contexts/AuthContext";
-import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
