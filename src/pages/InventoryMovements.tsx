@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,6 +49,7 @@ function getExpiryLabel(days: number) {
 
 export default function InventoryMovements() {
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [movements, setMovements] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -58,17 +60,21 @@ export default function InventoryMovements() {
     if (!profile?.company_id) return;
     const cid = profile.company_id;
     setLoading(true);
-    Promise.all([
-      supabase.from("inventory_movements").select("*").eq("company_id", cid).order("created_at", { ascending: false }).limit(200),
-      supabase.from("products").select("*").eq("company_id", cid),
-      supabase.from("sales").select("total, created_at").eq("company_id", cid),
-    ]).then(([m, p, s]) => {
+    let movQ = supabase.from("inventory_movements").select("*").eq("company_id", cid).order("created_at", { ascending: false }).limit(200);
+    let prodQ = supabase.from("products").select("*").eq("company_id", cid);
+    let salesQ = supabase.from("sales").select("total, created_at").eq("company_id", cid);
+    if (activeStoreId) {
+      movQ = movQ.eq("store_id", activeStoreId);
+      prodQ = prodQ.eq("store_id", activeStoreId);
+      salesQ = salesQ.eq("store_id", activeStoreId);
+    }
+    Promise.all([movQ, prodQ, salesQ]).then(([m, p, s]) => {
       setMovements(m.data || []);
       setProducts(p.data || []);
       setSales(s.data || []);
       setLoading(false);
     });
-  }, [profile?.company_id]);
+  }, [profile?.company_id, activeStoreId]);
 
   // Expiry alerts
   const expiryProducts = useMemo(() => {

@@ -143,18 +143,58 @@ export default function Onboarding() {
         .insert({ company_id: companyId, plan: "starter", max_products: 500, max_users: 1 });
       if (subErr) throw subErr;
 
-      // Create locations as warehouses
+      // Create locations as stores + warehouses
       const validLocations = locations.filter((l) => l.name.trim());
       if (validLocations.length > 0) {
-        const { error: whErr } = await supabase.from("warehouses").insert(
+        // Create stores
+        const { data: createdStores, error: storeErr } = await supabase.from("stores").insert(
           validLocations.map((l, i) => ({
             company_id: companyId,
             name: l.name,
             address: [l.address, l.city, l.postcode].filter(Boolean).join(", ") || null,
             is_default: i === 0,
           }))
+        ).select("id");
+        if (storeErr) throw storeErr;
+
+        // Assign user to all stores with switch permission
+        if (createdStores && createdStores.length > 0) {
+          await supabase.from("user_store_assignments").insert(
+            createdStores.map((s) => ({
+              user_id: user.id,
+              store_id: s.id,
+              company_id: companyId,
+              can_switch_store: true,
+            }))
+          );
+        }
+
+        // Create warehouses linked to stores
+        const { error: whErr } = await supabase.from("warehouses").insert(
+          validLocations.map((l, i) => ({
+            company_id: companyId,
+            name: l.name,
+            address: [l.address, l.city, l.postcode].filter(Boolean).join(", ") || null,
+            is_default: i === 0,
+            store_id: createdStores?.[i]?.id || null,
+          }))
         );
         if (whErr) throw whErr;
+      } else {
+        // Create a default store if no locations provided
+        const { data: defaultStore } = await supabase.from("stores").insert({
+          company_id: companyId,
+          name: biz.name + " - Main Store",
+          is_default: true,
+        }).select("id").single();
+        if (defaultStore) {
+          await supabase.from("user_store_assignments").insert({
+            user_id: user.id,
+            store_id: defaultStore.id,
+            company_id: companyId,
+            can_switch_store: true,
+          });
+        }
       }
 
       // Invite team members

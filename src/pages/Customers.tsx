@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
 import { validateEmail, validateAddress } from "@/lib/validation";
@@ -19,6 +20,7 @@ const emptyForm = { name: "", phone: "", whatsapp: "", email: "", address: "", n
 
 export default function Customers() {
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,12 +32,14 @@ export default function Customers() {
   const fetchCustomers = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
-    const { data } = await supabase.from("customers").select("*").eq("company_id", profile.company_id).order("created_at", { ascending: false });
+    let q = supabase.from("customers").select("*").eq("company_id", profile.company_id).order("created_at", { ascending: false });
+    if (activeStoreId) q = q.eq("store_id", activeStoreId);
+    const { data } = await q;
     setCustomers(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchCustomers(); }, [profile?.company_id]);
+  useEffect(() => { fetchCustomers(); }, [profile?.company_id, activeStoreId]);
 
   const openAdd = () => { setEditingId(null); setForm(emptyForm); setShowDialog(true); };
   const openEdit = (c: any) => {
@@ -65,7 +69,7 @@ export default function Customers() {
 
     const { error } = editingId
       ? await supabase.from("customers").update(payload).eq("id", editingId)
-      : await supabase.from("customers").insert({ ...payload, company_id: profile.company_id });
+      : await supabase.from("customers").insert({ ...payload, company_id: profile.company_id, store_id: activeStoreId });
 
     if (error) toast.error(error.message);
     else {

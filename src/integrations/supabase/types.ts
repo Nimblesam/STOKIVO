@@ -141,6 +141,7 @@ export type Database = {
           product_name: string | null
           read: boolean
           severity: Database["public"]["Enums"]["alert_severity"]
+          store_id: string | null
           type: Database["public"]["Enums"]["alert_type"]
         }
         Insert: {
@@ -153,6 +154,7 @@ export type Database = {
           product_name?: string | null
           read?: boolean
           severity?: Database["public"]["Enums"]["alert_severity"]
+          store_id?: string | null
           type: Database["public"]["Enums"]["alert_type"]
         }
         Update: {
@@ -165,6 +167,7 @@ export type Database = {
           product_name?: string | null
           read?: boolean
           severity?: Database["public"]["Enums"]["alert_severity"]
+          store_id?: string | null
           type?: Database["public"]["Enums"]["alert_type"]
         }
         Relationships: [
@@ -180,6 +183,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -297,6 +307,7 @@ export type Database = {
           notes: string | null
           outstanding_balance: number
           phone: string | null
+          store_id: string | null
           updated_at: string
           whatsapp: string | null
         }
@@ -310,6 +321,7 @@ export type Database = {
           notes?: string | null
           outstanding_balance?: number
           phone?: string | null
+          store_id?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -323,6 +335,7 @@ export type Database = {
           notes?: string | null
           outstanding_balance?: number
           phone?: string | null
+          store_id?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -332,6 +345,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -462,6 +482,7 @@ export type Database = {
           product_id: string
           product_name: string
           qty: number
+          store_id: string | null
           type: Database["public"]["Enums"]["movement_type"]
           user_id: string | null
           user_name: string | null
@@ -474,6 +495,7 @@ export type Database = {
           product_id: string
           product_name: string
           qty: number
+          store_id?: string | null
           type: Database["public"]["Enums"]["movement_type"]
           user_id?: string | null
           user_name?: string | null
@@ -486,6 +508,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           qty?: number
+          store_id?: string | null
           type?: Database["public"]["Enums"]["movement_type"]
           user_id?: string | null
           user_name?: string | null
@@ -503,6 +526,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -562,6 +592,7 @@ export type Database = {
           id: string
           invoice_number: string
           status: Database["public"]["Enums"]["invoice_status"]
+          store_id: string | null
           subtotal: number
           total: number
           updated_at: string
@@ -575,6 +606,7 @@ export type Database = {
           id?: string
           invoice_number: string
           status?: Database["public"]["Enums"]["invoice_status"]
+          store_id?: string | null
           subtotal?: number
           total?: number
           updated_at?: string
@@ -588,6 +620,7 @@ export type Database = {
           id?: string
           invoice_number?: string
           status?: Database["public"]["Enums"]["invoice_status"]
+          store_id?: string | null
           subtotal?: number
           total?: number
           updated_at?: string
@@ -605,6 +638,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -659,6 +699,7 @@ export type Database = {
           selling_price: number
           sku: string
           stock_qty: number
+          store_id: string | null
           supplier_id: string | null
           unit_type: Database["public"]["Enums"]["unit_type"]
           updated_at: string
@@ -677,6 +718,7 @@ export type Database = {
           selling_price?: number
           sku: string
           stock_qty?: number
+          store_id?: string | null
           supplier_id?: string | null
           unit_type?: Database["public"]["Enums"]["unit_type"]
           updated_at?: string
@@ -695,6 +737,7 @@ export type Database = {
           selling_price?: number
           sku?: string
           stock_qty?: number
+          store_id?: string | null
           supplier_id?: string | null
           unit_type?: Database["public"]["Enums"]["unit_type"]
           updated_at?: string
@@ -705,6 +748,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
           {
@@ -879,6 +929,7 @@ export type Database = {
           discount: number
           id: string
           status: string
+          store_id: string | null
           subtotal: number
           tax: number
           total: number
@@ -892,6 +943,7 @@ export type Database = {
           discount?: number
           id?: string
           status?: string
+          store_id?: string | null
           subtotal?: number
           tax?: number
           total?: number
@@ -905,6 +957,7 @@ export type Database = {
           discount?: number
           id?: string
           status?: string
+          store_id?: string | null
           subtotal?: number
           tax?: number
           total?: number
@@ -915,6 +968,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -931,6 +991,7 @@ export type Database = {
           product_id: string
           qty: number
           status: string
+          store_id: string | null
           to_warehouse_id: string
         }
         Insert: {
@@ -944,6 +1005,7 @@ export type Database = {
           product_id: string
           qty: number
           status?: string
+          store_id?: string | null
           to_warehouse_id: string
         }
         Update: {
@@ -957,6 +1019,7 @@ export type Database = {
           product_id?: string
           qty?: number
           status?: string
+          store_id?: string | null
           to_warehouse_id?: string
         }
         Relationships: [
@@ -982,10 +1045,64 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_transfers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_transfers_to_warehouse_id_fkey"
             columns: ["to_warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          email: string | null
+          id: string
+          is_default: boolean
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1215,6 +1332,48 @@ export type Database = {
           },
         ]
       }
+      user_store_assignments: {
+        Row: {
+          can_switch_store: boolean
+          company_id: string
+          created_at: string
+          id: string
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          can_switch_store?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          can_switch_store?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_store_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_store_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       warehouse_stock: {
         Row: {
           id: string
@@ -1262,6 +1421,7 @@ export type Database = {
           id: string
           is_default: boolean
           name: string
+          store_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1271,6 +1431,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           name: string
+          store_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1280,6 +1441,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           name?: string
+          store_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1288,6 +1450,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouses_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -1353,6 +1522,7 @@ export type Database = {
         Returns: number
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
+      get_user_default_store: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1389,6 +1559,10 @@ export type Database = {
       }
       user_belongs_to_company: {
         Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_store_access: {
+        Args: { _store_id: string; _user_id: string }
         Returns: boolean
       }
     }

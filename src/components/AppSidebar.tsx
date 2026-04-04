@@ -10,6 +10,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { StoreSwitcher } from "@/components/StoreSwitcher";
 import { Button } from "@/components/ui/button";
 
 type AppRole = "owner" | "manager" | "staff";
@@ -76,6 +77,11 @@ export function AppSidebar() {
             </div>
           )}
         </div>
+        {!collapsed && (
+          <div className="mt-2">
+            <StoreSwitcher />
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-2">

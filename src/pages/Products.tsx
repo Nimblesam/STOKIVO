@@ -4,6 +4,7 @@ import { BarcodeGenerator, BARCODE_FORMATS, BarcodeFormat, generateBarcode, vali
 import { BarcodePrintView } from "@/components/BarcodePrintView";
 import { formatMoney } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ const emptyForm = {
 
 export default function Products() {
   const { profile, company, role } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<any[]>([]);
@@ -46,16 +48,18 @@ export default function Products() {
   const fetchProducts = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
-    const { data } = await supabase
+    let q = supabase
       .from("products")
       .select("*")
       .eq("company_id", profile.company_id)
       .order("created_at", { ascending: false });
+    if (activeStoreId) q = q.eq("store_id", activeStoreId);
+    const { data } = await q;
     setProducts(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchProducts(); }, [profile?.company_id]);
+  useEffect(() => { fetchProducts(); }, [profile?.company_id, activeStoreId]);
 
   // Fetch suppliers
   useEffect(() => {
@@ -138,7 +142,7 @@ export default function Products() {
     if (editingProduct) {
       ({ error } = await supabase.from("products").update(payload).eq("id", editingProduct.id));
     } else {
-      ({ error } = await supabase.from("products").insert({ ...payload, company_id: profile.company_id }));
+      ({ error } = await supabase.from("products").insert({ ...payload, company_id: profile.company_id, store_id: activeStoreId }));
     }
 
     if (error) {

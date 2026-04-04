@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { formatMoney } from "@/lib/currency";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ export interface SaleRecord {
 
 export default function Cashier() {
   const { user, profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -120,17 +122,19 @@ export default function Cashier() {
     if (!profile?.company_id || searchQuery.length < 1) { setProducts([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      const { data } = await supabase
+      let q = supabase
         .from("products")
         .select("id, name, barcode, selling_price, stock_qty, category, sku")
         .eq("company_id", profile.company_id!)
         .or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%`)
         .limit(20);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q;
       setProducts(data || []);
       setSearching(false);
     }, 300);
     return () => clearTimeout(t);
-  }, [searchQuery, profile?.company_id]);
+  }, [searchQuery, profile?.company_id, activeStoreId]);
 
   const addToCart = useCallback((product: any) => {
     setCart((prev) => {
@@ -154,12 +158,13 @@ export default function Cashier() {
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scanValue.trim() || !profile?.company_id) return;
-    const { data } = await supabase
+    let q = supabase
       .from("products")
       .select("id, name, barcode, selling_price, stock_qty")
       .eq("company_id", profile.company_id)
-      .eq("barcode", scanValue.trim())
-      .maybeSingle();
+      .eq("barcode", scanValue.trim());
+    if (activeStoreId) q = q.eq("store_id", activeStoreId);
+    const { data } = await q.maybeSingle();
     if (data) { addToCart(data); }
     else { toast.error("Barcode not found", { description: `No product matches "${scanValue}"` }); }
     setScanValue("");
@@ -196,6 +201,7 @@ export default function Cashier() {
           company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
           subtotal, discount, tax, total: grandTotal, change_given: changeGiven,
           status: isPayLater ? "pending" : "completed",
+          store_id: activeStoreId,
         })
         .select("id").single();
       if (saleErr || !sale) throw saleErr || new Error("Failed to create sale");
@@ -232,6 +238,7 @@ export default function Cashier() {
           product_name: item.name, type: "SALE" as const, qty: -item.qty,
           user_id: user.id, user_name: profile.full_name,
           note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`,
+          store_id: activeStoreId,
         });
       }
 
@@ -269,6 +276,7 @@ export default function Cashier() {
             due_date: dueDate.toISOString().split("T")[0],
             subtotal: grandTotal, total: grandTotal,
             status: "sent" as any,
+            store_id: activeStoreId,
           }).select("id").single();
 
           if (inv) {

@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PageHeader } from "@/components/PageHeader";
 import { formatMoney } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const COLORS = ["hsl(170,60%,40%)", "hsl(220,60%,50%)", "hsl(38,92%,50%)", "hsl(
 export default function Dashboard() {
   const navigate = useNavigate();
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
@@ -37,13 +39,22 @@ export default function Dashboard() {
     if (!profile?.company_id) return;
     const cid = profile.company_id;
     setLoading(true);
-    Promise.all([
-      supabase.from("products").select("*").eq("company_id", cid),
-      supabase.from("customers").select("*").eq("company_id", cid),
-      supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false }).limit(10),
-      supabase.from("alerts").select("*").eq("company_id", cid).eq("read", false).order("created_at", { ascending: false }).limit(10),
-      supabase.from("sales").select("total, created_at").eq("company_id", cid),
-    ]).then(([p, c, i, a, s]) => {
+
+    let productsQ = supabase.from("products").select("*").eq("company_id", cid);
+    let customersQ = supabase.from("customers").select("*").eq("company_id", cid);
+    let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false }).limit(10);
+    let alertsQ = supabase.from("alerts").select("*").eq("company_id", cid).eq("read", false).order("created_at", { ascending: false }).limit(10);
+    let salesQ = supabase.from("sales").select("total, created_at").eq("company_id", cid);
+
+    if (activeStoreId) {
+      productsQ = productsQ.eq("store_id", activeStoreId);
+      customersQ = customersQ.eq("store_id", activeStoreId);
+      invoicesQ = invoicesQ.eq("store_id", activeStoreId);
+      alertsQ = alertsQ.eq("store_id", activeStoreId);
+      salesQ = salesQ.eq("store_id", activeStoreId);
+    }
+
+    Promise.all([productsQ, customersQ, invoicesQ, alertsQ, salesQ]).then(([p, c, i, a, s]) => {
       setProducts(p.data || []);
       setCustomers(c.data || []);
       setInvoices(i.data || []);
@@ -51,7 +62,7 @@ export default function Dashboard() {
       setSales(s.data || []);
       setLoading(false);
     });
-  }, [profile?.company_id]);
+  }, [profile?.company_id, activeStoreId]);
 
   const totalStockValue = products.reduce((s, p) => s + p.cost_price * p.stock_qty, 0);
   const monthlyRevenue = sales.reduce((s, sale) => s + sale.total, 0);
