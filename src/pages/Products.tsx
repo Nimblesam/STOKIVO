@@ -203,7 +203,7 @@ export default function Products() {
     <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Products"
-        subtitle={`${products.length} products in inventory`}
+        subtitle={`${products.length}${limits.maxProducts < Infinity ? ` / ${limits.maxProducts}` : ""} products in inventory`}
         actions={
           <div className="flex gap-2">
             {selectedIds.size > 0 && (
