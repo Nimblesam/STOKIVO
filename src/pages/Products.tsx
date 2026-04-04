@@ -18,6 +18,8 @@ import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
