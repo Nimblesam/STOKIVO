@@ -5,6 +5,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
+const LOGO_URL = 'https://lsujpckltpgrydbfuadt.supabase.co/storage/v1/object/public/email-assets/stokivo-logo.png'
 const SITE_NAME = 'Stokivo'
 const SITE_URL = 'https://zentra-stock-flow.lovable.app'
 
