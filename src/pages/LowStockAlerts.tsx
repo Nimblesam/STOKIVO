@@ -13,6 +13,7 @@ import type { Currency } from "@/lib/types";
 
 export default function LowStockAlerts() {
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [products, setProducts] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -21,8 +22,10 @@ export default function LowStockAlerts() {
   const fetchData = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
+    let prodsQ = supabase.from("products").select("*").eq("company_id", profile.company_id);
+    if (activeStoreId) prodsQ = prodsQ.eq("store_id", activeStoreId);
     const [{ data: prods }, { data: supps }] = await Promise.all([
-      supabase.from("products").select("*").eq("company_id", profile.company_id),
+      prodsQ,
       supabase.from("suppliers").select("*").eq("company_id", profile.company_id),
     ]);
     setProducts(prods || []);
@@ -30,7 +33,7 @@ export default function LowStockAlerts() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [profile?.company_id]);
+  useEffect(() => { fetchData(); }, [profile?.company_id, activeStoreId]);
 
   const lowStockProducts = products
     .filter((p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0)

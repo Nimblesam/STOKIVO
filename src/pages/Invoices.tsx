@@ -54,11 +54,15 @@ export default function Invoices() {
   const fetchData = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
-    const [{ data: invs }, { data: custs }, { data: prods }] = await Promise.all([
-      supabase.from("invoices").select("*, customers(name, address, phone, email, whatsapp)").eq("company_id", profile.company_id).order("created_at", { ascending: false }),
-      supabase.from("customers").select("id, name").eq("company_id", profile.company_id),
-      supabase.from("products").select("id, name, selling_price").eq("company_id", profile.company_id),
-    ]);
+    let invsQ = supabase.from("invoices").select("*, customers(name, address, phone, email, whatsapp)").eq("company_id", profile.company_id).order("created_at", { ascending: false });
+    let prodsQ = supabase.from("products").select("id, name, selling_price").eq("company_id", profile.company_id);
+    let custsQ = supabase.from("customers").select("id, name").eq("company_id", profile.company_id);
+    if (activeStoreId) {
+      invsQ = invsQ.eq("store_id", activeStoreId);
+      prodsQ = prodsQ.eq("store_id", activeStoreId);
+      custsQ = custsQ.eq("store_id", activeStoreId);
+    }
+    const [{ data: invs }, { data: custs }, { data: prods }] = await Promise.all([invsQ, custsQ, prodsQ]);
     setInvoices((invs as any[]) || []);
     setCustomers(custs || []);
     setProducts(prods || []);
