@@ -14,10 +14,28 @@ import stokivoLogo from "@/assets/stokivo-logo.png";
 import {
   Building2, MapPin, CreditCard, Monitor, Users, Rocket,
   ArrowRight, ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
-  ShieldCheck, UserPlus,
+  ShieldCheck, UserPlus, Crown, Check,
 } from "lucide-react";
 
+type PlanTier = "starter" | "growth" | "pro";
+
+const PLANS: { id: PlanTier; name: string; price: string; annual: string; features: string[] }[] = [
+  {
+    id: "starter", name: "Starter", price: "£19/mo", annual: "£15/mo billed annually",
+    features: ["Up to 500 products", "1 user", "1 location", "Basic reports", "POS system"],
+  },
+  {
+    id: "growth", name: "Growth", price: "£39/mo", annual: "£31/mo billed annually",
+    features: ["Up to 5,000 products", "5 users", "Multi-location", "Advanced analytics", "Reorder suggestions"],
+  },
+  {
+    id: "pro", name: "Pro", price: "£79/mo", annual: "£63/mo billed annually",
+    features: ["Unlimited products", "25 users", "AI forecasting", "Custom domain", "Priority support"],
+  },
+];
+
 const STEPS = [
+  { label: "Plan", icon: Crown },
   { label: "Business", icon: Building2 },
   { label: "Locations", icon: MapPin },
   { label: "Payments", icon: CreditCard },
@@ -48,7 +66,9 @@ export default function Onboarding() {
     { name: "", address: "", city: "", postcode: "" },
   ]);
 
-  // Step 3 — Payments
+  // Step 0 — Plan
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier>("starter");
+
   const [stripeConnected, setStripeConnected] = useState(false);
   const [stripeLoading, setStripeLoading] = useState(false);
 
@@ -83,8 +103,9 @@ export default function Onboarding() {
   };
 
   const canNext = (): boolean => {
-    if (step === 0) return !!biz.name.trim();
-    if (step === 1) return locations.some((l) => l.name.trim());
+    if (step === 0) return !!selectedPlan;
+    if (step === 1) return !!biz.name.trim();
+    if (step === 2) return locations.some((l) => l.name.trim());
     return true;
   };
 
@@ -124,6 +145,23 @@ export default function Onboarding() {
       });
       if (compErr) throw compErr;
 
+      // Ensure profile exists (Google OAuth users may not have one yet)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const { error: createProfileErr } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          });
+        if (createProfileErr) throw createProfileErr;
+      }
+
       // Create owner role BEFORE updating profile (RLS requires company_id IS NULL on profile)
       const { error: roleErr } = await supabase
         .from("user_roles")
@@ -137,11 +175,25 @@ export default function Onboarding() {
         .eq("user_id", user.id);
       if (profileErr) throw profileErr;
 
-      // Create subscription
+      // Create subscription with selected plan
+      const planConfig = {
+        starter: { max_products: 500, max_users: 1 },
+        growth: { max_products: 5000, max_users: 5 },
+        pro: { max_products: 999999, max_users: 25 },
+      };
+      const selectedPlanConfig = planConfig[selectedPlan];
       const { error: subErr } = await supabase
         .from("subscriptions")
-        .insert({ company_id: companyId, plan: "starter", max_products: 500, max_users: 1 });
+        .insert({
+          company_id: companyId,
+          plan: selectedPlan,
+          max_products: selectedPlanConfig.max_products,
+          max_users: selectedPlanConfig.max_users,
+        });
       if (subErr) throw subErr;
+
+      // Update company plan
+      await supabase.from("companies").update({ plan: selectedPlan }).eq("id", companyId);
 
       // Create locations as stores + warehouses
       const validLocations = locations.filter((l) => l.name.trim());
@@ -269,8 +321,52 @@ export default function Onboarding() {
       <div className="flex-1 flex items-start justify-center px-4 py-6">
         <div className="w-full max-w-lg animate-fade-in">
 
-          {/* STEP 1: Business Setup */}
+          {/* STEP 0: Plan Selection */}
           {step === 0 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h1 className="text-2xl font-display font-bold text-foreground">Choose Your Plan</h1>
+                <p className="text-sm text-muted-foreground mt-1">Start with a 30-day free trial. Upgrade or downgrade anytime.</p>
+              </div>
+              <div className="grid gap-4">
+                {PLANS.map((plan) => (
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`rounded-2xl border p-5 text-left transition-all ${
+                      selectedPlan === plan.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "bg-card hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <span className="text-base font-semibold text-foreground">{plan.name}</span>
+                        {plan.id === "growth" && (
+                          <span className="ml-2 text-[10px] font-bold uppercase bg-accent/10 text-accent px-2 py-0.5 rounded-full">Popular</span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-foreground">{plan.price}</span>
+                        <p className="text-[10px] text-muted-foreground">{plan.annual}</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Check className="h-3 w-3 text-accent shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 1: Business Setup */}
+          {step === 1 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Tell us about your business</h1>
@@ -344,7 +440,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 2: Locations */}
-          {step === 1 && (
+          {step === 2 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Set up your locations</h1>
@@ -389,7 +485,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 3: Payments */}
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Enable Payments</h1>
@@ -439,7 +535,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 4: POS / Terminal */}
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Point of Sale Setup</h1>
@@ -473,7 +569,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 5: Team */}
-          {step === 4 && (
+          {step === 5 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Invite Your Team</h1>
@@ -533,7 +629,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 6: Activation */}
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
@@ -544,6 +640,7 @@ export default function Onboarding() {
               </div>
               <div className="rounded-2xl border bg-card p-6 space-y-4">
                 {[
+                  { label: "Plan Selected", done: true, detail: `${PLANS.find(p => p.id === selectedPlan)?.name} — 30-day free trial` },
                   { label: "Business Setup", done: !!biz.name.trim(), detail: biz.name || "—" },
                   { label: "Locations Created", done: locations.some((l) => l.name.trim()), detail: `${locations.filter((l) => l.name.trim()).length} location(s)` },
                   { label: "Payments Enabled", done: stripeConnected, detail: stripeConnected ? "Connected" : "Skipped — set up later" },
