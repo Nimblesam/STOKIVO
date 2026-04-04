@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Building2, Users, CreditCard, ArrowLeftRight, AlertTriangle,
-  CheckCircle, TrendingUp, Activity, BarChart3,
+  CheckCircle, TrendingUp, Activity, BarChart3, Clock,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -20,7 +21,7 @@ const PLAN_COLORS: Record<string, string> = {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
-    totalCompanies: 0, activeCompanies: 0, suspendedCompanies: 0, newCompanies30d: 0,
+    totalCompanies: 0, activeCompanies: 0, suspendedCompanies: 0, pendingCompanies: 0, newCompanies30d: 0,
     totalUsers: 0, totalSales: 0, totalAlerts: 0,
     mrrEstimate: 0, platformFees: 0,
   });
@@ -57,6 +58,7 @@ export default function AdminDashboard() {
         totalCompanies: comps.length,
         activeCompanies: comps.filter(c => c.status === "active").length,
         suspendedCompanies: comps.filter(c => c.status === "suspended" || c.status === "disabled").length,
+        pendingCompanies: comps.filter(c => c.status === "pending").length,
         newCompanies30d: comps.filter(c => c.created_at >= thirtyDaysAgo).length,
         totalUsers: (users.data || []).length,
         totalSales: totalVolume,
@@ -100,9 +102,12 @@ export default function AdminDashboard() {
     load();
   }, []);
 
+  const navigate = useNavigate();
+
   const kpis = [
     { label: "Total Companies", value: stats.totalCompanies, icon: Building2, accent: "bg-blue-500/10 text-blue-600" },
     { label: "Active Companies", value: stats.activeCompanies, icon: CheckCircle, accent: "bg-emerald-500/10 text-emerald-600" },
+    { label: "Pending Approval", value: stats.pendingCompanies, icon: Clock, accent: "bg-warning/10 text-warning", highlight: stats.pendingCompanies > 0, onClick: () => navigate("/admin/companies") },
     { label: "Suspended", value: stats.suspendedCompanies, icon: AlertTriangle, accent: "bg-destructive/10 text-destructive" },
     { label: "New (30d)", value: stats.newCompanies30d, icon: TrendingUp, accent: "bg-purple-500/10 text-purple-600" },
     { label: "Total Users", value: stats.totalUsers, icon: Users, accent: "bg-orange-500/10 text-orange-600" },
@@ -125,8 +130,12 @@ export default function AdminDashboard() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {kpis.map((k) => (
-          <Card key={k.label} className="border shadow-sm hover:shadow-md transition-shadow">
+        {kpis.map((k: any) => (
+          <Card
+            key={k.label}
+            className={`border shadow-sm hover:shadow-md transition-shadow ${k.highlight ? "ring-2 ring-warning/50 border-warning/30" : ""} ${k.onClick ? "cursor-pointer" : ""}`}
+            onClick={k.onClick}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${k.accent}`}>
@@ -134,7 +143,14 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">{k.label}</p>
-                  <p className="text-xl font-bold">{k.value}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xl font-bold">{k.value}</p>
+                    {k.highlight && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 animate-pulse">
+                        Action needed
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
