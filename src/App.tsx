@@ -31,6 +31,8 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminSetup from "./pages/admin/AdminSetup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -94,6 +96,8 @@ const AppRoutes = () => (
     <Route path="/onboarding" element={<Onboarding />} />
     <Route path="/privacy" element={<PrivacyPolicy />} />
     <Route path="/terms" element={<TermsOfService />} />
+    <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+    <Route path="/reset-password" element={<ResetPassword />} />
 
     {/* Admin routes - public */}
     <Route path="/admin/login" element={<AdminLogin />} />
