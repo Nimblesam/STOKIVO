@@ -77,6 +77,11 @@ export function AppSidebar() {
             </div>
           )}
         </div>
+        {!collapsed && (
+          <div className="mt-2">
+            <StoreSwitcher />
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-2">
