@@ -553,6 +553,14 @@ export default function Products() {
         barcodeFormat={barcodeViewFormat}
         currency={currency}
       />
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        requiredPlan="growth"
+        featureLabel={`More than ${limits.maxProducts} products`}
+        currentPlan={currentPlan}
+      />
     </div>
   );
 }
