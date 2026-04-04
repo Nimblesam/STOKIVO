@@ -130,6 +130,20 @@ serve(async (req) => {
       if (insErr) throw insErr;
     }
 
+    // Also link the user's profile to this company
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, company_id")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
+    if (existingProfile && !existingProfile.company_id) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ company_id: callerCompanyId })
+        .eq("id", existingProfile.id);
+    }
+
     return new Response(JSON.stringify({ ok: true, mode }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
