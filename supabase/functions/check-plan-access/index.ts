@@ -30,7 +30,7 @@ const FEATURE_MIN_PLAN: Record<string, string> = {
   multi_warehouse: "pro",
   full_automation: "pro",
   advanced_analytics: "growth",
-  stripe_payouts: "pro",
+  stripe_payouts: "starter",
   rbac_advanced: "pro",
 };
 

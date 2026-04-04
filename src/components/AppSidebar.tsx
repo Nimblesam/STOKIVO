@@ -36,7 +36,7 @@ const mainNav: NavItem[] = [
   { title: "Customers", url: "/customers", icon: Users, roles: ["owner", "manager"] },
   { title: "Invoices", url: "/invoices", icon: FileText, roles: ["owner", "manager"] },
   { title: "Credit Ledger", url: "/credit-ledger", icon: CreditCard, roles: ["owner", "manager"] },
-  { title: "Payouts", url: "/payouts", icon: Banknote, roles: ["owner"], requiredFeature: "stripe_payouts" },
+  { title: "Payouts", url: "/payouts", icon: Banknote, roles: ["owner"] },
 ];
 
 const alertNav: NavItem[] = [
