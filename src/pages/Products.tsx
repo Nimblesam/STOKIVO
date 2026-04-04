@@ -27,6 +27,7 @@ const emptyForm = {
 
 export default function Products() {
   const { profile, company, role } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<any[]>([]);
