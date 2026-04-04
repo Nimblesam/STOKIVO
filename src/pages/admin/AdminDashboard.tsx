@@ -20,7 +20,7 @@ const PLAN_COLORS: Record<string, string> = {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
-    totalCompanies: 0, activeCompanies: 0, suspendedCompanies: 0, newCompanies30d: 0,
+    totalCompanies: 0, activeCompanies: 0, suspendedCompanies: 0, pendingCompanies: 0, newCompanies30d: 0,
     totalUsers: 0, totalSales: 0, totalAlerts: 0,
     mrrEstimate: 0, platformFees: 0,
   });
