@@ -14,10 +14,28 @@ import stokivoLogo from "@/assets/stokivo-logo.png";
 import {
   Building2, MapPin, CreditCard, Monitor, Users, Rocket,
   ArrowRight, ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
-  ShieldCheck, UserPlus,
+  ShieldCheck, UserPlus, Crown, Check,
 } from "lucide-react";
 
+type PlanTier = "starter" | "growth" | "pro";
+
+const PLANS: { id: PlanTier; name: string; price: string; annual: string; features: string[] }[] = [
+  {
+    id: "starter", name: "Starter", price: "£19/mo", annual: "£15/mo billed annually",
+    features: ["Up to 500 products", "1 user", "1 location", "Basic reports", "POS system"],
+  },
+  {
+    id: "growth", name: "Growth", price: "£39/mo", annual: "£31/mo billed annually",
+    features: ["Up to 5,000 products", "5 users", "Multi-location", "Advanced analytics", "Reorder suggestions"],
+  },
+  {
+    id: "pro", name: "Pro", price: "£79/mo", annual: "£63/mo billed annually",
+    features: ["Unlimited products", "25 users", "AI forecasting", "Custom domain", "Priority support"],
+  },
+];
+
 const STEPS = [
+  { label: "Plan", icon: Crown },
   { label: "Business", icon: Building2 },
   { label: "Locations", icon: MapPin },
   { label: "Payments", icon: CreditCard },
