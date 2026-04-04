@@ -48,11 +48,13 @@ export default function Products() {
   const fetchProducts = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
-    const { data } = await supabase
+    let q = supabase
       .from("products")
       .select("*")
       .eq("company_id", profile.company_id)
       .order("created_at", { ascending: false });
+    if (activeStoreId) q = q.eq("store_id", activeStoreId);
+    const { data } = await q;
     setProducts(data || []);
     setLoading(false);
   };
