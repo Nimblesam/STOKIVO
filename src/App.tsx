@@ -35,6 +35,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import SetPassword from "./pages/SetPassword";
 import Unsubscribe from "./pages/Unsubscribe";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminSetup from "./pages/admin/AdminSetup";
@@ -103,6 +104,7 @@ const AppRoutes = () => (
     <Route path="/terms" element={<TermsOfService />} />
     <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
     <Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/set-password" element={<SetPassword />} />
     <Route path="/unsubscribe" element={<Unsubscribe />} />
 
     {/* Admin routes - public */}

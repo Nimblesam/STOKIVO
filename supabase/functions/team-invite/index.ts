@@ -77,7 +77,7 @@ serve(async (req) => {
     const { data: invitedUser, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       normalizedEmail,
       {
-        redirectTo: `${origin}/login?invited=1`,
+        redirectTo: `${origin}/set-password`,
         data: { company_id: callerCompanyId, invited_role: normalizedRole },
       },
     );
@@ -103,7 +103,7 @@ serve(async (req) => {
 
       const { error: otpErr } = await supabaseAnon.auth.signInWithOtp({
         email: normalizedEmail,
-        options: { emailRedirectTo: `${origin}/login?invited=1` },
+        options: { emailRedirectTo: `${origin}/set-password` },
       });
       if (otpErr) throw otpErr;
     }
@@ -128,6 +128,20 @@ serve(async (req) => {
         .from("user_roles")
         .insert({ user_id: targetUserId, company_id: callerCompanyId, role: normalizedRole, active: true });
       if (insErr) throw insErr;
+    }
+
+    // Also link the user's profile to this company
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, company_id")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
+    if (existingProfile && !existingProfile.company_id) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ company_id: callerCompanyId })
+        .eq("id", existingProfile.id);
     }
 
     return new Response(JSON.stringify({ ok: true, mode }), {
