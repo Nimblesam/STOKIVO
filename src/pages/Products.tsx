@@ -59,7 +59,7 @@ export default function Products() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchProducts(); }, [profile?.company_id]);
+  useEffect(() => { fetchProducts(); }, [profile?.company_id, activeStoreId]);
 
   // Fetch suppliers
   useEffect(() => {
