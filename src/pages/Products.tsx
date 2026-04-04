@@ -30,6 +30,7 @@ const emptyForm = {
 export default function Products() {
   const { profile, company, role } = useAuth();
   const { activeStoreId } = useStore();
+  const { canAddProduct, limits, currentPlan, requiredPlanFor } = usePlanFeatures();
   const currency = (company?.currency || "GBP") as Currency;
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<any[]>([]);
@@ -42,6 +43,7 @@ export default function Products() {
   const [form, setForm] = useState(emptyForm);
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
