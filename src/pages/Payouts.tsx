@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
+import { PlanBadge } from "@/components/PlanBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
@@ -77,6 +78,7 @@ export default function Payouts() {
       <PageHeader
         title="Payouts"
         subtitle="All payments received and sent to your bank account"
+        badge={<PlanBadge feature="stripe_payouts" />}
         actions={
           <Button variant="outline" className="gap-2" onClick={handleExport} disabled={filtered.length === 0}>
             <Download className="h-4 w-4" /> Export CSV

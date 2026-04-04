@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { PlanBadge } from "@/components/PlanBadge";
 import { KPICard } from "@/components/KPICard";
 import { formatMoney } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
@@ -148,6 +149,7 @@ export default function Analytics() {
       <PageHeader
         title="Analytics"
         subtitle="Business performance insights and intelligence"
+        badge={<PlanBadge feature="advanced_analytics" />}
         actions={
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
