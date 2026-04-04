@@ -706,6 +706,13 @@ export default function Settings() {
           </div>
         </DialogContent>
       </Dialog>
+      <UpgradeModal
+        open={upgradeModal.open}
+        onOpenChange={(open) => setUpgradeModal((prev) => ({ ...prev, open }))}
+        requiredPlan={requiredPlanFor(upgradeModal.feature)}
+        featureLabel={upgradeModal.label}
+        currentPlan={currentPlan}
+      />
     </div>
   );
 }
