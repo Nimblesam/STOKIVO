@@ -201,6 +201,7 @@ export default function Cashier() {
           company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
           subtotal, discount, tax, total: grandTotal, change_given: changeGiven,
           status: isPayLater ? "pending" : "completed",
+          store_id: activeStoreId,
         })
         .select("id").single();
       if (saleErr || !sale) throw saleErr || new Error("Failed to create sale");
