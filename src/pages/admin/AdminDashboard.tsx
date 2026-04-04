@@ -130,8 +130,12 @@ export default function AdminDashboard() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {kpis.map((k) => (
-          <Card key={k.label} className="border shadow-sm hover:shadow-md transition-shadow">
+        {kpis.map((k: any) => (
+          <Card
+            key={k.label}
+            className={`border shadow-sm hover:shadow-md transition-shadow ${k.highlight ? "ring-2 ring-warning/50 border-warning/30" : ""} ${k.onClick ? "cursor-pointer" : ""}`}
+            onClick={k.onClick}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${k.accent}`}>
@@ -139,7 +143,14 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">{k.label}</p>
-                  <p className="text-xl font-bold">{k.value}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xl font-bold">{k.value}</p>
+                    {k.highlight && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 animate-pulse">
+                        Action needed
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
