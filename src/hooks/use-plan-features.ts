@@ -18,26 +18,43 @@ export type Feature =
   | "advanced_analytics"
   | "barcode_generation"
   | "invoicing"
-  | "supplier_management";
+  | "supplier_management"
+  | "stripe_payouts"
+  | "rbac_advanced";
 
 const FEATURE_MIN_PLAN: Record<Feature, PlanTier> = {
   multi_location: "growth",
   expiry_alerts: "growth",
   ai_insights: "growth",
   barcode_generation: "growth",
-  invoicing: "growth",
-  supplier_management: "growth",
+  invoicing: "starter",
+  supplier_management: "starter",
   ai_forecasting: "pro",
   custom_domain: "pro",
   multi_warehouse: "pro",
   full_automation: "pro",
-  advanced_analytics: "pro",
+  advanced_analytics: "growth",
+  stripe_payouts: "pro",
+  rbac_advanced: "pro",
+};
+
+export interface PlanLimits {
+  maxUsers: number;
+  maxProducts: number;
+  multiStore: boolean;
+}
+
+const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
+  starter: { maxUsers: 2, maxProducts: 500, multiStore: false },
+  growth: { maxUsers: 8, maxProducts: Infinity, multiStore: true },
+  pro: { maxUsers: Infinity, maxProducts: Infinity, multiStore: true },
 };
 
 export function usePlanFeatures() {
   const { company } = useAuth();
   const currentPlan: PlanTier = (company?.plan as PlanTier) || "starter";
   const currentLevel = PLAN_HIERARCHY[currentPlan];
+  const limits = PLAN_LIMITS[currentPlan];
 
   const hasFeature = (feature: Feature): boolean => {
     const requiredPlan = FEATURE_MIN_PLAN[feature];
@@ -49,5 +66,19 @@ export function usePlanFeatures() {
   const isPro = currentPlan === "pro";
   const isGrowthOrAbove = currentLevel >= 1;
 
-  return { currentPlan, hasFeature, requiredPlanFor, isPro, isGrowthOrAbove };
+  const canAddProduct = (currentCount: number): boolean => currentCount < limits.maxProducts;
+  const canAddUser = (currentCount: number): boolean => currentCount < limits.maxUsers;
+  const canUseMultiStore = limits.multiStore;
+
+  return {
+    currentPlan,
+    hasFeature,
+    requiredPlanFor,
+    isPro,
+    isGrowthOrAbove,
+    limits,
+    canAddProduct,
+    canAddUser,
+    canUseMultiStore,
+  };
 }

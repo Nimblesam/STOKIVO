@@ -18,6 +18,8 @@ import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
@@ -28,6 +30,7 @@ const emptyForm = {
 export default function Products() {
   const { profile, company, role } = useAuth();
   const { activeStoreId } = useStore();
+  const { canAddProduct, limits, currentPlan, requiredPlanFor } = usePlanFeatures();
   const currency = (company?.currency || "GBP") as Currency;
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<any[]>([]);
@@ -40,6 +43,7 @@ export default function Products() {
   const [form, setForm] = useState(emptyForm);
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -77,6 +81,10 @@ export default function Products() {
   );
 
   const openAdd = () => {
+    if (!canAddProduct(products.length)) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setEditingProduct(null);
     setForm(emptyForm);
     setBarcodeFormat("EAN13");
@@ -195,7 +203,7 @@ export default function Products() {
     <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Products"
-        subtitle={`${products.length} products in inventory`}
+        subtitle={`${products.length}${limits.maxProducts < Infinity ? ` / ${limits.maxProducts}` : ""} products in inventory`}
         actions={
           <div className="flex gap-2">
             {selectedIds.size > 0 && (
@@ -544,6 +552,14 @@ export default function Products() {
         }))}
         barcodeFormat={barcodeViewFormat}
         currency={currency}
+      />
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        requiredPlan="growth"
+        featureLabel={`More than ${limits.maxProducts} products`}
+        currentPlan={currentPlan}
       />
     </div>
   );

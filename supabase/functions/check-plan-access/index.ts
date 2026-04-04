@@ -12,18 +12,26 @@ const PLAN_HIERARCHY: Record<string, number> = {
   pro: 2,
 };
 
+const PLAN_LIMITS: Record<string, { maxUsers: number; maxProducts: number; multiStore: boolean }> = {
+  starter: { maxUsers: 2, maxProducts: 500, multiStore: false },
+  growth: { maxUsers: 8, maxProducts: 999999, multiStore: true },
+  pro: { maxUsers: 999999, maxProducts: 999999, multiStore: true },
+};
+
 const FEATURE_MIN_PLAN: Record<string, string> = {
   multi_location: "growth",
   expiry_alerts: "growth",
   ai_insights: "growth",
   barcode_generation: "growth",
-  invoicing: "growth",
-  supplier_management: "growth",
+  invoicing: "starter",
+  supplier_management: "starter",
   ai_forecasting: "pro",
   custom_domain: "pro",
   multi_warehouse: "pro",
   full_automation: "pro",
-  advanced_analytics: "pro",
+  advanced_analytics: "growth",
+  stripe_payouts: "pro",
+  rbac_advanced: "pro",
 };
 
 serve(async (req) => {
@@ -68,19 +76,77 @@ serve(async (req) => {
       });
     }
 
+    const companyId = profile.company_id;
+
     const { data: company } = await supabaseClient
       .from("companies")
       .select("plan")
-      .eq("id", profile.company_id)
+      .eq("id", companyId)
       .single();
 
     const currentPlan = company?.plan || "starter";
     const currentLevel = PLAN_HIERARCHY[currentPlan] ?? 0;
+    const limits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.starter;
 
-    // Check specific feature if requested
     const body = await req.json().catch(() => ({}));
-    const feature = body?.feature;
+    const { feature, action } = body;
 
+    // Check a specific limit action
+    if (action === "add_product") {
+      const { count } = await supabaseClient
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId);
+      const productCount = count ?? 0;
+      const allowed = productCount < limits.maxProducts;
+      return new Response(JSON.stringify({
+        allowed,
+        current_count: productCount,
+        max: limits.maxProducts,
+        current_plan: currentPlan,
+        upgrade_to: allowed ? null : "growth",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "add_user") {
+      const { count } = await supabaseClient
+        .from("user_roles")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("active", true);
+      const userCount = count ?? 0;
+      const allowed = userCount < limits.maxUsers;
+      return new Response(JSON.stringify({
+        allowed,
+        current_count: userCount,
+        max: limits.maxUsers,
+        current_plan: currentPlan,
+        upgrade_to: allowed ? null : (currentPlan === "starter" ? "growth" : "pro"),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "add_store") {
+      if (!limits.multiStore) {
+        return new Response(JSON.stringify({
+          allowed: false,
+          current_plan: currentPlan,
+          upgrade_to: "growth",
+          reason: "Multi-store requires Growth plan or above",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+      return new Response(JSON.stringify({ allowed: true, current_plan: currentPlan }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check specific feature
     if (feature) {
       const requiredPlan = FEATURE_MIN_PLAN[feature];
       if (!requiredPlan) {
@@ -109,6 +175,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       current_plan: currentPlan,
+      limits,
       features: allowedFeatures,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
