@@ -370,12 +370,57 @@ export default function Settings() {
         {isOwner && (
         <TabsContent value="payments">
           <div className="space-y-6">
+            {/* Hero card when not connected */}
+            {!stripeStatus?.connected && !loadingStripeStatus && (
+              <div className="relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/5 via-background to-accent/10 p-8">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="relative z-10 text-center max-w-md mx-auto">
+                  <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                    <Banknote className="h-8 w-8 text-accent" />
+                  </div>
+                  <h2 className="font-display font-bold text-2xl text-foreground mb-2">
+                    Start Receiving Payments
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                    Connect your bank account to accept customer payments directly. Funds are deposited automatically with just a 0.5% platform fee.
+                  </p>
+                  <Button
+                    size="lg"
+                    className="h-14 px-8 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 gap-3 rounded-xl shadow-lg shadow-accent/20"
+                    onClick={async () => {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+                          body: { business_type: "individual", country: "GB" },
+                        });
+                        if (error) throw error;
+                        if (data?.url) window.location.href = data.url;
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to start setup");
+                      }
+                    }}
+                  >
+                    <Banknote className="h-5 w-5" />
+                    Connect Bank Account
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Powered by Stripe · Secure · PCI Compliant
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="stokivo-card p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Banknote className="h-5 w-5 text-accent" />
                 <div>
-                  <h3 className="font-display font-semibold text-foreground">Set Up Payouts</h3>
-                  <p className="text-sm text-muted-foreground">Connect your bank account to receive customer payments directly</p>
+                  <h3 className="font-display font-semibold text-foreground">
+                    {stripeStatus?.connected ? "Payout Settings" : "Set Up Payouts"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {stripeStatus?.connected
+                      ? "Manage your connected bank account and payout preferences"
+                      : "Connect your bank account to receive customer payments directly"}
+                  </p>
                 </div>
               </div>
               <Separator className="mb-6" />

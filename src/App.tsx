@@ -155,7 +155,7 @@ const AppRoutes = () => (
   </Routes>
 );
 
-
+// eslint-disable-next-line react-refresh/only-export-components
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
