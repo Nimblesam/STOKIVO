@@ -149,6 +149,7 @@ export default function Analytics() {
       <PageHeader
         title="Analytics"
         subtitle="Business performance insights and intelligence"
+        badge={<PlanBadge feature="advanced_analytics" />}
         actions={
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
