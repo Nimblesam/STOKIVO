@@ -54,21 +54,17 @@ export default function AdminCompanies() {
           .single();
         
         if (ownerRole) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, user_id")
-            .eq("user_id", ownerRole.user_id)
-            .single();
+          const [{ data: profile }, { data: ownerEmail }] = await Promise.all([
+            supabase.from("profiles").select("full_name").eq("user_id", ownerRole.user_id).single(),
+            supabase.rpc("admin_get_user_email", { _user_id: ownerRole.user_id }),
+          ]);
 
-          // Get the user's email from admin_users or company email
-          const ownerEmail = company.email;
-          
-          // Try to get email from auth - we'll use the company email or profile lookup
-          if (ownerEmail || profile) {
+          const email = ownerEmail || company.email;
+          if (email) {
             await supabase.functions.invoke("send-transactional-email", {
               body: {
                 templateName: "account-approved",
-                recipientEmail: ownerEmail || company.email,
+                recipientEmail: email,
                 idempotencyKey: `account-approved-${company.id}`,
                 templateData: {
                   companyName: company.name,
