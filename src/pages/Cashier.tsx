@@ -238,6 +238,7 @@ export default function Cashier() {
           product_name: item.name, type: "SALE" as const, qty: -item.qty,
           user_id: user.id, user_name: profile.full_name,
           note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`,
+          store_id: activeStoreId,
         });
       }
 
