@@ -122,17 +122,19 @@ export default function Cashier() {
     if (!profile?.company_id || searchQuery.length < 1) { setProducts([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      const { data } = await supabase
+      let q = supabase
         .from("products")
         .select("id, name, barcode, selling_price, stock_qty, category, sku")
         .eq("company_id", profile.company_id!)
         .or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%`)
         .limit(20);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q;
       setProducts(data || []);
       setSearching(false);
     }, 300);
     return () => clearTimeout(t);
-  }, [searchQuery, profile?.company_id]);
+  }, [searchQuery, profile?.company_id, activeStoreId]);
 
   const addToCart = useCallback((product: any) => {
     setCart((prev) => {
