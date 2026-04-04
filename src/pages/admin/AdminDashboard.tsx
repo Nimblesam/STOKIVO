@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Building2, Users, CreditCard, ArrowLeftRight, AlertTriangle,
-  CheckCircle, TrendingUp, Activity, BarChart3,
+  CheckCircle, TrendingUp, Activity, BarChart3, Clock,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
