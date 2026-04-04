@@ -4,6 +4,7 @@ import { BarcodeGenerator, BARCODE_FORMATS, BarcodeFormat, generateBarcode, vali
 import { BarcodePrintView } from "@/components/BarcodePrintView";
 import { formatMoney } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
