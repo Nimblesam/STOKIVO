@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
 import type { InvoiceStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

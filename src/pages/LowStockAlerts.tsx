@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, Package, ShoppingCart, Layers, Loader2, Eye, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
