@@ -132,7 +132,7 @@ export default function AIInsights() {
       <PageHeader
         title="AI Insights"
         subtitle="Demand predictions and stock recommendations powered by your sales data"
-      />
+        badge={<PlanBadge feature="ai_insights" />}
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
