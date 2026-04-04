@@ -69,18 +69,7 @@ export const template = {
 const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
 const container = { padding: '40px 25px', maxWidth: '520px', margin: '0 auto' }
 const logoSection = { textAlign: 'center' as const, marginBottom: '24px' }
-const logoBadge = {
-  display: 'inline-block',
-  width: '48px',
-  height: '48px',
-  lineHeight: '48px',
-  borderRadius: '12px',
-  background: 'linear-gradient(135deg, hsl(262, 60%, 30%), hsl(262, 55%, 50%))',
-  color: '#ffffff',
-  fontSize: '22px',
-  fontWeight: '700' as const,
-  textAlign: 'center' as const,
-}
+const logoImg = { borderRadius: '12px' }
 const h1 = { fontSize: '22px', fontWeight: '700', color: 'hsl(220, 30%, 12%)', margin: '0 0 16px', textAlign: 'center' as const }
 const text = { fontSize: '14px', color: 'hsl(215, 15%, 50%)', lineHeight: '1.6', margin: '0 0 20px' }
 const subtext = { fontSize: '14px', color: 'hsl(220, 30%, 12%)', fontWeight: '600', margin: '16px 0 8px' }
