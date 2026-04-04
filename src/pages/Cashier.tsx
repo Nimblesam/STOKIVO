@@ -47,6 +47,7 @@ export interface SaleRecord {
 
 export default function Cashier() {
   const { user, profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
 
   const [cart, setCart] = useState<CartItem[]>([]);
