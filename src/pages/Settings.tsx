@@ -21,7 +21,8 @@ import {
 import { WarehouseManager } from "@/components/WarehouseManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { StatusBadge } from "@/components/StatusBadge";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures, type Feature } from "@/hooks/use-plan-features";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
