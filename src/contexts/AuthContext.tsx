@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (prof?.company_id) {
       const { data: comp } = await supabase
         .from("companies")
-        .select("id, name, currency, brand_color, plan")
+        .select("id, name, currency, brand_color, plan, status")
         .eq("id", prof.company_id)
         .single();
       setCompany(comp);
