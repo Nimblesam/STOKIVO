@@ -66,7 +66,9 @@ export default function Onboarding() {
     { name: "", address: "", city: "", postcode: "" },
   ]);
 
-  // Step 3 — Payments
+  // Step 0 — Plan
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier>("starter");
+
   const [stripeConnected, setStripeConnected] = useState(false);
   const [stripeLoading, setStripeLoading] = useState(false);
 
