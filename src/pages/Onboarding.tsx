@@ -103,8 +103,9 @@ export default function Onboarding() {
   };
 
   const canNext = (): boolean => {
-    if (step === 0) return !!biz.name.trim();
-    if (step === 1) return locations.some((l) => l.name.trim());
+    if (step === 0) return !!selectedPlan;
+    if (step === 1) return !!biz.name.trim();
+    if (step === 2) return locations.some((l) => l.name.trim());
     return true;
   };
 
