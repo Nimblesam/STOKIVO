@@ -22,8 +22,8 @@ export default function PendingApproval() {
         </div>
 
         <div className="space-y-3">
-          <div className="mx-auto h-20 w-20 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
-            <Clock className="h-10 w-10 text-amber-600 dark:text-amber-400" />
+          <div className="mx-auto h-20 w-20 rounded-full bg-warning/10 flex items-center justify-center">
+            <Clock className="h-10 w-10 text-warning" />
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground">Account Under Review</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
