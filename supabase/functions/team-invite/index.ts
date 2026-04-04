@@ -103,7 +103,7 @@ serve(async (req) => {
 
       const { error: otpErr } = await supabaseAnon.auth.signInWithOtp({
         email: normalizedEmail,
-        options: { emailRedirectTo: `${origin}/login?invited=1` },
+        options: { emailRedirectTo: `${origin}/set-password` },
       });
       if (otpErr) throw otpErr;
     }
