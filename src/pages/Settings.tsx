@@ -53,6 +53,9 @@ export default function Settings() {
     custom_domain: "", subdomain: "",
   });
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [memberStoreAssignments, setMemberStoreAssignments] = useState<Record<string, string[]>>({});
+  const [assigningStore, setAssigningStore] = useState<string | null>(null);
   const [domainStep, setDomainStep] = useState<"input" | "dns" | "verifying">("input");
   const [copiedRecord, setCopiedRecord] = useState<string | null>(null);
 
