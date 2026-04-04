@@ -142,7 +142,7 @@ export default function Products() {
     if (editingProduct) {
       ({ error } = await supabase.from("products").update(payload).eq("id", editingProduct.id));
     } else {
-      ({ error } = await supabase.from("products").insert({ ...payload, company_id: profile.company_id }));
+      ({ error } = await supabase.from("products").insert({ ...payload, company_id: profile.company_id, store_id: activeStoreId }));
     }
 
     if (error) {
