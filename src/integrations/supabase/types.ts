@@ -1513,6 +1513,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_user_email: { Args: { _user_id: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1523,6 +1524,7 @@ export type Database = {
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       get_user_default_store: { Args: { _user_id: string }; Returns: string }
+      get_user_email: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

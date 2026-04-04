@@ -41,6 +41,46 @@ export default function AdminCompanies() {
   const updateStatus = async (company: any, newStatus: string) => {
     await supabase.from("companies").update({ status: newStatus } as any).eq("id", company.id);
     await logAction(`company_${newStatus}`, "company", company.id, { name: company.name, previousStatus: company.status });
+    
+    // Send approval email to the company owner
+    if (newStatus === "active" && company.status === "pending") {
+      try {
+        // Get the owner's profile to find their email and name
+        const { data: ownerRole } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("company_id", company.id)
+          .eq("role", "owner")
+          .single();
+        
+        if (ownerRole) {
+          const [{ data: profile }, { data: ownerEmail }] = await Promise.all([
+            supabase.from("profiles").select("full_name").eq("user_id", ownerRole.user_id).single(),
+            supabase.rpc("admin_get_user_email", { _user_id: ownerRole.user_id }),
+          ]);
+
+          const email = ownerEmail || company.email;
+          if (email) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "account-approved",
+                recipientEmail: email,
+                idempotencyKey: `account-approved-${company.id}`,
+                templateData: {
+                  companyName: company.name,
+                  ownerName: profile?.full_name || "",
+                  plan: company.plan ? company.plan.charAt(0).toUpperCase() + company.plan.slice(1) : "",
+                },
+              },
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to send approval email:", e);
+        // Don't block the approval if email fails
+      }
+    }
+    
     toast({ title: `Company ${newStatus === "active" ? "approved" : newStatus}` });
     load();
   };
