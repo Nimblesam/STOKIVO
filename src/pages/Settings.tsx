@@ -28,7 +28,10 @@ import type { Currency } from "@/lib/types";
 
 export default function Settings() {
   const { company, profile, user, refreshProfile, role } = useAuth();
-  const { currentPlan, isPro } = usePlanFeatures();
+  const { currentPlan, isPro, limits, canAddUser, requiredPlanFor } = usePlanFeatures();
+  const [upgradeModal, setUpgradeModal] = useState<{ open: boolean; feature: Feature; label: string }>({
+    open: false, feature: "multi_location", label: "",
+  });
   const isOwner = role === "owner";
   const isManager = role === "manager";
   const currency = (company?.currency || "GBP") as Currency;
