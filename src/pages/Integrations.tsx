@@ -229,6 +229,24 @@ export default function Integrations() {
     }
   };
 
+  if (!isPro) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <PageHeader title="Integrations" subtitle="Connect your sales channels — inventory syncs automatically across all platforms" />
+        <UpgradeModal
+          open={true}
+          onOpenChange={() => {}}
+          requiredPlan="pro"
+          featureLabel="Integrations"
+          currentPlan={currentPlan}
+        />
+        <div className="text-center py-16">
+          <p className="text-muted-foreground">Integrations are available on the Pro plan.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto">
       <PageHeader
