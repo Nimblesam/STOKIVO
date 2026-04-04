@@ -142,6 +142,7 @@ export default function Onboarding() {
         currency: biz.currency as any,
         brand_color: biz.brandColor,
         business_type: biz.businessType,
+        status: "pending",
       });
       if (compErr) throw compErr;
 
