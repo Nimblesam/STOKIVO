@@ -57,6 +57,7 @@ export default function AdminDashboard() {
         totalCompanies: comps.length,
         activeCompanies: comps.filter(c => c.status === "active").length,
         suspendedCompanies: comps.filter(c => c.status === "suspended" || c.status === "disabled").length,
+        pendingCompanies: comps.filter(c => c.status === "pending").length,
         newCompanies30d: comps.filter(c => c.created_at >= thirtyDaysAgo).length,
         totalUsers: (users.data || []).length,
         totalSales: totalVolume,
