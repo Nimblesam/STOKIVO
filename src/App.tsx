@@ -91,7 +91,7 @@ function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={<Landing />} />
+    <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
     <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/onboarding" element={<Onboarding />} />

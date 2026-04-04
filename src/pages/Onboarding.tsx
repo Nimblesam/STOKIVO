@@ -124,6 +124,23 @@ export default function Onboarding() {
       });
       if (compErr) throw compErr;
 
+      // Ensure profile exists (Google OAuth users may not have one yet)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const { error: createProfileErr } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          });
+        if (createProfileErr) throw createProfileErr;
+      }
+
       // Create owner role BEFORE updating profile (RLS requires company_id IS NULL on profile)
       const { error: roleErr } = await supabase
         .from("user_roles")
@@ -137,11 +154,25 @@ export default function Onboarding() {
         .eq("user_id", user.id);
       if (profileErr) throw profileErr;
 
-      // Create subscription
+      // Create subscription with selected plan
+      const planConfig = {
+        starter: { max_products: 500, max_users: 1 },
+        growth: { max_products: 5000, max_users: 5 },
+        pro: { max_products: 999999, max_users: 25 },
+      };
+      const selectedPlanConfig = planConfig[selectedPlan];
       const { error: subErr } = await supabase
         .from("subscriptions")
-        .insert({ company_id: companyId, plan: "starter", max_products: 500, max_users: 1 });
+        .insert({
+          company_id: companyId,
+          plan: selectedPlan,
+          max_products: selectedPlanConfig.max_products,
+          max_users: selectedPlanConfig.max_users,
+        });
       if (subErr) throw subErr;
+
+      // Update company plan
+      await supabase.from("companies").update({ plan: selectedPlan }).eq("id", companyId);
 
       // Create locations as stores + warehouses
       const validLocations = locations.filter((l) => l.name.trim());
