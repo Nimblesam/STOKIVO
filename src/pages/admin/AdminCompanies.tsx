@@ -41,6 +41,50 @@ export default function AdminCompanies() {
   const updateStatus = async (company: any, newStatus: string) => {
     await supabase.from("companies").update({ status: newStatus } as any).eq("id", company.id);
     await logAction(`company_${newStatus}`, "company", company.id, { name: company.name, previousStatus: company.status });
+    
+    // Send approval email to the company owner
+    if (newStatus === "active" && company.status === "pending") {
+      try {
+        // Get the owner's profile to find their email and name
+        const { data: ownerRole } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("company_id", company.id)
+          .eq("role", "owner")
+          .single();
+        
+        if (ownerRole) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, user_id")
+            .eq("user_id", ownerRole.user_id)
+            .single();
+
+          // Get the user's email from admin_users or company email
+          const ownerEmail = company.email;
+          
+          // Try to get email from auth - we'll use the company email or profile lookup
+          if (ownerEmail || profile) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "account-approved",
+                recipientEmail: ownerEmail || company.email,
+                idempotencyKey: `account-approved-${company.id}`,
+                templateData: {
+                  companyName: company.name,
+                  ownerName: profile?.full_name || "",
+                  plan: company.plan ? company.plan.charAt(0).toUpperCase() + company.plan.slice(1) : "",
+                },
+              },
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to send approval email:", e);
+        // Don't block the approval if email fails
+      }
+    }
+    
     toast({ title: `Company ${newStatus === "active" ? "approved" : newStatus}` });
     load();
   };
