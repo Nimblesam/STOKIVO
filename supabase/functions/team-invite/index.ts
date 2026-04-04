@@ -77,7 +77,7 @@ serve(async (req) => {
     const { data: invitedUser, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       normalizedEmail,
       {
-        redirectTo: `${origin}/login?invited=1`,
+        redirectTo: `${origin}/set-password`,
         data: { company_id: callerCompanyId, invited_role: normalizedRole },
       },
     );
