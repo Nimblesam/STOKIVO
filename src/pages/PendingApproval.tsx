@@ -2,11 +2,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Clock, LogOut, RefreshCw } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function PendingApproval() {
-  const { signOut, refreshProfile, company } = useAuth();
+  const { signOut, refreshProfile, company, user, profile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+    } else if (company && company.status === "active") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, company, navigate]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
