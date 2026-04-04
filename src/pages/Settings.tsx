@@ -426,8 +426,8 @@ export default function Settings() {
         </TabsContent>
         )}
 
-        {/* WAREHOUSES TAB */}
-        {(isOwner || isManager) && (
+        {/* WAREHOUSES TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="warehouses">
           <div className="stokivo-card p-6">
             <WarehouseManager />

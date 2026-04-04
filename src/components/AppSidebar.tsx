@@ -48,7 +48,7 @@ const otherNav: NavItem[] = [
   { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["owner", "manager"], requiredFeature: "advanced_analytics" },
   { title: "AI Insights", url: "/ai-insights", icon: Brain, roles: ["owner", "manager"], requiredFeature: "ai_insights" },
   { title: "Accounting", url: "/accounting", icon: Calculator, roles: ["owner", "manager"] },
-  { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"] },
+  { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"], requiredFeature: "rbac_advanced" },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["owner", "manager"] },
 ];
 
