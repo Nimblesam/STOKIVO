@@ -158,12 +158,13 @@ export default function Cashier() {
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scanValue.trim() || !profile?.company_id) return;
-    const { data } = await supabase
+    let q = supabase
       .from("products")
       .select("id, name, barcode, selling_price, stock_qty")
       .eq("company_id", profile.company_id)
-      .eq("barcode", scanValue.trim())
-      .maybeSingle();
+      .eq("barcode", scanValue.trim());
+    if (activeStoreId) q = q.eq("store_id", activeStoreId);
+    const { data } = await q.maybeSingle();
     if (data) { addToCart(data); }
     else { toast.error("Barcode not found", { description: `No product matches "${scanValue}"` }); }
     setScanValue("");
