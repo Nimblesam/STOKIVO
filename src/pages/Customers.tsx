@@ -69,7 +69,7 @@ export default function Customers() {
 
     const { error } = editingId
       ? await supabase.from("customers").update(payload).eq("id", editingId)
-      : await supabase.from("customers").insert({ ...payload, company_id: profile.company_id });
+      : await supabase.from("customers").insert({ ...payload, company_id: profile.company_id, store_id: activeStoreId });
 
     if (error) toast.error(error.message);
     else {
