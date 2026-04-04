@@ -440,7 +440,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 2: Locations */}
-          {step === 1 && (
+          {step === 2 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Set up your locations</h1>
@@ -485,7 +485,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 3: Payments */}
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Enable Payments</h1>
@@ -535,7 +535,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 4: POS / Terminal */}
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Point of Sale Setup</h1>
@@ -569,7 +569,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 5: Team */}
-          {step === 4 && (
+          {step === 5 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-display font-bold text-foreground">Invite Your Team</h1>
@@ -629,7 +629,7 @@ export default function Onboarding() {
           )}
 
           {/* STEP 6: Activation */}
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
