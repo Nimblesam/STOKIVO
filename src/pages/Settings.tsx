@@ -82,7 +82,23 @@ export default function Settings() {
             const p = profiles?.find((pr) => pr.user_id === r.user_id);
             return { ...r, name: p?.full_name || "Unknown", avatar_url: p?.avatar_url };
           }));
+
+          // Load store assignments for all team members
+          const { data: assignments } = await supabase.from("user_store_assignments")
+            .select("user_id, store_id").eq("company_id", company.id);
+          if (assignments) {
+            const map: Record<string, string[]> = {};
+            assignments.forEach((a) => {
+              if (!map[a.user_id]) map[a.user_id] = [];
+              map[a.user_id].push(a.store_id);
+            });
+            setMemberStoreAssignments(map);
+          }
         });
+
+      // Load stores
+      supabase.from("stores").select("id, name").eq("company_id", company.id).eq("status", "active")
+        .then(({ data }) => { if (data) setStores(data); });
     }
   }, [company]);
 
