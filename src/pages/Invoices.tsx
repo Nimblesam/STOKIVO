@@ -69,7 +69,7 @@ export default function Invoices() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [profile?.company_id]);
+  useEffect(() => { fetchData(); }, [profile?.company_id, activeStoreId]);
 
   const filtered = filter === "all" ? invoices : invoices.filter((i) => i.status === filter);
 
