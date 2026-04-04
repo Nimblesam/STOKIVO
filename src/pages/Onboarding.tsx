@@ -263,6 +263,24 @@ export default function Onboarding() {
         }
       }
 
+      // Send welcome email
+      try {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "welcome",
+            recipientEmail: user.email,
+            idempotencyKey: `welcome-${user.id}`,
+            templateData: {
+              ownerName: user.user_metadata?.full_name || user.email?.split("@")[0] || "",
+              companyName: biz.name,
+              plan: selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1),
+            },
+          },
+        });
+      } catch {
+        // Non-blocking — welcome email is best-effort
+      }
+
       await refreshProfile();
       toast.success("Welcome to Stokivo! Your business is ready 🎉");
       navigate("/dashboard");
