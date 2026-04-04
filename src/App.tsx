@@ -156,7 +156,6 @@ const AppRoutes = () => (
   </Routes>
 );
 
-import { forwardRef } from "react";
 
 const App = forwardRef<HTMLDivElement>((_props, _ref) => (
   <QueryClientProvider client={queryClient}>
