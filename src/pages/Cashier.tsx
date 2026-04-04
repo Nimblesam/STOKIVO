@@ -276,6 +276,7 @@ export default function Cashier() {
             due_date: dueDate.toISOString().split("T")[0],
             subtotal: grandTotal, total: grandTotal,
             status: "sent" as any,
+            store_id: activeStoreId,
           }).select("id").single();
 
           if (inv) {

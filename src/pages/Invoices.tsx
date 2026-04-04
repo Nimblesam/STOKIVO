@@ -90,6 +90,7 @@ export default function Invoices() {
       company_id: profile.company_id, customer_id: newInv.customer_id,
       invoice_number: invNum, due_date: newInv.due_date,
       subtotal, total: subtotal, status: "draft" as any,
+      store_id: activeStoreId,
     }).select("id").single();
 
     if (error || !inv) { toast.error(error?.message || "Failed"); setSaving(false); return; }
