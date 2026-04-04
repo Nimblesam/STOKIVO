@@ -34,6 +34,7 @@ interface InvoiceRow {
 
 export default function Invoices() {
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [filter, setFilter] = useState<string>("all");
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
