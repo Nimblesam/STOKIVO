@@ -53,6 +53,9 @@ export default function Settings() {
     custom_domain: "", subdomain: "",
   });
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [memberStoreAssignments, setMemberStoreAssignments] = useState<Record<string, string[]>>({});
+  const [assigningStore, setAssigningStore] = useState<string | null>(null);
   const [domainStep, setDomainStep] = useState<"input" | "dns" | "verifying">("input");
   const [copiedRecord, setCopiedRecord] = useState<string | null>(null);
 
@@ -79,7 +82,23 @@ export default function Settings() {
             const p = profiles?.find((pr) => pr.user_id === r.user_id);
             return { ...r, name: p?.full_name || "Unknown", avatar_url: p?.avatar_url };
           }));
+
+          // Load store assignments for all team members
+          const { data: assignments } = await supabase.from("user_store_assignments")
+            .select("user_id, store_id").eq("company_id", company.id);
+          if (assignments) {
+            const map: Record<string, string[]> = {};
+            assignments.forEach((a) => {
+              if (!map[a.user_id]) map[a.user_id] = [];
+              map[a.user_id].push(a.store_id);
+            });
+            setMemberStoreAssignments(map);
+          }
         });
+
+      // Load stores
+      supabase.from("stores").select("id, name").eq("company_id", company.id).eq("status", "active")
+        .then(({ data }) => { if (data) setStores(data); });
     }
   }, [company]);
 
@@ -206,7 +225,7 @@ export default function Settings() {
         <TabsList className="bg-muted/50 flex flex-wrap">
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>
           {isOwner && <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>}
-          {(isOwner || isManager) && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
+          {isOwner && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
           {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
@@ -297,49 +316,106 @@ export default function Settings() {
               {teamMembers.map((member) => {
                 const isSelf = member.user_id === user?.id;
                 return (
-                  <div key={member.user_id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
-                    <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
-                      {member.name.split(" ").map((n: string) => n[0]).join("")}
+                  <div key={member.user_id} className="p-3 rounded-lg bg-muted/30 space-y-2">
+                    <div className="flex items-center gap-4">
+                      <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
+                        {member.name.split(" ").map((n: string) => n[0]).join("")}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{member.name}{isSelf ? " (You)" : ""}</p>
+                      </div>
+                      {!isSelf ? (
+                        <select
+                          value={member.role}
+                          onChange={async (e) => {
+                            const newRole = e.target.value;
+                            const { error } = await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", member.user_id).eq("company_id", company!.id);
+                            if (error) { toast.error(error.message); return; }
+                            setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, role: newRole } : m));
+                            toast.success(`Role updated to ${newRole}`);
+                          }}
+                          className="text-xs font-medium bg-muted px-2 py-1 rounded border border-input"
+                        >
+                          <option value="owner">Owner</option>
+                          <option value="manager">Manager</option>
+                          <option value="staff">Staff</option>
+                        </select>
+                      ) : (
+                        <span className="text-xs font-medium text-muted-foreground capitalize bg-muted px-2 py-1 rounded">{member.role}</span>
+                      )}
+                      {!isSelf ? (
+                        <Button
+                          variant={member.active ? "outline" : "default"}
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={async () => {
+                            const newActive = !member.active;
+                            const { error } = await supabase.from("user_roles").update({ active: newActive }).eq("user_id", member.user_id).eq("company_id", company!.id);
+                            if (error) { toast.error(error.message); return; }
+                            setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, active: newActive } : m));
+                            toast.success(newActive ? "Member activated" : "Member deactivated");
+                          }}
+                        >
+                          {member.active ? "Deactivate" : "Activate"}
+                        </Button>
+                      ) : (
+                        <StatusBadge status={member.active ? "active" : "inactive"} />
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{member.name}{isSelf ? " (You)" : ""}</p>
-                    </div>
-                    {!isSelf ? (
-                      <select
-                        value={member.role}
-                        onChange={async (e) => {
-                          const newRole = e.target.value;
-                          const { error } = await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", member.user_id).eq("company_id", company!.id);
-                          if (error) { toast.error(error.message); return; }
-                          setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, role: newRole } : m));
-                          toast.success(`Role updated to ${newRole}`);
-                        }}
-                        className="text-xs font-medium bg-muted px-2 py-1 rounded border border-input"
-                      >
-                        <option value="owner">Owner</option>
-                        <option value="manager">Manager</option>
-                        <option value="staff">Staff</option>
-                      </select>
-                    ) : (
-                      <span className="text-xs font-medium text-muted-foreground capitalize bg-muted px-2 py-1 rounded">{member.role}</span>
-                    )}
-                    {!isSelf ? (
-                      <Button
-                        variant={member.active ? "outline" : "default"}
-                        size="sm"
-                        className="text-xs h-7"
-                        onClick={async () => {
-                          const newActive = !member.active;
-                          const { error } = await supabase.from("user_roles").update({ active: newActive }).eq("user_id", member.user_id).eq("company_id", company!.id);
-                          if (error) { toast.error(error.message); return; }
-                          setTeamMembers((prev) => prev.map((m) => m.user_id === member.user_id ? { ...m, active: newActive } : m));
-                          toast.success(newActive ? "Member activated" : "Member deactivated");
-                        }}
-                      >
-                        {member.active ? "Deactivate" : "Activate"}
-                      </Button>
-                    ) : (
-                      <StatusBadge status={member.active ? "active" : "inactive"} />
+                    {/* Store assignments for non-owner members */}
+                    {!isSelf && member.role !== "owner" && stores.length > 0 && (
+                      <div className="pl-12">
+                        <p className="text-xs text-muted-foreground mb-1.5">Assigned Stores:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {stores.map((store) => {
+                            const assigned = (memberStoreAssignments[member.user_id] || []).includes(store.id);
+                            return (
+                              <Button
+                                key={store.id}
+                                variant={assigned ? "default" : "outline"}
+                                size="sm"
+                                className="text-xs h-6 px-2"
+                                disabled={assigningStore === `${member.user_id}-${store.id}`}
+                                onClick={async () => {
+                                  const key = `${member.user_id}-${store.id}`;
+                                  setAssigningStore(key);
+                                  try {
+                                    if (assigned) {
+                                      const { error } = await supabase.from("user_store_assignments")
+                                        .delete()
+                                        .eq("user_id", member.user_id)
+                                        .eq("store_id", store.id)
+                                        .eq("company_id", company!.id);
+                                      if (error) throw error;
+                                      setMemberStoreAssignments((prev) => ({
+                                        ...prev,
+                                        [member.user_id]: (prev[member.user_id] || []).filter((s) => s !== store.id),
+                                      }));
+                                      toast.success(`Removed ${store.name} from ${member.name}`);
+                                    } else {
+                                      const { error } = await supabase.from("user_store_assignments")
+                                        .insert({ user_id: member.user_id, store_id: store.id, company_id: company!.id });
+                                      if (error) throw error;
+                                      setMemberStoreAssignments((prev) => ({
+                                        ...prev,
+                                        [member.user_id]: [...(prev[member.user_id] || []), store.id],
+                                      }));
+                                      toast.success(`Assigned ${store.name} to ${member.name}`);
+                                    }
+                                  } catch (err: any) {
+                                    toast.error(err.message || "Failed to update store assignment");
+                                  } finally {
+                                    setAssigningStore(null);
+                                  }
+                                }}
+                              >
+                                {assigned ? <CheckCircle2 className="h-3 w-3 mr-1" /> : null}
+                                {store.name}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
                   </div>
                 );
@@ -350,8 +426,8 @@ export default function Settings() {
         </TabsContent>
         )}
 
-        {/* WAREHOUSES TAB */}
-        {(isOwner || isManager) && (
+        {/* WAREHOUSES TAB - Owner only */}
+        {isOwner && (
         <TabsContent value="warehouses">
           <div className="stokivo-card p-6">
             <WarehouseManager />

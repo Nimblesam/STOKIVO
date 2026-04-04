@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { PageHeader } from "@/components/PageHeader";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -112,6 +114,7 @@ const channels: Channel[] = [
 
 export default function Integrations() {
   const { profile } = useAuth();
+  const { currentPlan, isPro, requiredPlanFor } = usePlanFeatures();
   const [channelStatuses, setChannelStatuses] = useState<Record<string, ChannelStatus>>({});
   const [connectDialog, setConnectDialog] = useState<Channel | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -225,6 +228,24 @@ export default function Integrations() {
         );
     }
   };
+
+  if (!isPro) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <PageHeader title="Integrations" subtitle="Connect your sales channels — inventory syncs automatically across all platforms" />
+        <UpgradeModal
+          open={true}
+          onOpenChange={() => {}}
+          requiredPlan="pro"
+          featureLabel="Integrations"
+          currentPlan={currentPlan}
+        />
+        <div className="text-center py-16">
+          <p className="text-muted-foreground">Integrations are available on the Pro plan.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
