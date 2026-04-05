@@ -121,8 +121,13 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
           country: country,
         },
       });
-      if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+      if (error) throw new Error(error.message || "Edge function error");
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No redirect URL received from payment provider");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to start onboarding");
     } finally {
@@ -317,10 +322,6 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
               </span>
             </div>
             <Separator />
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Platform fee</span>
-              <span className="text-sm font-medium text-foreground">0.5% per transaction</span>
-            </div>
           </div>
 
           <div className="flex gap-3">
@@ -349,7 +350,6 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
           <p>1. Connect your bank account securely through Stripe</p>
           <p>2. Send payment links to customers for invoices</p>
           <p>3. Customer pays → funds go directly to your bank</p>
-          <p>4. Platform fee: <strong className="text-foreground">0.5%</strong> per transaction</p>
         </div>
       </div>
     </div>

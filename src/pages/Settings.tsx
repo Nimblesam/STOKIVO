@@ -458,7 +458,7 @@ export default function Settings() {
                     Start Receiving Payments
                   </h2>
                   <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                    Connect your bank account to accept customer payments directly. Funds are deposited automatically with just a 0.5% platform fee.
+                    Connect your bank account to accept customer payments directly. Funds are deposited automatically to your account.
                   </p>
                   <Button
                     size="lg"
@@ -468,8 +468,10 @@ export default function Settings() {
                         const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
                           body: { business_type: "individual", country: "GB" },
                         });
-                        if (error) throw error;
+                        if (error) throw new Error(error.message || "Edge function error");
+                        if (data?.error) throw new Error(data.error);
                         if (data?.url) window.location.href = data.url;
+                        else throw new Error("No redirect URL received");
                       } catch (err: any) {
                         toast.error(err.message || "Failed to start setup");
                       }
@@ -511,16 +513,6 @@ export default function Settings() {
                   });
                 }}
               />
-            </div>
-            <div className="stokivo-card p-6">
-              <h3 className="font-display font-semibold text-foreground mb-4">Payment Fee Example</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Customer pays</span><span className="font-medium">£100.00</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Stripe processing fee (~1.4%)</span><span className="text-destructive">-£1.40</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Platform fee (0.5%)</span><span className="text-destructive">-£0.50</span></div>
-                <Separator />
-                <div className="flex justify-between font-bold"><span>You receive</span><span className="text-green-600">£98.10</span></div>
-              </div>
             </div>
           </div>
         </TabsContent>
