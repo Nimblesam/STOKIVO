@@ -79,6 +79,8 @@ serve(async (req) => {
     let userMessage = msg;
     if (msg.includes("configuration")) {
       userMessage = "Billing portal is being set up. Please try again shortly or contact support.";
+    } else if (msg.includes("permission") || msg.includes("required permissions")) {
+      userMessage = "The Stripe API key does not have billing portal permissions. Please update to a full secret key in your settings.";
     }
 
     return new Response(JSON.stringify({ error: userMessage }), {
