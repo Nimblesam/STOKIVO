@@ -221,16 +221,16 @@ export default function Settings() {
     <div className="max-w-4xl mx-auto">
       <PageHeader title="Settings" subtitle="Manage your company, billing, and integrations" />
 
-      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "company"} className="space-y-6">
+      <Tabs defaultValue={isOwner ? (new URLSearchParams(window.location.search).get("tab") || "company") : "security"} className="space-y-6">
         <TabsList className="bg-muted/50 flex flex-wrap">
-          <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>
+          {isOwner && <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>}
           {isOwner && <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>}
           {isOwner && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
           {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
           {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
-          <TabsTrigger value="data-privacy" className="gap-2"><Database className="h-4 w-4" /> Data & Privacy</TabsTrigger>
+          {isOwner && <TabsTrigger value="data-privacy" className="gap-2"><Database className="h-4 w-4" /> Data & Privacy</TabsTrigger>}
         </TabsList>
 
         {/* COMPANY TAB */}

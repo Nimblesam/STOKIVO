@@ -4,6 +4,7 @@ import { formatMoney } from "@/lib/currency";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import type { Currency } from "@/lib/types";
 
 export default function CreditLedger() {
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [customers, setCustomers] = useState<any[]>([]);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
@@ -175,6 +177,7 @@ export default function CreditLedger() {
       company_id: profile.company_id, customer_id: invoiceCustomerId,
       invoice_number: invNum, due_date: newInv.due_date,
       subtotal, total: subtotal, status: "sent" as any,
+      store_id: activeStoreId || null,
     }).select("id").single();
 
     if (error || !inv) { toast.error(error?.message || "Failed"); setSavingInvoice(false); return; }
