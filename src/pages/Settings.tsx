@@ -458,7 +458,7 @@ export default function Settings() {
                     Start Receiving Payments
                   </h2>
                   <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                    Connect your bank account to accept customer payments directly. Funds are deposited automatically with just a 0.5% platform fee.
+                    Connect your bank account to accept customer payments directly. Funds are deposited automatically to your account.
                   </p>
                   <Button
                     size="lg"
