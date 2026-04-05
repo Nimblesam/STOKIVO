@@ -121,8 +121,13 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
           country: country,
         },
       });
-      if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+      if (error) throw new Error(error.message || "Edge function error");
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No redirect URL received from payment provider");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to start onboarding");
     } finally {
