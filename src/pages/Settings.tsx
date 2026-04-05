@@ -512,16 +512,6 @@ export default function Settings() {
                 }}
               />
             </div>
-            <div className="stokivo-card p-6">
-              <h3 className="font-display font-semibold text-foreground mb-4">Payment Fee Example</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Customer pays</span><span className="font-medium">£100.00</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Stripe processing fee (~1.4%)</span><span className="text-destructive">-£1.40</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Platform fee (0.5%)</span><span className="text-destructive">-£0.50</span></div>
-                <Separator />
-                <div className="flex justify-between font-bold"><span>You receive</span><span className="text-green-600">£98.10</span></div>
-              </div>
-            </div>
           </div>
         </TabsContent>
         )}
