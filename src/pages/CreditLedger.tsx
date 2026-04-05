@@ -177,6 +177,7 @@ export default function CreditLedger() {
       company_id: profile.company_id, customer_id: invoiceCustomerId,
       invoice_number: invNum, due_date: newInv.due_date,
       subtotal, total: subtotal, status: "sent" as any,
+      store_id: activeStoreId || null,
     }).select("id").single();
 
     if (error || !inv) { toast.error(error?.message || "Failed"); setSavingInvoice(false); return; }
