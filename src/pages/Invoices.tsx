@@ -414,7 +414,7 @@ export default function Invoices() {
       <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
         <DialogContent className="max-w-[900px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+           <DialogTitle className="flex items-center justify-between print:hidden">
               <span>{selectedInvoice?.invoice_number}</span>
               <div className="flex gap-2">
                 {selectedInvoice && (selectedInvoice.total - selectedInvoice.amount_paid) > 0 && (
