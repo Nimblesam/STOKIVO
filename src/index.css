@@ -151,4 +151,8 @@
   .print\:hidden {
     display: none !important;
   }
+  [data-radix-portal] button[data-radix-dialog-close],
+  [data-radix-portal] [role="dialog"] > button:first-of-type {
+    display: none !important;
+  }
 }
