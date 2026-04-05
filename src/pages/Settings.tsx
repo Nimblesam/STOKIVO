@@ -468,8 +468,10 @@ export default function Settings() {
                         const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
                           body: { business_type: "individual", country: "GB" },
                         });
-                        if (error) throw error;
+                        if (error) throw new Error(error.message || "Edge function error");
+                        if (data?.error) throw new Error(data.error);
                         if (data?.url) window.location.href = data.url;
+                        else throw new Error("No redirect URL received");
                       } catch (err: any) {
                         toast.error(err.message || "Failed to start setup");
                       }

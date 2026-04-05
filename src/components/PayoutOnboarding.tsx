@@ -350,7 +350,6 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
           <p>1. Connect your bank account securely through Stripe</p>
           <p>2. Send payment links to customers for invoices</p>
           <p>3. Customer pays → funds go directly to your bank</p>
-          <p>4. Platform fee: <strong className="text-foreground">0.5%</strong> per transaction</p>
         </div>
       </div>
     </div>

@@ -96,8 +96,8 @@ export default function Payouts() {
           <p className="text-2xl font-display font-bold text-foreground">{filtered.length}</p>
         </div>
         <div className="stokivo-card p-5">
-          <p className="text-xs text-muted-foreground mb-1">Platform Fee (0.5%)</p>
-          <p className="text-2xl font-display font-bold text-destructive">-{formatMoney(Math.round(totalPaid * 0.005), currency)}</p>
+          <p className="text-xs text-muted-foreground mb-1">Payment Methods</p>
+          <p className="text-2xl font-display font-bold text-foreground">{methods.length || 0}</p>
         </div>
       </div>
 
