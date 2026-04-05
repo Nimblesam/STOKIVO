@@ -322,10 +322,6 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
               </span>
             </div>
             <Separator />
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">Platform fee</span>
-              <span className="text-sm font-medium text-foreground">0.5% per transaction</span>
-            </div>
           </div>
 
           <div className="flex gap-3">
