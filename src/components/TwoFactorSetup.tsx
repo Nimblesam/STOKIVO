@@ -40,7 +40,7 @@ export function TwoFactorSetup() {
   const handleEnroll = async () => {
     setEnrolling(true);
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Authenticator App" });
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Authenticator App", issuer: "Stokivo" });
       if (error) throw error;
       setQrUri(data.totp.uri);
       setSecret(data.totp.secret);
