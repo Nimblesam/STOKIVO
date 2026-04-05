@@ -19,6 +19,7 @@ import type { Currency } from "@/lib/types";
 
 export default function CreditLedger() {
   const { profile, company } = useAuth();
+  const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [customers, setCustomers] = useState<any[]>([]);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
