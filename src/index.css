@@ -125,3 +125,25 @@
   .status-draft { @apply bg-muted text-muted-foreground; }
   .status-partial { @apply bg-info/10 text-info; }
 }
+
+@media print {
+  body > *:not([data-radix-portal]) {
+    display: none !important;
+  }
+  [data-radix-portal] [role="dialog"] {
+    position: static !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  [data-radix-portal] [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+  .print\\:hidden {
+    display: none !important;
+  }
+}
