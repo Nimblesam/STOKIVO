@@ -45,6 +45,7 @@ export default function Products() {
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
