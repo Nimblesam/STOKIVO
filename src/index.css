@@ -127,12 +127,17 @@
 }
 
 @media print {
+  /* Hide everything except the radix portal containing the dialog */
   body > *:not([data-radix-portal]) {
     display: none !important;
   }
+
+  /* Hide overlay backdrop */
   [data-radix-portal] [data-radix-dialog-overlay] {
     display: none !important;
   }
+
+  /* Make the dialog full-page and visible */
   [data-radix-portal] [role="dialog"] {
     position: fixed !important;
     inset: 0 !important;
@@ -148,11 +153,35 @@
     transform: none !important;
     background: white !important;
   }
+
+  /* Ensure the scrollable content area doesn't clip */
+  [data-radix-portal] [role="dialog"] > div {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   .print\:hidden {
     display: none !important;
   }
+
+  /* Hide dialog close button */
   [data-radix-portal] button[data-radix-dialog-close],
   [data-radix-portal] [role="dialog"] > button:first-of-type {
     display: none !important;
+  }
+
+  /* Ensure invoice content uses print-friendly colors */
+  #invoice-print {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #invoice-print .text-foreground {
+    color: #000 !important;
+  }
+
+  #invoice-print .text-muted-foreground {
+    color: #555 !important;
   }
 }
