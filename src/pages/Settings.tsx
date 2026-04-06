@@ -10,6 +10,7 @@ import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -199,24 +200,30 @@ export default function Settings() {
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const handleCancelSubscription = async () => {
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a reason for cancellation");
+      return;
+    }
+    if (!company || !user) return;
     setCancelling(true);
     try {
-      const { data, error } = await supabase.functions.invoke("cancel-subscription");
+      const { error } = await supabase.from("cancellation_requests").insert({
+        company_id: company.id,
+        user_id: user.id,
+        reason: cancelReason.trim(),
+      } as any);
       if (error) throw error;
-      if (data?.canceled) {
-        toast.success("Subscription cancelled", {
-          description: `Your plan remains active until ${new Date(data.period_end).toLocaleDateString()}. You won't be charged again.`,
-          duration: 8000,
-        });
-        setShowCancelDialog(false);
-        await refreshProfile();
-      } else {
-        toast.error(data?.error || "Could not cancel subscription");
-      }
+      toast.success("Cancellation request submitted", {
+        description: "Our team will review your request and get back to you shortly.",
+        duration: 8000,
+      });
+      setShowCancelDialog(false);
+      setCancelReason("");
     } catch (err: any) {
-      toast.error(err.message || "Failed to cancel subscription");
+      toast.error(err.message || "Failed to submit cancellation request");
     } finally { setCancelling(false); }
   };
 
@@ -668,23 +675,35 @@ export default function Settings() {
                   Cancel Subscription
                 </Button>
 
-                <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-                  <DialogContent className="max-w-sm">
+                <Dialog open={showCancelDialog} onOpenChange={(open) => { setShowCancelDialog(open); if (!open) setCancelReason(""); }}>
+                  <DialogContent className="max-w-md">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2 text-destructive">
-                        <AlertTriangle className="h-5 w-5" /> Cancel Subscription
+                        <AlertTriangle className="h-5 w-5" /> Request Cancellation
                       </DialogTitle>
                     </DialogHeader>
                     <p className="text-sm text-muted-foreground">
-                      Are you sure you want to cancel your <strong>{currentPlan.toUpperCase()}</strong> plan? Your access will continue until the end of the current billing period, but you won't be charged again.
+                      Please tell us why you'd like to cancel your <strong>{currentPlan.toUpperCase()}</strong> plan. Our team will review your request.
                     </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="cancel-reason">Reason for cancellation</Label>
+                      <Textarea
+                        id="cancel-reason"
+                        placeholder="e.g. Too expensive, switching to another platform, no longer needed..."
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className="min-h-[100px] resize-none"
+                        maxLength={500}
+                      />
+                      <p className="text-xs text-muted-foreground text-right">{cancelReason.length}/500</p>
+                    </div>
                     <div className="flex gap-3 pt-2">
-                      <Button variant="ghost" className="flex-1" onClick={() => setShowCancelDialog(false)}>
+                      <Button variant="ghost" className="flex-1" onClick={() => { setShowCancelDialog(false); setCancelReason(""); }}>
                         Keep Plan
                       </Button>
-                      <Button variant="destructive" className="flex-1 gap-2" onClick={handleCancelSubscription} disabled={cancelling}>
+                      <Button variant="destructive" className="flex-1 gap-2" onClick={handleCancelSubscription} disabled={cancelling || !cancelReason.trim()}>
                         {cancelling && <Loader2 className="h-4 w-4 animate-spin" />}
-                        Yes, Cancel
+                        Submit Request
                       </Button>
                     </div>
                   </DialogContent>
