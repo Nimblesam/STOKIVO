@@ -77,12 +77,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
     const timeout = setTimeout(() => setLoading(false), 8000);
 
-    let initialLoadDone = false;
+    // 1. Set up listener FIRST (no awaits inside — fire-and-forget for post-init events)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        // Only handle post-init changes; initial load is handled by getSession below
+        setSession(session);
+        setUser(session?.user ?? null);
 
-    // 1. Restore session from storage first
+        if (!session?.user) {
+          setProfile(null);
+          setCompany(null);
+          setRole(null);
+          setMfaRequired(false);
+        }
+      }
+    );
+
+    // 2. Restore session from storage — this is the ONLY place we await profile fetch
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -96,40 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Continue even if profile fetch fails
         }
       }
-      initialLoadDone = true;
       setLoading(false);
       clearTimeout(timeout);
     });
-
-    // 2. Listen for subsequent auth changes (sign in/out/token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          try {
-            const needsMfa = await checkMfaStatus();
-            if (!needsMfa) {
-              await fetchProfile(session.user.id);
-            }
-          } catch {
-            // Continue even if MFA check fails
-          }
-        } else {
-          setProfile(null);
-          setCompany(null);
-          setRole(null);
-          setMfaRequired(false);
-        }
-        if (initialLoadDone) {
-          // Only update loading for post-init events
-        } else {
-          initialLoadDone = true;
-          setLoading(false);
-          clearTimeout(timeout);
-        }
-      }
-    );
 
     return () => {
       subscription.unsubscribe();
