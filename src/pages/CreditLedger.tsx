@@ -6,6 +6,7 @@ import { FieldError } from "@/components/FieldError";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
+import { syncCustomerBalance } from "@/lib/sync-balance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
