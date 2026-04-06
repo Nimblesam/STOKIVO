@@ -77,12 +77,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
     const timeout = setTimeout(() => setLoading(false), 8000);
 
-    let initialLoadDone = false;
+    // 1. Set up listener FIRST (fire-and-forget — no awaits to avoid deadlocks)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-    // 1. Restore session from storage first
+        if (session?.user) {
+          // Fire-and-forget profile hydration for sign-in / token refresh events
+          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "MFA_CHALLENGE_VERIFIED") {
+            checkMfaStatus().then((needsMfa) => {
+              if (!needsMfa) {
+                fetchProfile(session.user.id);
+              }
+            }).catch(() => {});
+          }
+        } else {
+          setProfile(null);
+          setCompany(null);
+          setRole(null);
+          setMfaRequired(false);
+        }
+      }
+    );
+
+    // 2. Restore session from storage — this is the ONLY place we await profile fetch
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -96,40 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Continue even if profile fetch fails
         }
       }
-      initialLoadDone = true;
       setLoading(false);
       clearTimeout(timeout);
     });
-
-    // 2. Listen for subsequent auth changes (sign in/out/token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          try {
-            const needsMfa = await checkMfaStatus();
-            if (!needsMfa) {
-              await fetchProfile(session.user.id);
-            }
-          } catch {
-            // Continue even if MFA check fails
-          }
-        } else {
-          setProfile(null);
-          setCompany(null);
-          setRole(null);
-          setMfaRequired(false);
-        }
-        if (initialLoadDone) {
-          // Only update loading for post-init events
-        } else {
-          initialLoadDone = true;
-          setLoading(false);
-          clearTimeout(timeout);
-        }
-      }
-    );
 
     return () => {
       subscription.unsubscribe();
