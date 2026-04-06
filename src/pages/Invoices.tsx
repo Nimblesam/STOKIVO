@@ -19,6 +19,17 @@ import type { Currency } from "@/lib/types";
 
 const statusFilters = ["all", "draft", "sent", "paid", "partially_paid", "overdue"] as const;
 
+interface PrintableCompany {
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  company_number: string | null;
+  logo_url: string | null;
+  currency: Currency;
+  brand_color: string;
+}
+
 interface InvoiceRow {
   id: string;
   invoice_number: string;
@@ -31,6 +42,142 @@ interface InvoiceRow {
   created_at: string;
   customers?: { name: string; address: string | null; phone: string | null; email: string | null; whatsapp?: string | null } | null;
 }
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const buildInvoicePrintHtml = ({
+  company,
+  invoice,
+  items,
+}: {
+  company: PrintableCompany;
+  invoice: InvoiceRow;
+  items: Array<{ product_name: string; qty: number; unit_price: number; total: number }>;
+}) => {
+  const brandColor = company.brand_color || "#0d9488";
+  const balance = invoice.total - invoice.amount_paid;
+  const itemRows = items
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHtml(item.product_name || "")}</td>
+          <td class="right">${item.qty}</td>
+          <td class="right">${escapeHtml(formatMoney(item.unit_price, company.currency))}</td>
+          <td class="right strong">${escapeHtml(formatMoney(item.total, company.currency))}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(invoice.invoice_number)}</title>
+        <style>
+          :root { color-scheme: light; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: #ffffff; color: #0f172a; font-family: Inter, Arial, Helvetica, sans-serif; }
+          body { padding: 32px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .invoice { max-width: 820px; margin: 0 auto; }
+          .bar { height: 10px; border-radius: 999px; background: ${brandColor}; margin-bottom: 24px; }
+          .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+          .muted { color: #64748b; }
+          .small { font-size: 12px; line-height: 1.5; }
+          .title { font-size: 32px; font-weight: 800; color: ${brandColor}; margin: 0; }
+          .company-name { font-size: 28px; font-weight: 800; color: ${brandColor}; margin: 0 0 8px; }
+          .invoice-number { font-size: 18px; font-weight: 700; margin: 8px 0 0; }
+          .logo { max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 8px; }
+          hr { border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0; }
+          .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
+          table { width: 100%; border-collapse: collapse; margin: 0 0 32px; }
+          thead tr { border-bottom: 2px solid ${brandColor}; }
+          th, td { padding: 12px 0; font-size: 14px; }
+          th { text-align: left; }
+          tbody tr { border-bottom: 1px solid #e2e8f0; }
+          .right { text-align: right; }
+          .strong { font-weight: 700; }
+          .totals { width: 280px; margin-left: auto; }
+          .totals-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; font-size: 14px; }
+          .totals-row.total { font-size: 18px; font-weight: 800; border-top: 1px solid #e2e8f0; margin-top: 4px; padding-top: 12px; }
+          .totals-row.balance { border-top: 1px solid #e2e8f0; margin-top: 4px; padding-top: 12px; color: #dc2626; font-weight: 700; }
+          .paid { color: #16a34a; }
+          .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b; }
+          @page { size: A4; margin: 12mm; }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice">
+          <div class="bar"></div>
+          <div class="row">
+            <div>
+              ${company.logo_url ? `<img src="${escapeHtml(company.logo_url)}" alt="${escapeHtml(company.name)}" class="logo" />` : `<h2 class="company-name">${escapeHtml(company.name)}</h2>`}
+              ${company.address ? `<div class="muted small">${escapeHtml(company.address)}</div>` : ""}
+              ${company.phone ? `<div class="muted small">${escapeHtml(company.phone)}</div>` : ""}
+              ${company.email ? `<div class="muted small">${escapeHtml(company.email)}</div>` : ""}
+              ${company.company_number ? `<div class="muted small">Company No: ${escapeHtml(company.company_number)}</div>` : ""}
+            </div>
+            <div class="right">
+              <h1 class="title">INVOICE</h1>
+              <div class="invoice-number">${escapeHtml(invoice.invoice_number)}</div>
+              <div class="muted small" style="margin-top: 8px;">
+                <div>Date: ${escapeHtml(invoice.created_at.split("T")[0])}</div>
+                <div>Due: ${escapeHtml(invoice.due_date)}</div>
+              </div>
+            </div>
+          </div>
+          <hr />
+          <div>
+            <div class="section-label">Bill To</div>
+            <div class="strong">${escapeHtml(invoice.customers?.name || "")}</div>
+            ${invoice.customers?.address ? `<div class="muted small">${escapeHtml(invoice.customers.address)}</div>` : ""}
+            ${invoice.customers?.phone ? `<div class="muted small">${escapeHtml(invoice.customers.phone)}</div>` : ""}
+            ${invoice.customers?.email ? `<div class="muted small">${escapeHtml(invoice.customers.email)}</div>` : ""}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Qty</th>
+                <th class="right">Unit Price</th>
+                <th class="right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+          </table>
+          <div class="totals">
+            <div class="totals-row"><span class="muted">Subtotal</span><span class="strong">${escapeHtml(formatMoney(invoice.subtotal, company.currency))}</span></div>
+            <div class="totals-row total"><span>Total</span><span>${escapeHtml(formatMoney(invoice.total, company.currency))}</span></div>
+            <div class="totals-row"><span class="muted">Amount Paid</span><span class="paid">${escapeHtml(formatMoney(invoice.amount_paid, company.currency))}</span></div>
+            ${balance > 0 ? `<div class="totals-row balance"><span>Balance Due</span><span>${escapeHtml(formatMoney(balance, company.currency))}</span></div>` : ""}
+          </div>
+          <div class="footer">
+            <div>Thank you for your business!</div>
+            <div style="margin-top: 4px;">${escapeHtml(company.name)}${company.company_number ? ` · Company No: ${escapeHtml(company.company_number)}` : ""}${company.address ? ` · ${escapeHtml(company.address)}` : ""}</div>
+          </div>
+        </div>
+        <script>
+          window.onload = function () {
+            window.print();
+            window.onafterprint = function () { window.close(); };
+          };
+        </script>
+      </body>
+    </html>
+  `;
+};
 
 export default function Invoices() {
   const { profile, company } = useAuth();
@@ -105,9 +252,10 @@ export default function Invoices() {
   };
 
   const viewInvoice = async (inv: InvoiceRow) => {
-    setSelectedInvoice(inv);
+    setSelectedItems([]);
     const { data } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
     setSelectedItems(data || []);
+    setSelectedInvoice(inv);
   };
 
   const sendViaEmail = (inv: InvoiceRow) => {
@@ -249,6 +397,30 @@ export default function Invoices() {
     currency: (fullCompany?.currency || company?.currency || "GBP") as any,
     brand_color: fullCompany?.brand_color || company?.brand_color || "#0d9488",
   });
+
+  const handlePrintInvoice = () => {
+    if (!selectedInvoice) return;
+
+    const printWindow = window.open("", "_blank", "noopener,noreferrer");
+    if (!printWindow) {
+      toast.error("Please allow pop-ups to print the invoice");
+      return;
+    }
+
+    printWindow.document.write(
+      buildInvoicePrintHtml({
+        company: getInvoiceCompany(),
+        invoice: selectedInvoice,
+        items: selectedItems.map((item) => ({
+          product_name: item.product_name,
+          qty: item.qty,
+          unit_price: item.unit_price,
+          total: item.total,
+        })),
+      }),
+    );
+    printWindow.document.close();
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -436,7 +608,7 @@ export default function Invoices() {
                     <DropdownMenuItem onClick={() => selectedInvoice && sendViaWhatsApp(selectedInvoice)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="h-4 w-4" /> Print</Button>
+                <Button variant="outline" size="sm" className="gap-2" onClick={handlePrintInvoice}><Printer className="h-4 w-4" /> Print</Button>
               </div>
             </DialogTitle>
           </DialogHeader>

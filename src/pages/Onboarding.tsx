@@ -116,7 +116,9 @@ export default function Onboarding() {
         body: { return_url: window.location.href },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       if (data?.url) window.location.href = data.url;
+      else throw new Error("No redirect URL received");
     } catch (err: any) {
       toast.error(err.message || "Failed to start payment setup");
     } finally {
