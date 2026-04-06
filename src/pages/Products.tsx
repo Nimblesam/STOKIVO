@@ -566,6 +566,16 @@ export default function Products() {
         featureLabel={`More than ${limits.maxProducts} products`}
         currentPlan={currentPlan}
       />
+
+      <ProductImport
+        open={showImport}
+        onOpenChange={setShowImport}
+        companyId={profile?.company_id || ""}
+        storeId={activeStoreId}
+        onComplete={fetchProducts}
+        existingCount={products.length}
+        maxProducts={limits.maxProducts}
+      />
     </div>
   );
 }
