@@ -65,7 +65,8 @@ export default function CreditLedger() {
       const custInvoiceDebt = unpaidInvoices
         .filter((i) => i.customer_id === c.id)
         .reduce((s, i) => s + (i.total - i.amount_paid), 0);
-      return { ...c, total_debt: Math.max(c.outstanding_balance, custInvoiceDebt) };
+      const hasInvoices = unpaidInvoices.some((i) => i.customer_id === c.id);
+      return { ...c, total_debt: hasInvoices ? custInvoiceDebt : c.outstanding_balance };
     })
     .sort((a, b) => b.total_debt - a.total_debt);
 
