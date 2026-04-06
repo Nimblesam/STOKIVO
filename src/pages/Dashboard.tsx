@@ -67,13 +67,15 @@ export default function Dashboard() {
   const totalStockValue = products.reduce((s, p) => s + p.cost_price * p.stock_qty, 0);
   const monthlyRevenue = sales.reduce((s, sale) => s + sale.total, 0);
 
-  // Sync outstanding payments: use the greater of customer.outstanding_balance or unpaid invoice totals per customer
+  // Use invoice data as the source of truth for outstanding payments
   const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && i.total > i.amount_paid);
   const outstandingPayments = customers.reduce((s, c) => {
     const invoiceDebt = unpaidInvoices
       .filter((i) => i.customer_id === c.id)
       .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
-    return s + Math.max(c.outstanding_balance, invoiceDebt);
+    // Use invoice debt if available, otherwise fall back to outstanding_balance (for manual debts without invoices)
+    const hasInvoices = unpaidInvoices.some((i) => i.customer_id === c.id);
+    return s + (hasInvoices ? invoiceDebt : c.outstanding_balance);
   }, 0);
   const lowStockCount = products.filter((p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0).length;
   const priceChangeCount = alerts.filter((a) => a.type === "SUPPLIER_PRICE_CHANGE").length;
