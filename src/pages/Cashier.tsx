@@ -63,6 +63,7 @@ export default function Cashier() {
   const [processing, setProcessing] = useState(false);
   const [bestSellers, setBestSellers] = useState<any[]>([]);
   const scanRef = useRef<HTMLInputElement>(null);
+  const terminal = useTerminal();
 
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
   const discount = 0;
