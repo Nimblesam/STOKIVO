@@ -219,13 +219,7 @@ export default function Invoices() {
     }
 
     if (inv.customer_id) {
-      const { data: custData } = await supabase
-        .from("customers").select("outstanding_balance").eq("id", inv.customer_id).single();
-      if (custData) {
-        await supabase.from("customers").update({
-          outstanding_balance: Math.max(0, custData.outstanding_balance - balance),
-        }).eq("id", inv.customer_id);
-      }
+      await syncCustomerBalance(inv.customer_id);
     }
 
     toast.success("Invoice marked as paid!");

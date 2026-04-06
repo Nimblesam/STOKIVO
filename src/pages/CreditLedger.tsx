@@ -133,14 +133,14 @@ export default function CreditLedger() {
   };
 
   const markAsPaid = async (customerId: string) => {
-    // Mark all unpaid invoices as paid and reset outstanding balance
+    // Mark all unpaid invoices as paid and sync outstanding balance
     const custInvoices = unpaidInvoices.filter((i) => i.customer_id === customerId);
     for (const inv of custInvoices) {
       await supabase.from("invoices").update({
         amount_paid: inv.total, status: "paid" as any,
       }).eq("id", inv.id);
     }
-    await supabase.from("customers").update({ outstanding_balance: 0 }).eq("id", customerId);
+    await syncCustomerBalance(customerId);
     toast.success("Marked as paid!");
     fetchData();
   };
