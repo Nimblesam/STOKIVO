@@ -396,6 +396,13 @@ export default function Cashier() {
               <ScanBarcode className="h-4 w-4" /> Barcode Scanner
             </div>
             <ScannerStatus />
+            <TerminalStatus
+              status={terminal.status}
+              readerLabel={terminal.reader?.label}
+              error={terminal.error}
+              onConnect={terminal.connect}
+              onDisconnect={terminal.disconnect}
+            />
           </div>
           <form onSubmit={handleScan} className="flex gap-3">
             <div className="relative flex-1">
