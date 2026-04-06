@@ -14,7 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, ScanBarcode, CalendarClock, Tag, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle } from "lucide-react";
+import { ProductImport } from "@/components/ProductImport";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -44,6 +45,7 @@ export default function Products() {
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -211,6 +213,9 @@ export default function Products() {
                 <Printer className="h-4 w-4" /> Print {selectedIds.size} Labels
               </Button>
             )}
+            <Button variant="outline" className="gap-2" onClick={() => setShowImport(true)}>
+              <Upload className="h-4 w-4" /> Import CSV
+            </Button>
             <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
               <Plus className="h-4 w-4" /> Add Product
             </Button>
@@ -560,6 +565,16 @@ export default function Products() {
         requiredPlan="growth"
         featureLabel={`More than ${limits.maxProducts} products`}
         currentPlan={currentPlan}
+      />
+
+      <ProductImport
+        open={showImport}
+        onOpenChange={setShowImport}
+        companyId={profile?.company_id || ""}
+        storeId={activeStoreId}
+        onComplete={fetchProducts}
+        existingCount={products.length}
+        maxProducts={limits.maxProducts}
       />
     </div>
   );
