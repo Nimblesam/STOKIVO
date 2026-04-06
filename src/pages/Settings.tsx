@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/currency";
 import { PLANS, STRIPE_PRICES } from "@/lib/demo-data";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
-import { PayoutOnboarding } from "@/components/PayoutOnboarding";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -487,33 +487,6 @@ export default function Settings() {
               </div>
             )}
 
-            <div className="stokivo-card p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Banknote className="h-5 w-5 text-accent" />
-                <div>
-                  <h3 className="font-display font-semibold text-foreground">
-                    {stripeStatus?.connected ? "Payout Settings" : "Set Up Payouts"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {stripeStatus?.connected
-                      ? "Manage your connected bank account and payout preferences"
-                      : "Connect your bank account to receive customer payments directly"}
-                  </p>
-                </div>
-              </div>
-              <Separator className="mb-6" />
-              <PayoutOnboarding
-                stripeStatus={stripeStatus}
-                loadingStripeStatus={loadingStripeStatus}
-                onRefreshStatus={() => {
-                  setLoadingStripeStatus(true);
-                  supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
-                    if (!error && data) setStripeStatus(data);
-                    setLoadingStripeStatus(false);
-                  });
-                }}
-              />
-            </div>
           </div>
         </TabsContent>
         )}
