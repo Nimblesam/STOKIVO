@@ -79,14 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 8000);
 
-    // 1. Set up listener FIRST (no awaits inside — fire-and-forget for post-init events)
+    // 1. Set up listener FIRST (fire-and-forget — no awaits to avoid deadlocks)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        // Only handle post-init changes; initial load is handled by getSession below
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (!session?.user) {
+        if (session?.user) {
+          // Fire-and-forget profile hydration for sign-in / token refresh events
+          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "MFA_CHALLENGE_VERIFIED") {
+            checkMfaStatus().then((needsMfa) => {
+              if (!needsMfa) {
+                fetchProfile(session.user.id);
+              }
+            }).catch(() => {});
+          }
+        } else {
           setProfile(null);
           setCompany(null);
           setRole(null);
