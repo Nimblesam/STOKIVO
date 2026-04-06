@@ -19,6 +19,17 @@ import type { Currency } from "@/lib/types";
 
 const statusFilters = ["all", "draft", "sent", "paid", "partially_paid", "overdue"] as const;
 
+interface PrintableCompany {
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  company_number: string | null;
+  logo_url: string | null;
+  currency: Currency;
+  brand_color: string;
+}
+
 interface InvoiceRow {
   id: string;
   invoice_number: string;
@@ -45,7 +56,7 @@ const buildInvoicePrintHtml = ({
   invoice,
   items,
 }: {
-  company: ReturnType<Invoices["prototype"]["getInvoiceCompany"]>;
+  company: PrintableCompany;
   invoice: InvoiceRow;
   items: Array<{ product_name: string; qty: number; unit_price: number; total: number }>;
 }) => {
