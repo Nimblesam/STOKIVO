@@ -6,6 +6,7 @@ import { FieldError } from "@/components/FieldError";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
+import { syncCustomerBalance } from "@/lib/sync-balance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,7 +65,8 @@ export default function CreditLedger() {
       const custInvoiceDebt = unpaidInvoices
         .filter((i) => i.customer_id === c.id)
         .reduce((s, i) => s + (i.total - i.amount_paid), 0);
-      return { ...c, total_debt: Math.max(c.outstanding_balance, custInvoiceDebt) };
+      const hasInvoices = unpaidInvoices.some((i) => i.customer_id === c.id);
+      return { ...c, total_debt: hasInvoices ? custInvoiceDebt : c.outstanding_balance };
     })
     .sort((a, b) => b.total_debt - a.total_debt);
 
@@ -132,14 +134,14 @@ export default function CreditLedger() {
   };
 
   const markAsPaid = async (customerId: string) => {
-    // Mark all unpaid invoices as paid and reset outstanding balance
+    // Mark all unpaid invoices as paid and sync outstanding balance
     const custInvoices = unpaidInvoices.filter((i) => i.customer_id === customerId);
     for (const inv of custInvoices) {
       await supabase.from("invoices").update({
         amount_paid: inv.total, status: "paid" as any,
       }).eq("id", inv.id);
     }
-    await supabase.from("customers").update({ outstanding_balance: 0 }).eq("id", customerId);
+    await syncCustomerBalance(customerId);
     toast.success("Marked as paid!");
     fetchData();
   };

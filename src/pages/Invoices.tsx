@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { syncCustomerBalance } from "@/lib/sync-balance";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
 import type { InvoiceStatus } from "@/lib/types";
@@ -194,15 +195,9 @@ export default function Invoices() {
       note: `Manual payment of ${formatMoney(amountMinor, currency)}`,
     });
 
-    // Update customer outstanding balance
+    // Sync customer outstanding balance from invoices
     if (paymentInvoice.customer_id) {
-      const { data: custData } = await supabase
-        .from("customers").select("outstanding_balance").eq("id", paymentInvoice.customer_id).single();
-      if (custData) {
-        await supabase.from("customers").update({
-          outstanding_balance: Math.max(0, custData.outstanding_balance - amountMinor),
-        }).eq("id", paymentInvoice.customer_id);
-      }
+      await syncCustomerBalance(paymentInvoice.customer_id);
     }
 
     toast.success(newStatus === "paid" ? "Invoice marked as fully paid!" : "Partial payment recorded!");
@@ -224,13 +219,7 @@ export default function Invoices() {
     }
 
     if (inv.customer_id) {
-      const { data: custData } = await supabase
-        .from("customers").select("outstanding_balance").eq("id", inv.customer_id).single();
-      if (custData) {
-        await supabase.from("customers").update({
-          outstanding_balance: Math.max(0, custData.outstanding_balance - balance),
-        }).eq("id", inv.customer_id);
-      }
+      await syncCustomerBalance(inv.customer_id);
     }
 
     toast.success("Invoice marked as paid!");
