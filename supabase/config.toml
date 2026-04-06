@@ -37,3 +37,7 @@ project_id = "lsujpckltpgrydbfuadt"
     verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
+  [functions.create-terminal-token]
+    verify_jwt = false
+  [functions.create-terminal-payment]
+    verify_jwt = false
