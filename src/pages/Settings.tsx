@@ -446,8 +446,17 @@ export default function Settings() {
         {isOwner && (
         <TabsContent value="payments">
           <div className="space-y-6">
-            {/* Hero card when not connected */}
-            {!stripeStatus?.connected && !loadingStripeStatus && (
+            {/* Loading state */}
+            {loadingStripeStatus && (
+              <div className="stokivo-card p-6">
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              </div>
+            )}
+
+            {/* Hero card when not connected or onboarding incomplete */}
+            {!loadingStripeStatus && (!stripeStatus?.connected || !stripeStatus?.details_submitted) && (
               <div className="relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/5 via-background to-accent/10 p-8">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10 text-center max-w-md mx-auto">
@@ -455,10 +464,12 @@ export default function Settings() {
                     <Banknote className="h-8 w-8 text-accent" />
                   </div>
                   <h2 className="font-display font-bold text-2xl text-foreground mb-2">
-                    Start Receiving Payments
+                    {stripeStatus?.connected ? "Complete Your Setup" : "Start Receiving Payments"}
                   </h2>
                   <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                    Connect your bank account to accept customer payments directly. Funds are deposited automatically to your account.
+                    {stripeStatus?.connected
+                      ? "Your account is created but setup is incomplete. Please finish connecting your bank account."
+                      : "Connect your bank account to accept customer payments directly. Funds are deposited automatically to your account."}
                   </p>
                   <Button
                     size="lg"
@@ -483,6 +494,23 @@ export default function Settings() {
                   <p className="text-xs text-muted-foreground mt-4">
                     Powered by Stripe · Secure · PCI Compliant
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Connected status */}
+            {!loadingStripeStatus && stripeStatus?.connected && stripeStatus?.details_submitted && (
+              <div className="stokivo-card p-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-semibold text-foreground">Bank Account Connected</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Charges: {stripeStatus.charges_enabled ? "Enabled ✓" : "Pending"} · Payouts: {stripeStatus.payouts_enabled ? "Enabled ✓" : "Pending"}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
