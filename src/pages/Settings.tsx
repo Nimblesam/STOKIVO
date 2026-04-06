@@ -197,15 +197,27 @@ export default function Settings() {
     } finally { setCheckingOut(null); }
   };
 
-  const handleManageSubscription = async () => {
-    setManagingPortal(true);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
     try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const { data, error } = await supabase.functions.invoke("cancel-subscription");
       if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
+      if (data?.canceled) {
+        toast.success("Subscription cancelled", {
+          description: `Your plan remains active until ${new Date(data.period_end).toLocaleDateString()}. You won't be charged again.`,
+          duration: 8000,
+        });
+        setShowCancelDialog(false);
+        await refreshProfile();
+      } else {
+        toast.error(data?.error || "Could not cancel subscription");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to open portal");
-    } finally { setManagingPortal(false); }
+      toast.error(err.message || "Failed to cancel subscription");
+    } finally { setCancelling(false); }
   };
 
   const copyToClipboard = (text: string, label: string) => {
