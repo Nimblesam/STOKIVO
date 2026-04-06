@@ -93,7 +93,8 @@ export default function Dashboard() {
       const invoiceDebt = unpaidInvoices
         .filter((i) => i.customer_id === c.id)
         .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
-      return { ...c, total_debt: Math.max(c.outstanding_balance, invoiceDebt) };
+      const hasInvoices = unpaidInvoices.some((i) => i.customer_id === c.id);
+      return { ...c, total_debt: hasInvoices ? invoiceDebt : c.outstanding_balance };
     })
     .filter((c) => c.total_debt > 0)
     .sort((a, b) => b.total_debt - a.total_debt)
