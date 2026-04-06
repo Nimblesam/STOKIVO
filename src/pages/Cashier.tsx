@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
+import { TerminalStatus } from "@/components/pos/TerminalStatus";
 import { PosReceipt } from "@/components/pos/PosReceipt";
+import { useTerminal } from "@/hooks/use-terminal";
 import type { Currency } from "@/lib/types";
 
 export interface CartItem {
@@ -61,6 +63,7 @@ export default function Cashier() {
   const [processing, setProcessing] = useState(false);
   const [bestSellers, setBestSellers] = useState<any[]>([]);
   const scanRef = useRef<HTMLInputElement>(null);
+  const terminal = useTerminal();
 
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
   const discount = 0;
@@ -393,6 +396,13 @@ export default function Cashier() {
               <ScanBarcode className="h-4 w-4" /> Barcode Scanner
             </div>
             <ScannerStatus />
+            <TerminalStatus
+              status={terminal.status}
+              readerLabel={terminal.reader?.label}
+              error={terminal.error}
+              onConnect={terminal.connect}
+              onDisconnect={terminal.disconnect}
+            />
           </div>
           <form onSubmit={handleScan} className="flex gap-3">
             <div className="relative flex-1">
@@ -553,6 +563,11 @@ export default function Cashier() {
           onClose={() => setShowPayment(false)}
           onComplete={handlePaymentComplete}
           processing={processing}
+          terminalStatus={terminal.status}
+          onTerminalPayment={(amount) => terminal.collectPayment(amount, currency.toLowerCase())}
+          isTerminalCollecting={terminal.isCollecting}
+          onCancelTerminalCollect={terminal.cancelCollect}
+          onRetryTerminal={terminal.connect}
         />
       )}
     </div>
