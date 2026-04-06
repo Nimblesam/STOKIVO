@@ -213,6 +213,9 @@ export default function Products() {
                 <Printer className="h-4 w-4" /> Print {selectedIds.size} Labels
               </Button>
             )}
+            <Button variant="outline" className="gap-2" onClick={() => setShowImport(true)}>
+              <Upload className="h-4 w-4" /> Import CSV
+            </Button>
             <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
               <Plus className="h-4 w-4" /> Add Product
             </Button>
