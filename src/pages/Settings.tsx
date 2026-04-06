@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, ExternalLink, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database,
 } from "lucide-react";
 import { WarehouseManager } from "@/components/WarehouseManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
@@ -37,7 +37,7 @@ export default function Settings() {
   const currency = (company?.currency || "GBP") as Currency;
   const [saving, setSaving] = useState(false);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
-  const [managingPortal, setManagingPortal] = useState(false);
+  
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
@@ -197,15 +197,27 @@ export default function Settings() {
     } finally { setCheckingOut(null); }
   };
 
-  const handleManageSubscription = async () => {
-    setManagingPortal(true);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
     try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const { data, error } = await supabase.functions.invoke("cancel-subscription");
       if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
+      if (data?.canceled) {
+        toast.success("Subscription cancelled", {
+          description: `Your plan remains active until ${new Date(data.period_end).toLocaleDateString()}. You won't be charged again.`,
+          duration: 8000,
+        });
+        setShowCancelDialog(false);
+        await refreshProfile();
+      } else {
+        toast.error(data?.error || "Could not cancel subscription");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to open portal");
-    } finally { setManagingPortal(false); }
+      toast.error(err.message || "Failed to cancel subscription");
+    } finally { setCancelling(false); }
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -651,10 +663,32 @@ export default function Settings() {
                     <p className="text-sm text-muted-foreground">Your plan renews {billingAnnual ? "annually" : "monthly"}</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2" onClick={handleManageSubscription} disabled={managingPortal}>
-                  {managingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                  Manage Subscription
+                <Button variant="outline" size="sm" className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowCancelDialog(true)}>
+                  <AlertTriangle className="h-4 w-4" />
+                  Cancel Subscription
                 </Button>
+
+                <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                  <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" /> Cancel Subscription
+                      </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                      Are you sure you want to cancel your <strong>{currentPlan.toUpperCase()}</strong> plan? Your access will continue until the end of the current billing period, but you won't be charged again.
+                    </p>
+                    <div className="flex gap-3 pt-2">
+                      <Button variant="ghost" className="flex-1" onClick={() => setShowCancelDialog(false)}>
+                        Keep Plan
+                      </Button>
+                      <Button variant="destructive" className="flex-1 gap-2" onClick={handleCancelSubscription} disabled={cancelling}>
+                        {cancelling && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Yes, Cancel
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
