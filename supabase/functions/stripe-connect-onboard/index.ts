@@ -8,6 +8,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,19 +28,13 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+      return jsonResponse({ error: "Please sign in again and retry connecting your bank account." });
     }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user?.email) {
-      return new Response(JSON.stringify({ error: "User not authenticated" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+      return jsonResponse({ error: "Your session expired. Please sign in again and retry." });
     }
     const user = userData.user;
 
@@ -57,12 +57,14 @@ serve(async (req) => {
     if (!companyId) throw new Error("No company found");
 
     // Parse request body for account preferences
-    let businessType = "individual";
     let selectedCountry = "GB";
+    let requestedReturnUrl: string | null = null;
+    let requestedRefreshUrl: string | null = null;
     try {
       const body = await req.json();
-      if (body.business_type) businessType = body.business_type;
       if (body.country) selectedCountry = body.country;
+      if (body.return_url) requestedReturnUrl = body.return_url;
+      if (body.refresh_url) requestedRefreshUrl = body.refresh_url;
     } catch { /* no body is fine */ }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -78,50 +80,63 @@ serve(async (req) => {
 
     let accountId = company?.stripe_account_id;
 
-    if (!accountId) {
-      // Create a new Stripe Connect Express account
+    const createExpressAccount = async () => {
       const account = await stripe.accounts.create({
         type: "express",
         country: selectedCountry,
         email: company?.email || user.email,
-        business_type: businessType as any,
-        business_profile: {
-          name: company?.name || undefined,
-        },
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
       });
-      accountId = account.id;
 
-      // Save the account ID to the company
       await supabaseClient
         .from("companies")
-        .update({ stripe_account_id: accountId })
+        .update({ stripe_account_id: account.id })
         .eq("id", companyId);
+
+      return account.id;
+    };
+
+    if (accountId) {
+      try {
+        await stripe.accounts.retrieve(accountId);
+      } catch {
+        accountId = null;
+      }
+    }
+
+    if (!accountId) {
+      accountId = await createExpressAccount();
     }
 
     const origin = req.headers.get("origin") || "http://localhost:5173";
+    const returnUrl = requestedReturnUrl || `${origin}/settings?tab=payments&stripe_connected=true`;
+    const refreshUrl = requestedRefreshUrl || `${origin}/settings?tab=payments&stripe_refresh=true`;
 
     // Create an account link for onboarding
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${origin}/settings?tab=payments&stripe_refresh=true`,
-      return_url: `${origin}/settings?tab=payments&stripe_connected=true`,
-      type: "account_onboarding",
-    });
+    let accountLink;
+    try {
+      accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: "account_onboarding",
+      });
+    } catch {
+      accountId = await createExpressAccount();
+      accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: "account_onboarding",
+      });
+    }
 
-    return new Response(JSON.stringify({ url: accountLink.url, accountId }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ url: accountLink.url, accountId });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const status = message.includes("authorization") || message.includes("authenticated") ? 401 : 500;
-
-    return new Response(JSON.stringify({ error: message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status,
-    });
+    return jsonResponse({ error: message });
   }
 });
