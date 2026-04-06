@@ -268,7 +268,7 @@ export default function Dashboard() {
                   </div>
                   <p className="text-xs font-medium text-foreground">{c.name}</p>
                 </div>
-                <span className="text-xs font-bold text-destructive">{formatMoney(c.outstanding_balance, currency)}</span>
+                <span className="text-xs font-bold text-destructive">{formatMoney(c.total_debt, currency)}</span>
               </div>
             ))}
             {topDebtors.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No outstanding debts ✓</p>}
