@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/currency";
 import { PLANS, STRIPE_PRICES } from "@/lib/demo-data";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
-import { PayoutOnboarding } from "@/components/PayoutOnboarding";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
