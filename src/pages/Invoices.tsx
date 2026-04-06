@@ -264,27 +264,7 @@ export default function Invoices() {
   });
 
   const handlePrintInvoice = () => {
-    if (!selectedInvoice) return;
-
-    const printWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!printWindow) {
-      toast.error("Please allow pop-ups to print the invoice");
-      return;
-    }
-
-    printWindow.document.write(
-      buildInvoicePrintHtml({
-        company: getInvoiceCompany(),
-        invoice: selectedInvoice,
-        items: selectedItems.map((item) => ({
-          product_name: item.product_name,
-          qty: item.qty,
-          unit_price: item.unit_price,
-          total: item.total,
-        })),
-      }),
-    );
-    printWindow.document.close();
+    window.print();
   };
 
   return (
