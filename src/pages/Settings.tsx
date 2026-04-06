@@ -663,10 +663,32 @@ export default function Settings() {
                     <p className="text-sm text-muted-foreground">Your plan renews {billingAnnual ? "annually" : "monthly"}</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2" onClick={handleManageSubscription} disabled={managingPortal}>
-                  {managingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                  Manage Subscription
+                <Button variant="outline" size="sm" className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowCancelDialog(true)}>
+                  <AlertTriangle className="h-4 w-4" />
+                  Cancel Subscription
                 </Button>
+
+                <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                  <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" /> Cancel Subscription
+                      </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                      Are you sure you want to cancel your <strong>{currentPlan.toUpperCase()}</strong> plan? Your access will continue until the end of the current billing period, but you won't be charged again.
+                    </p>
+                    <div className="flex gap-3 pt-2">
+                      <Button variant="ghost" className="flex-1" onClick={() => setShowCancelDialog(false)}>
+                        Keep Plan
+                      </Button>
+                      <Button variant="destructive" className="flex-1 gap-2" onClick={handleCancelSubscription} disabled={cancelling}>
+                        {cancelling && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Yes, Cancel
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
