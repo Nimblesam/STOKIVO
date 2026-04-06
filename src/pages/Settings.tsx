@@ -37,7 +37,7 @@ export default function Settings() {
   const currency = (company?.currency || "GBP") as Currency;
   const [saving, setSaving] = useState(false);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
-  const [managingPortal, setManagingPortal] = useState(false);
+  
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
