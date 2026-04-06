@@ -123,9 +123,27 @@ export function TwoFactorSetup() {
         <div className="flex items-center gap-3">
           <CheckCircle2 className="h-4 w-4 text-success" />
           <span className="text-sm text-muted-foreground">Authenticator app connected</span>
-          <Button variant="outline" size="sm" className="ml-auto text-destructive" onClick={handleUnenroll} disabled={unenrolling}>
-            {unenrolling ? "Disabling..." : "Disable 2FA"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-auto text-destructive border-destructive/30 hover:bg-destructive/10" disabled={unenrolling}>
+                {unenrolling ? "Disabling..." : "Disable 2FA"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Disable Two-Factor Authentication?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove the extra layer of security from your account. Anyone with your password will be able to sign in without a verification code. You can re-enable 2FA at any time.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep 2FA Enabled</AlertDialogCancel>
+                <AlertDialogAction onClick={handleUnenroll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Yes, Disable 2FA
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 
