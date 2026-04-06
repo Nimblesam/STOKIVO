@@ -42,7 +42,7 @@ export default function Dashboard() {
 
     let productsQ = supabase.from("products").select("*").eq("company_id", cid);
     let customersQ = supabase.from("customers").select("*").eq("company_id", cid);
-    let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false }).limit(10);
+    let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false });
     let alertsQ = supabase.from("alerts").select("*").eq("company_id", cid).eq("read", false).order("created_at", { ascending: false }).limit(10);
     let salesQ = supabase.from("sales").select("total, created_at").eq("company_id", cid);
 
