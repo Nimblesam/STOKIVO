@@ -111,7 +111,7 @@ serve(async (req) => {
       accountId = await createExpressAccount();
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:5173";
+    const origin = req.headers.get("origin") || "https://zentra-stock-flow.lovable.app";
     const returnUrl = requestedReturnUrl || `${origin}/settings?tab=payments&stripe_connected=true`;
     const refreshUrl = requestedRefreshUrl || `${origin}/settings?tab=payments&stripe_refresh=true`;
 
