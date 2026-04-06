@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { syncCustomerBalance } from "@/lib/sync-balance";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
 import type { InvoiceStatus } from "@/lib/types";
