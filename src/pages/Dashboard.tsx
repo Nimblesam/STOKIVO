@@ -87,8 +87,14 @@ export default function Dashboard() {
     .slice(0, 5);
 
   const topDebtors = customers
-    .filter((c) => c.outstanding_balance > 0)
-    .sort((a, b) => b.outstanding_balance - a.outstanding_balance)
+    .map((c) => {
+      const invoiceDebt = unpaidInvoices
+        .filter((i) => i.customer_id === c.id)
+        .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
+      return { ...c, total_debt: Math.max(c.outstanding_balance, invoiceDebt) };
+    })
+    .filter((c) => c.total_debt > 0)
+    .sort((a, b) => b.total_debt - a.total_debt)
     .slice(0, 4);
 
   // Build category data from products
