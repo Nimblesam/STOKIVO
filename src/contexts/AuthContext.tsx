@@ -77,14 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => setLoading(false), 5000);
+
+    let initialSessionHandled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          const needsMfa = await checkMfaStatus();
-          if (!needsMfa) {
-            setTimeout(() => fetchProfile(session.user.id), 0);
+          try {
+            const needsMfa = await checkMfaStatus();
+            if (!needsMfa) {
+              setTimeout(() => fetchProfile(session.user.id), 0);
+            }
+          } catch {
+            // Continue even if MFA check fails
           }
         } else {
           setProfile(null);
@@ -93,22 +102,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMfaRequired(false);
         }
         setLoading(false);
+        clearTimeout(timeout);
       }
     );
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (initialSessionHandled) return;
+      initialSessionHandled = true;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        const needsMfa = await checkMfaStatus();
-        if (!needsMfa) {
-          fetchProfile(session.user.id);
+        try {
+          const needsMfa = await checkMfaStatus();
+          if (!needsMfa) {
+            await fetchProfile(session.user.id);
+          }
+        } catch {
+          // Continue even if profile fetch fails
         }
       }
       setLoading(false);
+      clearTimeout(timeout);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const signOut = async () => {
