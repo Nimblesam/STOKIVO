@@ -563,6 +563,11 @@ export default function Cashier() {
           onClose={() => setShowPayment(false)}
           onComplete={handlePaymentComplete}
           processing={processing}
+          terminalStatus={terminal.status}
+          onTerminalPayment={(amount) => terminal.collectPayment(amount, currency.toLowerCase())}
+          isTerminalCollecting={terminal.isCollecting}
+          onCancelTerminalCollect={terminal.cancelCollect}
+          onRetryTerminal={terminal.connect}
         />
       )}
     </div>
