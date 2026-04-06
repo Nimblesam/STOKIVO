@@ -127,66 +127,7 @@
 }
 
 @media print {
-  /* Hide everything except the radix portal */
-  body > *:not([data-radix-portal]) {
-    display: none !important;
-  }
-
-  /* Hide overlay backdrop */
-  [data-radix-portal] [data-radix-dialog-overlay] {
-    display: none !important;
-  }
-
-  /* Reset dialog to static full-page layout */
-  [data-radix-portal] [role="dialog"] {
-    position: static !important;
-    left: auto !important;
-    top: auto !important;
-    transform: none !important;
-    translate: none !important;
-    max-width: 100% !important;
-    max-height: none !important;
-    width: 100% !important;
-    height: auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    background: white !important;
-    animation: none !important;
-  }
-
-  /* Ensure all ancestors don't clip */
-  [data-radix-portal],
-  [data-radix-portal] > div {
-    position: static !important;
-    overflow: visible !important;
-    max-height: none !important;
-  }
-
   .print\:hidden {
     display: none !important;
-  }
-
-  /* Hide dialog close button */
-  [data-radix-portal] button[data-radix-dialog-close],
-  [data-radix-portal] [role="dialog"] > button:first-of-type {
-    display: none !important;
-  }
-
-  /* Print-friendly colors */
-  #invoice-print {
-    color: #000 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #invoice-print .text-foreground {
-    color: #000 !important;
-  }
-
-  #invoice-print .text-muted-foreground {
-    color: #555 !important;
   }
 }
