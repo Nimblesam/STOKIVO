@@ -59,7 +59,7 @@ serve(async (req) => {
       logStep("Created new Stripe customer", { customerId });
     }
 
-    const origin = req.headers.get("origin") || "https://zentra-stock-flow.lovable.app";
+    const origin = req.headers.get("origin") || "https://stokivo.com";
     logStep("Creating portal session", { origin });
 
     const portalSession = await stripe.billingPortal.sessions.create({
