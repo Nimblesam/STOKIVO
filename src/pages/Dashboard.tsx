@@ -42,7 +42,7 @@ export default function Dashboard() {
 
     let productsQ = supabase.from("products").select("*").eq("company_id", cid);
     let customersQ = supabase.from("customers").select("*").eq("company_id", cid);
-    let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false }).limit(10);
+    let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false });
     let alertsQ = supabase.from("alerts").select("*").eq("company_id", cid).eq("read", false).order("created_at", { ascending: false }).limit(10);
     let salesQ = supabase.from("sales").select("total, created_at").eq("company_id", cid);
 
@@ -66,7 +66,15 @@ export default function Dashboard() {
 
   const totalStockValue = products.reduce((s, p) => s + p.cost_price * p.stock_qty, 0);
   const monthlyRevenue = sales.reduce((s, sale) => s + sale.total, 0);
-  const outstandingPayments = customers.reduce((s, c) => s + c.outstanding_balance, 0);
+
+  // Sync outstanding payments: use the greater of customer.outstanding_balance or unpaid invoice totals per customer
+  const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && i.total > i.amount_paid);
+  const outstandingPayments = customers.reduce((s, c) => {
+    const invoiceDebt = unpaidInvoices
+      .filter((i) => i.customer_id === c.id)
+      .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
+    return s + Math.max(c.outstanding_balance, invoiceDebt);
+  }, 0);
   const lowStockCount = products.filter((p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0).length;
   const priceChangeCount = alerts.filter((a) => a.type === "SUPPLIER_PRICE_CHANGE").length;
   const avgMargin = products.length > 0
@@ -79,8 +87,14 @@ export default function Dashboard() {
     .slice(0, 5);
 
   const topDebtors = customers
-    .filter((c) => c.outstanding_balance > 0)
-    .sort((a, b) => b.outstanding_balance - a.outstanding_balance)
+    .map((c) => {
+      const invoiceDebt = unpaidInvoices
+        .filter((i) => i.customer_id === c.id)
+        .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
+      return { ...c, total_debt: Math.max(c.outstanding_balance, invoiceDebt) };
+    })
+    .filter((c) => c.total_debt > 0)
+    .sort((a, b) => b.total_debt - a.total_debt)
     .slice(0, 4);
 
   // Build category data from products
@@ -254,7 +268,7 @@ export default function Dashboard() {
                   </div>
                   <p className="text-xs font-medium text-foreground">{c.name}</p>
                 </div>
-                <span className="text-xs font-bold text-destructive">{formatMoney(c.outstanding_balance, currency)}</span>
+                <span className="text-xs font-bold text-destructive">{formatMoney(c.total_debt, currency)}</span>
               </div>
             ))}
             {topDebtors.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No outstanding debts ✓</p>}
