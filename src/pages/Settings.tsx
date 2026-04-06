@@ -199,24 +199,30 @@ export default function Settings() {
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const handleCancelSubscription = async () => {
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a reason for cancellation");
+      return;
+    }
+    if (!company || !user) return;
     setCancelling(true);
     try {
-      const { data, error } = await supabase.functions.invoke("cancel-subscription");
+      const { error } = await supabase.from("cancellation_requests").insert({
+        company_id: company.id,
+        user_id: user.id,
+        reason: cancelReason.trim(),
+      } as any);
       if (error) throw error;
-      if (data?.canceled) {
-        toast.success("Subscription cancelled", {
-          description: `Your plan remains active until ${new Date(data.period_end).toLocaleDateString()}. You won't be charged again.`,
-          duration: 8000,
-        });
-        setShowCancelDialog(false);
-        await refreshProfile();
-      } else {
-        toast.error(data?.error || "Could not cancel subscription");
-      }
+      toast.success("Cancellation request submitted", {
+        description: "Our team will review your request and get back to you shortly.",
+        duration: 8000,
+      });
+      setShowCancelDialog(false);
+      setCancelReason("");
     } catch (err: any) {
-      toast.error(err.message || "Failed to cancel subscription");
+      toast.error(err.message || "Failed to submit cancellation request");
     } finally { setCancelling(false); }
   };
 
