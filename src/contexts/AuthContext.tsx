@@ -78,37 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Safety timeout to prevent infinite loading
-    const timeout = setTimeout(() => setLoading(false), 5000);
+    const timeout = setTimeout(() => setLoading(false), 8000);
 
-    let initialSessionHandled = false;
+    let initialLoadDone = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          try {
-            const needsMfa = await checkMfaStatus();
-            if (!needsMfa) {
-              setTimeout(() => fetchProfile(session.user.id), 0);
-            }
-          } catch {
-            // Continue even if MFA check fails
-          }
-        } else {
-          setProfile(null);
-          setCompany(null);
-          setRole(null);
-          setMfaRequired(false);
-        }
-        setLoading(false);
-        clearTimeout(timeout);
-      }
-    );
-
+    // 1. Restore session from storage first
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (initialSessionHandled) return;
-      initialSessionHandled = true;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -121,9 +96,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Continue even if profile fetch fails
         }
       }
+      initialLoadDone = true;
       setLoading(false);
       clearTimeout(timeout);
     });
+
+    // 2. Listen for subsequent auth changes (sign in/out/token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          try {
+            const needsMfa = await checkMfaStatus();
+            if (!needsMfa) {
+              await fetchProfile(session.user.id);
+            }
+          } catch {
+            // Continue even if MFA check fails
+          }
+        } else {
+          setProfile(null);
+          setCompany(null);
+          setRole(null);
+          setMfaRequired(false);
+        }
+        if (initialLoadDone) {
+          // Only update loading for post-init events
+        } else {
+          initialLoadDone = true;
+          setLoading(false);
+          clearTimeout(timeout);
+        }
+      }
+    );
 
     return () => {
       subscription.unsubscribe();
