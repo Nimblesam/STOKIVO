@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
+import { TerminalStatus } from "@/components/pos/TerminalStatus";
 import { PosReceipt } from "@/components/pos/PosReceipt";
+import { useTerminal } from "@/hooks/use-terminal";
 import type { Currency } from "@/lib/types";
 
 export interface CartItem {
