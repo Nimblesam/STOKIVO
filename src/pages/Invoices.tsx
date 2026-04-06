@@ -195,15 +195,9 @@ export default function Invoices() {
       note: `Manual payment of ${formatMoney(amountMinor, currency)}`,
     });
 
-    // Update customer outstanding balance
+    // Sync customer outstanding balance from invoices
     if (paymentInvoice.customer_id) {
-      const { data: custData } = await supabase
-        .from("customers").select("outstanding_balance").eq("id", paymentInvoice.customer_id).single();
-      if (custData) {
-        await supabase.from("customers").update({
-          outstanding_balance: Math.max(0, custData.outstanding_balance - amountMinor),
-        }).eq("id", paymentInvoice.customer_id);
-      }
+      await syncCustomerBalance(paymentInvoice.customer_id);
     }
 
     toast.success(newStatus === "paid" ? "Invoice marked as fully paid!" : "Partial payment recorded!");
