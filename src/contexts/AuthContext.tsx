@@ -9,13 +9,14 @@ interface AuthState {
   profile: { id: string; full_name: string; avatar_url: string | null; company_id: string | null } | null;
   company: { id: string; name: string; currency: string; brand_color: string; plan: string; status: string } | null;
   role: string | null;
+  mfaRequired: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
   user: null, session: null, loading: true, profile: null, company: null, role: null,
-  signOut: async () => {}, refreshProfile: async () => {},
+  mfaRequired: false, signOut: async () => {}, refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -27,6 +28,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [company, setCompany] = useState<AuthState["company"]>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+
+  const checkMfaStatus = async () => {
+    try {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const verifiedFactors = factors?.totp?.filter(f => f.status === "verified") || [];
+      if (verifiedFactors.length > 0) {
+        // User has MFA enrolled — check current assurance level
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+          setMfaRequired(true);
+          return true; // MFA not yet verified
+        }
+      }
+      setMfaRequired(false);
+      return false;
+    } catch {
+      setMfaRequired(false);
+      return false;
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data: prof } = await supabase
@@ -60,22 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // defer to avoid deadlocks
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          const needsMfa = await checkMfaStatus();
+          if (!needsMfa) {
+            setTimeout(() => fetchProfile(session.user.id), 0);
+          }
         } else {
           setProfile(null);
           setCompany(null);
           setRole(null);
+          setMfaRequired(false);
         }
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        const needsMfa = await checkMfaStatus();
+        if (!needsMfa) {
+          fetchProfile(session.user.id);
+        }
       }
       setLoading(false);
     });
@@ -90,14 +118,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setCompany(null);
     setRole(null);
+    setMfaRequired(false);
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) {
+      await checkMfaStatus();
+      await fetchProfile(user.id);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, company, role, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, company, role, mfaRequired, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

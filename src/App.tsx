@@ -55,7 +55,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile, company } = useAuth();
+  const { user, loading, profile, company, mfaRequired } = useAuth();
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -69,14 +69,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
+  if (mfaRequired) return <Navigate to="/login" replace />;
   if (!profile?.company_id) return <Navigate to="/onboarding" replace />;
   if (company && company.status !== "active") return <Navigate to="/pending-approval" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile } = useAuth();
+  const { user, loading, profile, mfaRequired } = useAuth();
   if (loading) return null;
+  if (mfaRequired) return <>{children}</>;
   if (user && profile?.company_id) return <Navigate to="/dashboard" replace />;
   if (user && !profile?.company_id) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
