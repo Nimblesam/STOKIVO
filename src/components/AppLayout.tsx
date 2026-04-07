@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGlobalScanner } from "@/hooks/use-global-scanner";
+import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Bell } from "lucide-react";
@@ -108,6 +109,13 @@ export function AppLayout({ children }: AppLayoutProps) {
           </main>
         </div>
       </div>
+      {unknownBarcode && (
+        <AddProductFromScanDialog
+          barcode={unknownBarcode}
+          open={!!unknownBarcode}
+          onClose={clearUnknownBarcode}
+        />
+      )}
     </SidebarProvider>
   );
 }
