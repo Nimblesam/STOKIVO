@@ -410,13 +410,21 @@ export default function Products() {
             </div>
             <div>
               <Label>Barcode Value</Label>
-              <p className="text-[10px] text-muted-foreground mb-1">Type manually, scan with a scanner, or auto-generate</p>
+              <p className="text-[10px] text-muted-foreground mb-1">Type manually, scan with a scanner, or auto-generate. Format is auto-detected.</p>
               <div className="flex gap-2 mt-1">
                 <div className="relative flex-1">
                   <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     value={form.barcode}
-                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm({ ...form, barcode: val });
+                      // Auto-detect barcode format
+                      if (val.length > 0) {
+                        const detected = detectFormat(val);
+                        setBarcodeFormat(detected);
+                      }
+                    }}
                     placeholder={`Enter, scan, or generate ${barcodeFormat}`}
                     className="pl-10 font-mono"
                     autoFocus={false}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useGlobalScanner } from "@/hooks/use-global-scanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Bell } from "lucide-react";
@@ -16,7 +17,8 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { profile, company } = useAuth();
   const navigate = useNavigate();
-  const initials = company?.name?.split(" ").map((n) => n[0]).slice(0, 2).join("") || "Z";
+  useGlobalScanner();
+  const initials = company?.name?.split(" ").map((n) => n[0]).slice(0, 2).join("") || "S";
   const [alerts, setAlerts] = useState<any[]>([]);
   const unreadCount = alerts.filter((a) => !a.read).length;
 
