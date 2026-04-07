@@ -687,16 +687,24 @@ export default function Onboarding() {
                 <ArrowLeft className="h-4 w-4" /> Back
               </Button>
             ) : <div />}
-            {step < STEPS.length - 1 ? (
-              <Button onClick={() => setStep(step + 1)} disabled={!canNext()} className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
-                Continue <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button onClick={handleFinish} disabled={loading} className="gap-2 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 px-8">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                Go to Dashboard
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Skip button for optional steps (2=Locations, 3=Payments, 4=POS, 5=Team) */}
+              {[2, 3, 4, 5].includes(step) && (
+                <Button variant="ghost" onClick={() => setStep(step + 1)} className="text-muted-foreground text-sm">
+                  Skip
+                </Button>
+              )}
+              {step < STEPS.length - 1 ? (
+                <Button onClick={() => setStep(step + 1)} disabled={!canNext()} className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
+                  Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button onClick={handleFinish} disabled={loading} className="gap-2 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 px-8">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                  Go to Dashboard
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
