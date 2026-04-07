@@ -72,6 +72,16 @@ export default function Cashier() {
 
   useEffect(() => { scanRef.current?.focus(); }, [cart]);
 
+  // Listen for global barcode scan events (from other pages)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const product = (e as CustomEvent).detail;
+      if (product) addToCart(product);
+    };
+    window.addEventListener("global-barcode-scan", handler);
+    return () => window.removeEventListener("global-barcode-scan", handler);
+  }, [addToCart]);
+
   // Load best sellers on mount
   useEffect(() => {
     if (!profile?.company_id) return;
