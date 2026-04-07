@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useGlobalScanner } from "@/hooks/use-global-scanner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Bell } from "lucide-react";
