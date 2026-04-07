@@ -7,7 +7,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   profile: { id: string; full_name: string; avatar_url: string | null; company_id: string | null } | null;
-  company: { id: string; name: string; currency: string; brand_color: string; plan: string; status: string } | null;
+  company: { id: string; name: string; currency: string; brand_color: string; plan: string; status: string; stripe_account_id: string | null; country: string } | null;
   role: string | null;
   mfaRequired: boolean;
   signOut: () => Promise<void>;
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (prof?.company_id) {
       const { data: comp } = await supabase
         .from("companies")
-        .select("id, name, currency, brand_color, plan, status")
+        .select("id, name, currency, brand_color, plan, status, stripe_account_id, country")
         .eq("id", prof.company_id)
         .single();
       setCompany(comp);

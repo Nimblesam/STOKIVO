@@ -1,15 +1,19 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { toast } from "sonner";
 
+export interface UnknownBarcodeEvent {
+  barcode: string;
+}
+
 /**
  * Global HID barcode scanner listener.
  * Detects rapid keystrokes (scanner emulation) from anywhere in the app,
  * looks up the scanned barcode, and navigates to POS with the product added to cart.
- * Shows a "product not found" alert for unknown barcodes.
+ * Shows an "add product" prompt for unknown barcodes.
  */
 export function useGlobalScanner() {
   const { profile } = useAuth();
@@ -19,6 +23,7 @@ export function useGlobalScanner() {
   const bufferRef = useRef("");
   const lastKeyTimeRef = useRef(0);
   const processingRef = useRef(false);
+  const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
 
   const handleBarcode = useCallback(async (barcode: string) => {
     if (processingRef.current || !profile?.company_id) return;
@@ -34,18 +39,14 @@ export function useGlobalScanner() {
       const { data } = await q.maybeSingle();
 
       if (data) {
-        // Dispatch custom event with product data for POS to pick up
         window.dispatchEvent(new CustomEvent("global-barcode-scan", { detail: data }));
-        // Navigate to POS if not already there
         if (location.pathname !== "/pos") {
           navigate("/pos");
         }
         toast.success(`${data.name} scanned`, { duration: 1500 });
       } else {
-        toast.error("Product not found", {
-          description: `No product matches barcode "${barcode}". Add it in Products first.`,
-          duration: 4000,
-        });
+        // Set unknown barcode state to trigger dialog
+        setUnknownBarcode(barcode);
       }
     } catch {
       // silently fail
@@ -55,11 +56,10 @@ export function useGlobalScanner() {
   }, [profile?.company_id, activeStoreId, navigate, location.pathname]);
 
   useEffect(() => {
-    const SCAN_SPEED_THRESHOLD = 50; // ms between keys for scanner
+    const SCAN_SPEED_THRESHOLD = 50;
     const MIN_LENGTH = 4;
 
     const handler = (e: KeyboardEvent) => {
-      // Skip if user is focused on an input/textarea (let the POS scan field handle it)
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
@@ -89,4 +89,6 @@ export function useGlobalScanner() {
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
   }, [handleBarcode]);
+
+  return { unknownBarcode, clearUnknownBarcode: () => setUnknownBarcode(null) };
 }
