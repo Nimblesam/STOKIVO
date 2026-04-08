@@ -41,3 +41,5 @@ project_id = "lsujpckltpgrydbfuadt"
     verify_jwt = false
   [functions.create-terminal-payment]
     verify_jwt = false
+  [functions.stripe-ledger-webhook]
+    verify_jwt = false

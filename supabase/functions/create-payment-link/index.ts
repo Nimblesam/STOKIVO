@@ -40,17 +40,10 @@ serve(async (req) => {
     }
     const user = userData.user;
 
-    // Only accept invoiceId from frontend — derive everything else server-side
     const body = await req.json();
-    const invoiceId = body?.invoiceId;
-    if (!invoiceId || typeof invoiceId !== "string") {
-      return new Response(JSON.stringify({ error: "invoiceId is required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
+    const { invoiceId, customerId: ledgerCustomerId } = body;
 
-    // Derive company from user profile (NEVER trust frontend)
+    // Derive company from user profile
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("company_id")
@@ -65,7 +58,93 @@ serve(async (req) => {
       });
     }
 
-    // Fetch invoice server-side and verify it belongs to the user's company
+    // Get company details
+    const { data: company } = await supabaseClient
+      .from("companies")
+      .select("stripe_account_id, currency, name")
+      .eq("id", companyId)
+      .single();
+
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2025-08-27.basil",
+    });
+
+    const companyCurrency = (company?.currency || "GBP").toLowerCase();
+
+    // MODE 1: Ledger-based payment link (for credit ledger)
+    if (ledgerCustomerId) {
+      const { data: customer } = await supabaseClient
+        .from("customers")
+        .select("id, name, email, company_id")
+        .eq("id", ledgerCustomerId)
+        .eq("company_id", companyId)
+        .single();
+
+      if (!customer) {
+        return new Response(JSON.stringify({ error: "Customer not found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
+      }
+
+      // Calculate balance from ledger
+      const { data: entries } = await supabaseClient.from("customer_ledger")
+        .select("type, amount").eq("customer_id", ledgerCustomerId);
+
+      let balance = 0;
+      for (const e of entries || []) {
+        if (e.type === "CHARGE") balance += e.amount;
+        else balance -= e.amount;
+      }
+
+      if (balance <= 0) {
+        return new Response(JSON.stringify({ error: "No outstanding balance" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      const platformFee = Math.round(balance * (PLATFORM_FEE_PERCENT / 100));
+
+      const sessionParams: any = {
+        line_items: [{
+          price_data: {
+            currency: companyCurrency,
+            product_data: { name: `Outstanding balance for ${customer.name}` },
+            unit_amount: balance,
+          },
+          quantity: 1,
+        }],
+        mode: "payment",
+        success_url: `${req.headers.get("origin")}/credit-ledger?paid=true`,
+        cancel_url: `${req.headers.get("origin")}/credit-ledger`,
+        metadata: { customerId: customer.id, companyId, type: "ledger_payment" },
+      };
+
+      if (customer.email) sessionParams.customer_email = customer.email;
+
+      if (company?.stripe_account_id) {
+        sessionParams.payment_intent_data = {
+          application_fee_amount: platformFee,
+          transfer_data: { destination: company.stripe_account_id },
+        };
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      return new Response(JSON.stringify({ url: session.url, balance, platformFee }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // MODE 2: Invoice-based payment link (existing behavior)
+    if (!invoiceId || typeof invoiceId !== "string") {
+      return new Response(JSON.stringify({ error: "invoiceId or customerId is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     const { data: invoice, error: invoiceError } = await supabaseClient
       .from("invoices")
       .select("id, total, status, company_id, customer_id")
@@ -87,7 +166,6 @@ serve(async (req) => {
       });
     }
 
-    // Server-side amount from DB (NEVER from frontend)
     const amount = invoice.total;
     if (!amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "Invalid invoice amount" }), {
@@ -96,30 +174,18 @@ serve(async (req) => {
       });
     }
 
-    // Get customer email for pre-fill
     const { data: customer } = await supabaseClient
       .from("customers")
       .select("email")
       .eq("id", invoice.customer_id)
       .maybeSingle();
 
-    // Get company Stripe account (derived server-side)
-    const { data: company } = await supabaseClient
-      .from("companies")
-      .select("stripe_account_id")
-      .eq("id", companyId)
-      .single();
-
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
-
     const platformFee = Math.round(amount * (PLATFORM_FEE_PERCENT / 100));
 
     const sessionParams: any = {
       line_items: [{
         price_data: {
-          currency: "gbp",
+          currency: companyCurrency,
           product_data: { name: `Invoice ${invoiceId.substring(0, 8)}` },
           unit_amount: amount,
         },
@@ -131,11 +197,8 @@ serve(async (req) => {
       metadata: { invoiceId, companyId },
     };
 
-    if (customer?.email) {
-      sessionParams.customer_email = customer.email;
-    }
+    if (customer?.email) sessionParams.customer_email = customer.email;
 
-    // If store has Stripe Connect, route payment to merchant with platform fee
     if (company?.stripe_account_id) {
       sessionParams.payment_intent_data = {
         application_fee_amount: platformFee,
@@ -146,9 +209,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(JSON.stringify({
-      url: session.url,
-      platformFee,
-      netAmount: amount - platformFee,
+      url: session.url, platformFee, netAmount: amount - platformFee,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

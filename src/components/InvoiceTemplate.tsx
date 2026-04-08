@@ -66,7 +66,7 @@ export function InvoiceTemplate({ company, invoice }: InvoiceTemplateProps) {
         </div>
         <div className="text-right">
           <h1 className="text-3xl font-display font-bold" style={{ color: brandColor }}>INVOICE</h1>
-          <p className="text-lg font-semibold text-foreground mt-1">{invoice.invoiceNumber}</p>
+          <p className="text-sm font-semibold text-foreground mt-1">{invoice.invoiceNumber}</p>
           <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
             <p>Date: {invoice.createdAt}</p>
             <p>Due: {invoice.dueDate}</p>

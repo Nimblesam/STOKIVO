@@ -11,6 +11,7 @@ interface Store {
   email: string | null;
   is_default: boolean;
   status: string;
+  currency: string;
 }
 
 interface StoreState {
@@ -56,7 +57,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const [storesRes, assignRes] = await Promise.all([
       supabase
         .from("stores")
-        .select("id, company_id, name, address, phone, email, is_default, status")
+        .select("id, company_id, name, address, phone, email, is_default, status, currency")
         .eq("company_id", profile.company_id)
         .eq("status", "active")
         .order("is_default", { ascending: false }),

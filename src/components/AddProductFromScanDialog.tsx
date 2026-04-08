@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,18 @@ export function AddProductFromScanDialog({ barcode, open, onClose }: Props) {
   const { activeStoreId } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [form, setForm] = useState({
-    name: "", sku: "", cost_price: "", selling_price: "", stock_qty: "1", min_stock_level: "5",
+    name: "", sku: "", cost_price: "", selling_price: "", stock_qty: "1",
+    min_stock_level: "5", category: "", supplier_id: "", expiry_date: "",
+    unit_type: "unit",
   });
+
+  useEffect(() => {
+    if (!profile?.company_id || !open) return;
+    supabase.from("suppliers").select("id, name").eq("company_id", profile.company_id)
+      .then(({ data }) => setSuppliers(data || []));
+  }, [profile?.company_id, open]);
 
   const handleAdd = async () => {
     if (!form.name.trim() || !form.sku.trim() || !profile?.company_id) {
@@ -40,21 +49,27 @@ export function AddProductFromScanDialog({ barcode, open, onClose }: Props) {
       selling_price: Math.round(parseFloat(form.selling_price || "0") * 100),
       stock_qty: parseInt(form.stock_qty || "0"),
       min_stock_level: parseInt(form.min_stock_level || "5"),
+      category: form.category || null,
+      supplier_id: form.supplier_id || null,
+      expiry_date: form.expiry_date || null,
+      unit_type: (form.unit_type as any) || "unit",
     });
     setSaving(false);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success(`${form.name} added successfully!`);
-      setShowForm(false);
-      setForm({ name: "", sku: "", cost_price: "", selling_price: "", stock_qty: "1", min_stock_level: "5" });
-      onClose();
+      handleClose();
     }
   };
 
   const handleClose = () => {
     setShowForm(false);
-    setForm({ name: "", sku: "", cost_price: "", selling_price: "", stock_qty: "1", min_stock_level: "5" });
+    setForm({
+      name: "", sku: "", cost_price: "", selling_price: "", stock_qty: "1",
+      min_stock_level: "5", category: "", supplier_id: "", expiry_date: "",
+      unit_type: "unit",
+    });
     onClose();
   };
 
@@ -89,7 +104,7 @@ export function AddProductFromScanDialog({ barcode, open, onClose }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
@@ -105,6 +120,10 @@ export function AddProductFromScanDialog({ barcode, open, onClose }: Props) {
           <div>
             <Label>SKU *</Label>
             <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="e.g. IND-001" className="mt-1" />
+          </div>
+          <div>
+            <Label>Category</Label>
+            <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Food & Beverages" className="mt-1" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -125,6 +144,30 @@ export function AddProductFromScanDialog({ barcode, open, onClose }: Props) {
               <Label>Min Stock Level</Label>
               <Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="5" className="mt-1" />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Unit Type</Label>
+              <select value={form.unit_type} onChange={(e) => setForm({ ...form, unit_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="unit">Unit</option>
+                <option value="carton">Carton</option>
+                <option value="bag">Bag</option>
+                <option value="kg">Kg</option>
+                <option value="bottle">Bottle</option>
+                <option value="tin">Tin</option>
+              </select>
+            </div>
+            <div>
+              <Label>Expiry Date</Label>
+              <Input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="mt-1" />
+            </div>
+          </div>
+          <div>
+            <Label>Supplier</Label>
+            <select value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">No supplier</option>
+              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
           </div>
           <Button onClick={handleAdd} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
             {saving ? "Saving..." : "Add Product"}

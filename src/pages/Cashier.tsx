@@ -258,7 +258,7 @@ export default function Cashier() {
         });
       }
 
-      // 5. If Pay Later → create customer (if needed), invoice, and add to credit ledger
+      // 5. If Pay Later → create customer (if needed), invoice, ledger CHARGE entry
       if (isPayLater && customerName) {
         // Find or create customer
         let customerId: string | null = null;
@@ -283,7 +283,7 @@ export default function Cashier() {
           // Create invoice for the credit
           const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
           const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + 30);
+          dueDate.setDate(dueDate.getDate() + 7);
 
           const { data: inv } = await supabase.from("invoices").insert({
             company_id: profile.company_id,
@@ -303,6 +303,19 @@ export default function Cashier() {
               }))
             );
           }
+
+          // Create CHARGE ledger entry
+          const itemDesc = cart.map(i => `${i.name} x${i.qty}`).join(", ");
+          await supabase.from("customer_ledger").insert({
+            customer_id: customerId,
+            company_id: profile.company_id,
+            store_id: activeStoreId,
+            type: "CHARGE" as any,
+            amount: grandTotal,
+            description: `POS Sale: ${itemDesc}`,
+            reference_id: sale.id,
+            due_date: dueDate.toISOString().split("T")[0],
+          });
 
           // Update customer outstanding balance
           const { data: custData } = await supabase

@@ -343,6 +343,70 @@ export type Database = {
           },
         ]
       }
+      customer_ledger: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          customer_id: string
+          description: string
+          due_date: string | null
+          id: string
+          last_reminder_sent_at: string | null
+          reference_id: string | null
+          store_id: string | null
+          type: Database["public"]["Enums"]["ledger_entry_type"]
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          customer_id: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          reference_id?: string | null
+          store_id?: string | null
+          type: Database["public"]["Enums"]["ledger_entry_type"]
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          reference_id?: string | null
+          store_id?: string | null
+          type?: Database["public"]["Enums"]["ledger_entry_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_ledger_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_ledger_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -1112,6 +1176,7 @@ export type Database = {
           address: string | null
           company_id: string
           created_at: string
+          currency: string
           email: string | null
           id: string
           is_default: boolean
@@ -1124,6 +1189,7 @@ export type Database = {
           address?: string | null
           company_id: string
           created_at?: string
+          currency?: string
           email?: string | null
           id?: string
           is_default?: boolean
@@ -1136,6 +1202,7 @@ export type Database = {
           address?: string | null
           company_id?: string
           created_at?: string
+          currency?: string
           email?: string | null
           id?: string
           is_default?: boolean
@@ -1634,6 +1701,7 @@ export type Database = {
         | "AED"
         | "AUD"
       invoice_status: "draft" | "sent" | "partially_paid" | "paid" | "overdue"
+      ledger_entry_type: "CHARGE" | "PAYMENT"
       movement_type: "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT" | "SALE"
       plan_tier: "starter" | "growth" | "pro"
       unit_type: "bag" | "carton" | "unit" | "kg" | "bottle" | "tin"
@@ -1783,6 +1851,7 @@ export const Constants = {
         "AUD",
       ],
       invoice_status: ["draft", "sent", "partially_paid", "paid", "overdue"],
+      ledger_entry_type: ["CHARGE", "PAYMENT"],
       movement_type: ["STOCK_IN", "STOCK_OUT", "ADJUSTMENT", "SALE"],
       plan_tier: ["starter", "growth", "pro"],
       unit_type: ["bag", "carton", "unit", "kg", "bottle", "tin"],
