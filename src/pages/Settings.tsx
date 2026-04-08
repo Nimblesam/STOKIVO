@@ -98,8 +98,8 @@ export default function Settings() {
         });
 
       // Load stores
-      supabase.from("stores").select("id, name").eq("company_id", company.id).eq("status", "active")
-        .then(({ data }) => { if (data) setStores(data); });
+      supabase.from("stores").select("id, name, currency").eq("company_id", company.id).eq("status", "active")
+        .then(({ data }) => { if (data) setStores(data as any); });
     }
   }, [company]);
 
