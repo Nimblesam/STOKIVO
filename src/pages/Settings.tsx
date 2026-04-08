@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database, Store,
 } from "lucide-react";
 import { WarehouseManager } from "@/components/WarehouseManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
@@ -244,6 +244,7 @@ export default function Settings() {
         <TabsList className="bg-muted/50 flex flex-wrap">
           {isOwner && <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" /> Company</TabsTrigger>}
           {isOwner && <TabsTrigger value="team" className="gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>}
+          {isOwner && <TabsTrigger value="stores" className="gap-2"><Store className="h-4 w-4" /> Stores</TabsTrigger>}
           {isOwner && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
@@ -440,6 +441,49 @@ export default function Settings() {
                 );
               })}
               {teamMembers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No team members found</p>}
+            </div>
+          </div>
+        </TabsContent>
+        )}
+
+        {/* STORES TAB - Owner only */}
+        {isOwner && (
+        <TabsContent value="stores">
+          <div className="stokivo-card p-6">
+            <h3 className="font-display font-semibold text-foreground mb-4">Store Locations & Currency</h3>
+            <p className="text-sm text-muted-foreground mb-4">Set a different currency for each store location.</p>
+            <div className="space-y-3">
+              {stores.map((store) => (
+                <div key={store.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center gap-3">
+                    <Store className="h-5 w-5 text-accent" />
+                    <span className="font-medium text-foreground">{store.name}</span>
+                  </div>
+                  <select
+                    defaultValue={(store as any).currency || companyForm.currency || "GBP"}
+                    onChange={async (e) => {
+                      const newCurrency = e.target.value;
+                      const { error } = await supabase.from("stores").update({ currency: newCurrency } as any).eq("id", store.id);
+                      if (error) { toast.error(error.message); return; }
+                      toast.success(`Currency updated to ${newCurrency} for ${store.name}`);
+                    }}
+                    className="text-sm font-medium bg-background px-3 py-2 rounded-md border border-input"
+                  >
+                    <option value="GBP">🇬🇧 GBP</option>
+                    <option value="NGN">🇳🇬 NGN</option>
+                    <option value="USD">🇺🇸 USD</option>
+                    <option value="EUR">🇪🇺 EUR</option>
+                    <option value="CAD">🇨🇦 CAD</option>
+                    <option value="GHS">🇬🇭 GHS</option>
+                    <option value="KES">🇰🇪 KES</option>
+                    <option value="ZAR">🇿🇦 ZAR</option>
+                    <option value="INR">🇮🇳 INR</option>
+                    <option value="AED">🇦🇪 AED</option>
+                    <option value="AUD">🇦🇺 AUD</option>
+                  </select>
+                </div>
+              ))}
+              {stores.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No stores found. Add stores during onboarding.</p>}
             </div>
           </div>
         </TabsContent>
