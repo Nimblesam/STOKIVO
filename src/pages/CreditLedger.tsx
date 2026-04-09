@@ -360,7 +360,38 @@ export default function CreditLedger() {
         </DialogContent>
       </Dialog>
 
-      {/* Customer Ledger Detail Dialog */}
+      {/* Add Charge Dialog */}
+      <Dialog open={showAddCharge} onOpenChange={setShowAddCharge}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Add Charge</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Customer *</Label>
+              <Select value={chargeCustomerId || ""} onValueChange={setChargeCustomerId}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select customer" /></SelectTrigger>
+                <SelectContent>
+                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Amount *</Label>
+              <Input type="number" step="0.01" value={chargeAmount} onChange={(e) => setChargeAmount(e.target.value)} placeholder="0.00" className="mt-1" />
+            </div>
+            <div>
+              <Label>Due Date</Label>
+              <Input type="date" value={chargeDueDate} onChange={(e) => setChargeDueDate(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Input value={chargeNote} onChange={(e) => setChargeNote(e.target.value)} placeholder="e.g. Goods supplied" className="mt-1" />
+            </div>
+            <Button onClick={handleRecordCharge} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={savingCharge || !chargeCustomerId}>
+              {savingCharge ? "Recording..." : "Add Charge"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!selectedCustomerId} onOpenChange={() => setSelectedCustomerId(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
