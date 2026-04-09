@@ -71,7 +71,7 @@ export default function Settings() {
             business_type: data.business_type || "wholesale",
             company_number: (data as any).company_number || "", phone: (data as any).phone || "",
             email: (data as any).email || "", custom_domain: (data as any).custom_domain || "",
-            subdomain: (data as any).subdomain || "",
+            subdomain: (data as any).subdomain || "", logo_url: data.logo_url || "",
           });
         }
       });
