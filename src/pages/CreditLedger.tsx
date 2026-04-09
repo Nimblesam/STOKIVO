@@ -45,10 +45,16 @@ export default function CreditLedger() {
   const [loading, setLoading] = useState(true);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [showAddCharge, setShowAddCharge] = useState(false);
   const [paymentCustomerId, setPaymentCustomerId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [savingPayment, setSavingPayment] = useState(false);
+  const [chargeCustomerId, setChargeCustomerId] = useState<string | null>(null);
+  const [chargeAmount, setChargeAmount] = useState("");
+  const [chargeNote, setChargeNote] = useState("");
+  const [chargeDueDate, setChargeDueDate] = useState("");
+  const [savingCharge, setSavingCharge] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"all" | "CHARGE" | "PAYMENT">("all");
   const [dateFilter, setDateFilter] = useState("");
 
@@ -151,6 +157,37 @@ export default function CreditLedger() {
     setSavingPayment(false);
     fetchData();
   };
+  const handleRecordCharge = async () => {
+    if (!chargeCustomerId || !profile?.company_id) return;
+    const amt = Math.round(parseFloat(chargeAmount || "0") * 100);
+    if (amt <= 0) { toast.error("Enter a valid amount"); return; }
+    setSavingCharge(true);
+
+    const { error } = await supabase.from("customer_ledger").insert({
+      customer_id: chargeCustomerId,
+      company_id: profile.company_id,
+      store_id: activeStoreId,
+      type: "CHARGE" as any,
+      amount: amt,
+      description: chargeNote || "Manual charge",
+      due_date: chargeDueDate || null,
+    });
+
+    if (error) { toast.error(error.message); setSavingCharge(false); return; }
+
+    const bal = customerBalances.get(chargeCustomerId);
+    const newBalance = (bal?.balance || 0) + amt;
+    await supabase.from("customers").update({ outstanding_balance: newBalance }).eq("id", chargeCustomerId);
+
+    toast.success("Charge recorded!");
+    setShowAddCharge(false);
+    setChargeAmount("");
+    setChargeNote("");
+    setChargeDueDate("");
+    setChargeCustomerId(null);
+    setSavingCharge(false);
+    fetchData();
+  };
 
   const sendPaymentReminder = (customer: Customer & { balance: number }) => {
     if (!customer.email) { toast.error("Customer has no email address"); return; }
@@ -201,6 +238,9 @@ export default function CreditLedger() {
         subtitle="Ledger-based tracking — all charges and payments in one place"
         actions={
           <div className="flex gap-2">
+            <Button className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setShowAddCharge(true)}>
+              <Plus className="h-4 w-4" /> Add Charge
+            </Button>
             <Button variant="outline" className="gap-2" onClick={exportCSV}>
               <Download className="h-4 w-4" /> Export CSV
             </Button>
@@ -323,7 +363,38 @@ export default function CreditLedger() {
         </DialogContent>
       </Dialog>
 
-      {/* Customer Ledger Detail Dialog */}
+      {/* Add Charge Dialog */}
+      <Dialog open={showAddCharge} onOpenChange={setShowAddCharge}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Add Charge</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Customer *</Label>
+              <Select value={chargeCustomerId || ""} onValueChange={setChargeCustomerId}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select customer" /></SelectTrigger>
+                <SelectContent>
+                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Amount *</Label>
+              <Input type="number" step="0.01" value={chargeAmount} onChange={(e) => setChargeAmount(e.target.value)} placeholder="0.00" className="mt-1" />
+            </div>
+            <div>
+              <Label>Due Date</Label>
+              <Input type="date" value={chargeDueDate} onChange={(e) => setChargeDueDate(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Input value={chargeNote} onChange={(e) => setChargeNote(e.target.value)} placeholder="e.g. Goods supplied" className="mt-1" />
+            </div>
+            <Button onClick={handleRecordCharge} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={savingCharge || !chargeCustomerId}>
+              {savingCharge ? "Recording..." : "Add Charge"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!selectedCustomerId} onOpenChange={() => setSelectedCustomerId(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -381,17 +452,18 @@ export default function CreditLedger() {
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Description</TableHead>
+                      <TableHead>Due Date</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead className="text-right">Balance</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {customerEntries.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No entries found</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No entries found</TableCell></TableRow>
                     ) : (
                       customerEntries.map((e) => (
                         <TableRow key={e.id}>
@@ -404,6 +476,13 @@ export default function CreditLedger() {
                             )}
                           </TableCell>
                           <TableCell className="text-sm max-w-[200px] truncate">{e.description}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {e.due_date ? (
+                              <span className={new Date(e.due_date) < new Date() && e.type === "CHARGE" ? "text-destructive font-medium" : ""}>
+                                {new Date(e.due_date).toLocaleDateString()}
+                              </span>
+                            ) : "—"}
+                          </TableCell>
                           <TableCell className={`text-right text-sm font-medium ${e.type === "CHARGE" ? "text-destructive" : "text-success"}`}>
                             {e.type === "CHARGE" ? "+" : "-"}{formatMoney(e.amount, currency)}
                           </TableCell>
