@@ -478,18 +478,19 @@ export default function Settings() {
             <h3 className="font-display font-semibold text-foreground mb-4">Store Locations & Currency</h3>
             <p className="text-sm text-muted-foreground mb-4">Set a different currency for each store location.</p>
             <div className="space-y-3">
-              {stores.map((store) => (
+              {stores.map((store, idx) => (
                 <div key={store.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
                   <div className="flex items-center gap-3">
                     <Store className="h-5 w-5 text-accent" />
                     <span className="font-medium text-foreground">{store.name}</span>
                   </div>
                   <select
-                    defaultValue={(store as any).currency || companyForm.currency || "GBP"}
+                    value={(store as any).currency || companyForm.currency || "GBP"}
                     onChange={async (e) => {
                       const newCurrency = e.target.value;
                       const { error } = await supabase.from("stores").update({ currency: newCurrency } as any).eq("id", store.id);
                       if (error) { toast.error(error.message); return; }
+                      setStores(prev => prev.map(s => s.id === store.id ? { ...s, currency: newCurrency } : s));
                       toast.success(`Currency updated to ${newCurrency} for ${store.name}`);
                     }}
                     className="text-sm font-medium bg-background px-3 py-2 rounded-md border border-input"
