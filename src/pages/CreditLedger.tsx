@@ -238,6 +238,9 @@ export default function CreditLedger() {
         subtitle="Ledger-based tracking — all charges and payments in one place"
         actions={
           <div className="flex gap-2">
+            <Button className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setShowAddCharge(true)}>
+              <Plus className="h-4 w-4" /> Add Charge
+            </Button>
             <Button variant="outline" className="gap-2" onClick={exportCSV}>
               <Download className="h-4 w-4" /> Export CSV
             </Button>
