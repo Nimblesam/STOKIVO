@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatMoney } from "@/lib/currency";
-import { Lightbulb, TrendingUp, TrendingDown, Package, AlertTriangle, Star } from "lucide-react";
+import { Lightbulb, TrendingUp, TrendingDown, Package, AlertTriangle, Star, Clock, Percent } from "lucide-react";
 import type { Currency } from "@/lib/types";
 
 interface Suggestion {
@@ -22,7 +22,7 @@ export function SmartSuggestions() {
     const cid = profile.company_id!;
 
     Promise.all([
-      supabase.from("products").select("id, name, stock_qty, min_stock_level, selling_price, cost_price").eq("company_id", cid),
+      supabase.from("products").select("id, name, stock_qty, min_stock_level, selling_price, cost_price, expiry_date").eq("company_id", cid),
       supabase.from("sale_items").select("product_name, qty, sale_id, sales!inner(company_id, created_at)")
         .eq("sales.company_id", cid),
       supabase.from("sales").select("total, created_at").eq("company_id", cid),
@@ -110,6 +110,43 @@ export function SmartSuggestions() {
         });
       }
 
+      // Expiring stock — discount suggestions
+      const now = new Date();
+      const in7Days = new Date();
+      in7Days.setDate(now.getDate() + 7);
+      const in30Days = new Date();
+      in30Days.setDate(now.getDate() + 30);
+
+      const expiringProducts = products.filter((p) => {
+        if (!p.expiry_date || p.stock_qty <= 0) return false;
+        const exp = new Date(p.expiry_date);
+        return exp >= now && exp <= in30Days;
+      });
+
+      const criticalExpiry = expiringProducts.filter((p) => new Date(p.expiry_date!) <= in7Days);
+      const soonExpiry = expiringProducts.filter((p) => new Date(p.expiry_date!) > in7Days);
+
+      if (criticalExpiry.length > 0) {
+        const names = criticalExpiry.slice(0, 3).map((p) => `"${p.name}"`).join(", ");
+        const stockValue = criticalExpiry.reduce((s, p) => s + p.selling_price * p.stock_qty, 0);
+        tips.push({
+          id: "expiry-critical",
+          icon: Clock,
+          message: `🚨 ${names}${criticalExpiry.length > 3 ? ` +${criticalExpiry.length - 3} more` : ""} expire within 7 days (${formatMoney(stockValue, currency)} at risk). Run a 30-50% flash sale or bundle them to recover costs.`,
+          type: "warning",
+        });
+      }
+
+      if (soonExpiry.length > 0) {
+        const stockValue = soonExpiry.reduce((s, p) => s + p.selling_price * p.stock_qty, 0);
+        tips.push({
+          id: "expiry-soon",
+          icon: Percent,
+          message: `${soonExpiry.length} product${soonExpiry.length > 1 ? "s" : ""} expire within 30 days (${formatMoney(stockValue, currency)}). Consider a 10-20% discount or "Buy 2 Get 1" bundle to clear stock before it's too late.`,
+          type: "info",
+        });
+      }
+
       // Low margin products
       const lowMarginProducts = products.filter((p) => {
         if (p.selling_price <= 0) return false;
@@ -125,7 +162,7 @@ export function SmartSuggestions() {
         });
       }
 
-      setSuggestions(tips.slice(0, 4));
+      setSuggestions(tips.slice(0, 6));
     });
   }, [profile?.company_id]);
 
