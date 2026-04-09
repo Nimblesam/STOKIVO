@@ -189,6 +189,7 @@ export default function CreditLedger() {
     fetchData();
   };
 
+  const sendPaymentReminder = (customer: Customer & { balance: number }) => {
     if (!customer.email) { toast.error("Customer has no email address"); return; }
     const subject = encodeURIComponent(`Payment Reminder from ${company?.name || "Us"}`);
     const body = encodeURIComponent(
