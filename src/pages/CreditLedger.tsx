@@ -157,8 +157,38 @@ export default function CreditLedger() {
     setSavingPayment(false);
     fetchData();
   };
+  const handleRecordCharge = async () => {
+    if (!chargeCustomerId || !profile?.company_id) return;
+    const amt = Math.round(parseFloat(chargeAmount || "0") * 100);
+    if (amt <= 0) { toast.error("Enter a valid amount"); return; }
+    setSavingCharge(true);
 
-  const sendPaymentReminder = (customer: Customer & { balance: number }) => {
+    const { error } = await supabase.from("customer_ledger").insert({
+      customer_id: chargeCustomerId,
+      company_id: profile.company_id,
+      store_id: activeStoreId,
+      type: "CHARGE" as any,
+      amount: amt,
+      description: chargeNote || "Manual charge",
+      due_date: chargeDueDate || null,
+    });
+
+    if (error) { toast.error(error.message); setSavingCharge(false); return; }
+
+    const bal = customerBalances.get(chargeCustomerId);
+    const newBalance = (bal?.balance || 0) + amt;
+    await supabase.from("customers").update({ outstanding_balance: newBalance }).eq("id", chargeCustomerId);
+
+    toast.success("Charge recorded!");
+    setShowAddCharge(false);
+    setChargeAmount("");
+    setChargeNote("");
+    setChargeDueDate("");
+    setChargeCustomerId(null);
+    setSavingCharge(false);
+    fetchData();
+  };
+
     if (!customer.email) { toast.error("Customer has no email address"); return; }
     const subject = encodeURIComponent(`Payment Reminder from ${company?.name || "Us"}`);
     const body = encodeURIComponent(
