@@ -392,7 +392,7 @@ export default function CreditLedger() {
                   </TableHeader>
                   <TableBody>
                     {customerEntries.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No entries found</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No entries found</TableCell></TableRow>
                     ) : (
                       customerEntries.map((e) => (
                         <TableRow key={e.id}>
@@ -405,6 +405,13 @@ export default function CreditLedger() {
                             )}
                           </TableCell>
                           <TableCell className="text-sm max-w-[200px] truncate">{e.description}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {e.due_date ? (
+                              <span className={new Date(e.due_date) < new Date() && e.type === "CHARGE" ? "text-destructive font-medium" : ""}>
+                                {new Date(e.due_date).toLocaleDateString()}
+                              </span>
+                            ) : "—"}
+                          </TableCell>
                           <TableCell className={`text-right text-sm font-medium ${e.type === "CHARGE" ? "text-destructive" : "text-success"}`}>
                             {e.type === "CHARGE" ? "+" : "-"}{formatMoney(e.amount, currency)}
                           </TableCell>
