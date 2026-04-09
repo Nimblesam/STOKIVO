@@ -51,7 +51,7 @@ export default function Settings() {
   const [companyForm, setCompanyForm] = useState({
     name: "", address: "", country: "", currency: "GBP", brand_color: "#0d9488",
     business_type: "wholesale", company_number: "", phone: "", email: "",
-    custom_domain: "", subdomain: "",
+    custom_domain: "", subdomain: "", logo_url: "",
   });
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
@@ -59,6 +59,7 @@ export default function Settings() {
   const [assigningStore, setAssigningStore] = useState<string | null>(null);
   const [domainStep, setDomainStep] = useState<"input" | "dns" | "verifying">("input");
   const [copiedRecord, setCopiedRecord] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     if (company) {
@@ -253,16 +254,40 @@ export default function Settings() {
           {isOwner && <TabsTrigger value="data-privacy" className="gap-2"><Database className="h-4 w-4" /> Data & Privacy</TabsTrigger>}
         </TabsList>
 
-        {/* COMPANY TAB */}
+      {/* COMPANY TAB */}
         <TabsContent value="company">
           <div className="stokivo-card p-6 space-y-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-16 w-16 rounded-xl flex items-center justify-center" style={{ backgroundColor: companyForm.brand_color + "20" }}>
-                <Building2 className="h-8 w-8" style={{ color: companyForm.brand_color }} />
-              </div>
+              {companyForm.logo_url ? (
+                <img src={companyForm.logo_url} alt={companyForm.name} className="h-16 w-16 rounded-xl object-contain border" />
+              ) : (
+                <div className="h-16 w-16 rounded-xl flex items-center justify-center" style={{ backgroundColor: companyForm.brand_color + "20" }}>
+                  <Building2 className="h-8 w-8" style={{ color: companyForm.brand_color }} />
+                </div>
+              )}
               <div>
                 <h3 className="font-display font-bold text-lg text-foreground">{companyForm.name || "Your Company"}</h3>
                 <p className="text-sm text-muted-foreground">{companyForm.address || "No address set"}</p>
+                <label className="text-xs text-accent hover:underline cursor-pointer mt-1 inline-block">
+                  {uploadingLogo ? "Uploading..." : "Upload Logo"}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingLogo} onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !company) return;
+                    setUploadingLogo(true);
+                    const ext = file.name.split(".").pop() || "png";
+                    const path = `${company.id}/logo.${ext}`;
+                    const { error: uploadErr } = await supabase.storage.from("company-logos").upload(path, file, { upsert: true });
+                    if (uploadErr) { toast.error(uploadErr.message); setUploadingLogo(false); return; }
+                    const { data: urlData } = supabase.storage.from("company-logos").getPublicUrl(path);
+                    const logoUrl = urlData.publicUrl + "?t=" + Date.now();
+                    const { error: updateErr } = await supabase.from("companies").update({ logo_url: logoUrl } as any).eq("id", company.id);
+                    if (updateErr) { toast.error(updateErr.message); setUploadingLogo(false); return; }
+                    setCompanyForm(prev => ({ ...prev, logo_url: logoUrl }));
+                    await refreshProfile();
+                    toast.success("Logo uploaded!");
+                    setUploadingLogo(false);
+                  }} />
+                </label>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
