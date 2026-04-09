@@ -45,10 +45,16 @@ export default function CreditLedger() {
   const [loading, setLoading] = useState(true);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [showAddCharge, setShowAddCharge] = useState(false);
   const [paymentCustomerId, setPaymentCustomerId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [savingPayment, setSavingPayment] = useState(false);
+  const [chargeCustomerId, setChargeCustomerId] = useState<string | null>(null);
+  const [chargeAmount, setChargeAmount] = useState("");
+  const [chargeNote, setChargeNote] = useState("");
+  const [chargeDueDate, setChargeDueDate] = useState("");
+  const [savingCharge, setSavingCharge] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"all" | "CHARGE" | "PAYMENT">("all");
   const [dateFilter, setDateFilter] = useState("");
 
