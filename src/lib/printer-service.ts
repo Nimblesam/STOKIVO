@@ -62,7 +62,8 @@ export async function connectPrinter(): Promise<boolean> {
   try {
     updateState({ status: "connecting", error: null });
 
-    const port = await navigator.serial.requestPort();
+    const serial = (navigator as any).serial;
+    const port = await serial.requestPort();
     await port.open({ baudRate: 9600 });
 
     const writer = port.writable?.getWriter() || null;
