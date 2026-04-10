@@ -26,6 +26,7 @@ import { usePlanFeatures, type Feature } from "@/hooks/use-plan-features";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
+import { PosSettingsTab } from "@/components/PosSettingsTab";
 
 export default function Settings() {
   const { company, profile, user, refreshProfile, role } = useAuth();
