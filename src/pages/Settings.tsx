@@ -532,6 +532,13 @@ export default function Settings() {
           </div>
         </TabsContent>
 
+        {/* POS SETTINGS TAB */}
+        {isOwner && (
+        <TabsContent value="pos">
+          <PosSettingsTab companyId={company?.id} />
+        </TabsContent>
+        )}
+
         {/* PAYMENTS TAB - Owner only */}
         {isOwner && (
         <TabsContent value="payments">
