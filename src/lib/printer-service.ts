@@ -14,8 +14,8 @@ const CASH_DRAWER_PIN5 = new Uint8Array([ESC, 0x70, 0x01, 0x3C, 0xFF]); // Kick 
 export type PrinterStatus = "disconnected" | "connecting" | "connected" | "error";
 
 interface PrinterState {
-  port: SerialPort | null;
-  writer: WritableStreamDefaultWriter<Uint8Array> | null;
+  port: any; // SerialPort
+  writer: any; // WritableStreamDefaultWriter
   status: PrinterStatus;
   printerName: string | null;
   error: string | null;
