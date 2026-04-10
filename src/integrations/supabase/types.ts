@@ -467,6 +467,61 @@ export type Database = {
           },
         ]
       }
+      drawer_events: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          sale_id: string | null
+          store_id: string | null
+          trigger_type: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          sale_id?: string | null
+          store_id?: string | null
+          trigger_type?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          sale_id?: string | null
+          store_id?: string | null
+          trigger_type?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawer_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drawer_events_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drawer_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -791,6 +846,41 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_settings: {
+        Row: {
+          auto_open_drawer: boolean
+          company_id: string
+          created_at: string
+          id: string
+          printer_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_open_drawer?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          printer_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_open_drawer?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          printer_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1687,7 +1777,7 @@ export type Database = {
       alert_severity: "warning" | "critical"
       alert_type: "LOW_STOCK" | "SUPPLIER_PRICE_CHANGE"
       app_role: "owner" | "manager" | "staff"
-      business_type: "wholesale" | "retail" | "hybrid"
+      business_type: "wholesale" | "retail" | "hybrid" | "restaurant"
       currency_code:
         | "GBP"
         | "NGN"
@@ -1836,7 +1926,7 @@ export const Constants = {
       alert_severity: ["warning", "critical"],
       alert_type: ["LOW_STOCK", "SUPPLIER_PRICE_CHANGE"],
       app_role: ["owner", "manager", "staff"],
-      business_type: ["wholesale", "retail", "hybrid"],
+      business_type: ["wholesale", "retail", "hybrid", "restaurant"],
       currency_code: [
         "GBP",
         "NGN",
