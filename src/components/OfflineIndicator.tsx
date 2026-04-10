@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { getOfflineStatus, subscribeOfflineStatus, getPendingSalesCount, syncOfflineData } from "@/lib/offline-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { SyncStatus } from "@/lib/offline-store";
 
 export function OfflineIndicator() {
   const [status, setStatus] = useState<string>(getOfflineStatus());

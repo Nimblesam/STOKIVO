@@ -15,7 +15,7 @@ export function PrinterStatusIndicator() {
 
   useEffect(() => {
     const unsub = subscribePrinter(() => setPrinter(getPrinterState()));
-    return unsub;
+    return () => { unsub(); };
   }, []);
 
   if (!isSerialSupported()) return null;
