@@ -57,7 +57,7 @@ export default function Onboarding() {
   // Step 1 — Business
   const [biz, setBiz] = useState({
     name: "", email: "", phone: "", address: "", country: "UK", currency: "GBP",
-    businessType: "retail" as "wholesale" | "retail" | "hybrid",
+    businessType: "retail" as "wholesale" | "retail" | "hybrid" | "restaurant",
     isRegistered: false, companyNumber: "", brandColor: "#0d9488",
   });
 
@@ -405,6 +405,7 @@ export default function Onboarding() {
                     <option value="retail">Retail</option>
                     <option value="wholesale">Wholesale</option>
                     <option value="hybrid">Hybrid (Retail + Wholesale)</option>
+                    <option value="restaurant">Restaurant / Food Service</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
