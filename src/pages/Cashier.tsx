@@ -12,13 +12,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   ScanBarcode, ShoppingCart, Plus, Minus, X, CreditCard, Banknote,
-  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, Star,
+  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, Star, LockKeyhole,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
 import { TerminalStatus } from "@/components/pos/TerminalStatus";
 import { PosReceipt } from "@/components/pos/PosReceipt";
+import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useTerminal } from "@/hooks/use-terminal";
+import { openCashDrawer } from "@/lib/printer-service";
+import {
+  cacheProducts, getCachedProductByBarcode, getCachedProducts,
+  queueOfflineSale, queueDrawerEvent, getOfflineStatus,
+} from "@/lib/offline-store";
 import type { Currency } from "@/lib/types";
 
 export interface CartItem {
@@ -48,9 +55,10 @@ export interface SaleRecord {
 }
 
 export default function Cashier() {
-  const { user, profile, company } = useAuth();
+  const { user, profile, company, role } = useAuth();
   const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
+  const isRestaurant = company?.business_type === "restaurant";
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [scanValue, setScanValue] = useState("");
@@ -62,6 +70,9 @@ export default function Cashier() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [bestSellers, setBestSellers] = useState<any[]>([]);
+  const [posSettings, setPosSettings] = useState<{ auto_open_drawer: boolean }>({ auto_open_drawer: true });
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
   const terminal = useTerminal();
 
@@ -72,8 +83,32 @@ export default function Cashier() {
 
   useEffect(() => { scanRef.current?.focus(); }, [cart]);
 
+  // Load POS settings
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    supabase.from("pos_settings").select("auto_open_drawer").eq("company_id", profile.company_id).maybeSingle()
+      .then(({ data }) => {
+        if (data) setPosSettings({ auto_open_drawer: data.auto_open_drawer });
+      });
+  }, [profile?.company_id]);
 
-
+  // Load all products for restaurant grid + cache for offline
+  useEffect(() => {
+    if (!profile?.company_id) return;
+    const loadProducts = async () => {
+      let q = supabase.from("products")
+        .select("id, name, barcode, selling_price, stock_qty, category, sku")
+        .eq("company_id", profile.company_id!);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q.limit(500);
+      if (data) {
+        setAllProducts(data);
+        // Cache for offline use
+        cacheProducts(data).catch(() => {});
+      }
+    };
+    loadProducts();
+  }, [profile?.company_id, activeStoreId]);
 
   // Load best sellers on mount
   useEffect(() => {
@@ -85,7 +120,6 @@ export default function Cashier() {
         .eq("sales.company_id", profile.company_id!);
       if (!saleItems || saleItems.length === 0) return;
 
-      // Aggregate qty by product_id
       const totals = new Map<string, { id: string; name: string; totalQty: number }>();
       saleItems.forEach((si: any) => {
         if (!si.product_id) return;
@@ -97,14 +131,12 @@ export default function Cashier() {
       const topIds = [...totals.values()].sort((a, b) => b.totalQty - a.totalQty).slice(0, 12);
       if (topIds.length === 0) return;
 
-      // Fetch current prices & stock for those products
       const { data: prods } = await supabase
         .from("products")
         .select("id, name, barcode, selling_price, stock_qty, sku")
         .in("id", topIds.map((t) => t.id));
       if (!prods) return;
 
-      // Sort by sales volume
       const prodMap = new Map(prods.map((p) => [p.id, p]));
       const sorted = topIds.map((t) => prodMap.get(t.id)).filter(Boolean);
       setBestSellers(sorted);
@@ -128,15 +160,26 @@ export default function Cashier() {
     if (!profile?.company_id || searchQuery.length < 1) { setProducts([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      let q = supabase
-        .from("products")
-        .select("id, name, barcode, selling_price, stock_qty, category, sku")
-        .eq("company_id", profile.company_id!)
-        .or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%`)
-        .limit(20);
-      if (activeStoreId) q = q.eq("store_id", activeStoreId);
-      const { data } = await q;
-      setProducts(data || []);
+      // Try online first, fallback to cached
+      if (navigator.onLine) {
+        let q = supabase
+          .from("products")
+          .select("id, name, barcode, selling_price, stock_qty, category, sku")
+          .eq("company_id", profile.company_id!)
+          .or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%,barcode.ilike.%${searchQuery}%`)
+          .limit(20);
+        if (activeStoreId) q = q.eq("store_id", activeStoreId);
+        const { data } = await q;
+        setProducts(data || []);
+      } else {
+        // Offline: search from cached products
+        const cached = await getCachedProducts(profile.company_id!);
+        const q = searchQuery.toLowerCase();
+        const filtered = cached.filter(p =>
+          p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || p.barcode?.includes(searchQuery)
+        ).slice(0, 20);
+        setProducts(filtered);
+      }
       setSearching(false);
     }, 300);
     return () => clearTimeout(t);
@@ -161,7 +204,6 @@ export default function Cashier() {
     toast.success(`${product.name} added`, { duration: 1000 });
   }, []);
 
-  // Listen for global barcode scan events (from other pages)
   useEffect(() => {
     const handler = (e: Event) => {
       const product = (e as CustomEvent).detail;
@@ -174,15 +216,23 @@ export default function Cashier() {
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scanValue.trim() || !profile?.company_id) return;
-    let q = supabase
-      .from("products")
-      .select("id, name, barcode, selling_price, stock_qty")
-      .eq("company_id", profile.company_id)
-      .eq("barcode", scanValue.trim());
-    if (activeStoreId) q = q.eq("store_id", activeStoreId);
-    const { data } = await q.maybeSingle();
-    if (data) { addToCart(data); }
-    else { toast.error("Barcode not found", { description: `No product matches "${scanValue}"` }); }
+
+    // Try online first, then offline cache
+    if (navigator.onLine) {
+      let q = supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty")
+        .eq("company_id", profile.company_id)
+        .eq("barcode", scanValue.trim());
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q.maybeSingle();
+      if (data) { addToCart(data); }
+      else { toast.error("Barcode not found", { description: `No product matches "${scanValue}"` }); }
+    } else {
+      const cached = await getCachedProductByBarcode(scanValue.trim(), profile.company_id);
+      if (cached) { addToCart(cached); }
+      else { toast.error("Barcode not found offline"); }
+    }
     setScanValue("");
     scanRef.current?.focus();
   };
@@ -199,7 +249,36 @@ export default function Cashier() {
 
   const removeItem = (productId: string) => setCart((prev) => prev.filter((i) => i.product_id !== productId));
   const clearCart = () => setCart([]);
-  const stockErrors = cart.filter((i) => i.qty > i.stock_qty);
+  const stockErrors = isRestaurant ? [] : cart.filter((i) => i.qty > i.stock_qty);
+
+  // Trigger cash drawer + log event
+  const triggerCashDrawer = async (triggerType: "cash_payment" | "manual", saleId?: string) => {
+    if (!profile?.company_id || !user) return;
+
+    // Open drawer
+    await openCashDrawer();
+
+    // Log event (online or queue for offline)
+    const eventData = {
+      company_id: profile.company_id,
+      store_id: activeStoreId || null,
+      user_id: user.id,
+      user_name: profile.full_name,
+      trigger_type: triggerType,
+      sale_id: saleId || null,
+    };
+
+    if (navigator.onLine) {
+      await supabase.from("drawer_events").insert(eventData);
+    } else {
+      await queueDrawerEvent({
+        id: crypto.randomUUID(),
+        data: eventData,
+        created_at: new Date().toISOString(),
+        synced: false,
+      });
+    }
+  };
 
   const handlePaymentComplete = async (payments: { method: string; amount: number }[], customerName?: string) => {
     if (!profile?.company_id || !user) return;
@@ -209,6 +288,50 @@ export default function Cashier() {
       const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
       const changeGiven = Math.max(0, totalPaid - grandTotal);
       const isPayLater = payments.length === 0;
+      const hasCashPayment = payments.some(p => p.method === "cash");
+
+      // Check if offline
+      if (!navigator.onLine) {
+        // Queue for offline sync
+        const offlineSaleId = crypto.randomUUID();
+        await queueOfflineSale({
+          id: offlineSaleId,
+          data: {
+            company_id: profile.company_id,
+            cashier_id: user.id,
+            cashier_name: profile.full_name,
+            subtotal, discount, tax, total: grandTotal,
+            change_given: changeGiven,
+            status: isPayLater ? "pending" : "completed",
+            store_id: activeStoreId,
+            items: cart.map(i => ({
+              product_id: i.product_id, product_name: i.name,
+              qty: i.qty, unit_price: i.unit_price, line_total: i.line_total,
+            })),
+            payments,
+            customer_name: customerName,
+          },
+          created_at: new Date().toISOString(),
+          synced: false,
+        });
+
+        // Open cash drawer for cash payments
+        if (hasCashPayment && posSettings.auto_open_drawer) {
+          await triggerCashDrawer("cash_payment", offlineSaleId);
+        }
+
+        setCompletedSale({
+          id: offlineSaleId, items: [...cart], subtotal, discount, tax, total: grandTotal,
+          payments, change_given: changeGiven, cashier_name: profile.full_name,
+          created_at: new Date().toISOString(), company_name: company?.name || "", currency,
+          company_logo: company?.logo_url,
+        });
+        setShowPayment(false);
+        setCart([]);
+        toast.success("Sale saved offline — will sync when online");
+        setProcessing(false);
+        return;
+      }
 
       // 1. Create sale
       const { data: sale, error: saleErr } = await supabase
@@ -241,7 +364,7 @@ export default function Cashier() {
         );
       }
 
-      // 4. Deduct stock
+      // 4. Deduct stock (skip for restaurant if no stock tracking)
       for (const item of cart) {
         const { data: currentProduct } = await supabase
           .from("products").select("stock_qty").eq("id", item.product_id).single();
@@ -258,41 +381,31 @@ export default function Cashier() {
         });
       }
 
-      // 5. If Pay Later → create customer (if needed), invoice, ledger CHARGE entry
+      // 5. If Pay Later → create customer, invoice, ledger CHARGE
       if (isPayLater && customerName) {
-        // Find or create customer
         let customerId: string | null = null;
         const { data: existingCustomers } = await supabase
-          .from("customers")
-          .select("id")
-          .eq("company_id", profile.company_id)
-          .ilike("name", customerName)
-          .limit(1);
+          .from("customers").select("id").eq("company_id", profile.company_id)
+          .ilike("name", customerName).limit(1);
 
         if (existingCustomers && existingCustomers.length > 0) {
           customerId = existingCustomers[0].id;
         } else {
           const { data: newCust } = await supabase
-            .from("customers")
-            .insert({ company_id: profile.company_id, name: customerName, outstanding_balance: 0 })
+            .from("customers").insert({ company_id: profile.company_id, name: customerName, outstanding_balance: 0 })
             .select("id").single();
           customerId = newCust?.id || null;
         }
 
         if (customerId) {
-          // Create invoice for the credit
           const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
           const dueDate = new Date();
           dueDate.setDate(dueDate.getDate() + 7);
 
           const { data: inv } = await supabase.from("invoices").insert({
-            company_id: profile.company_id,
-            customer_id: customerId,
-            invoice_number: invNum,
-            due_date: dueDate.toISOString().split("T")[0],
-            subtotal: grandTotal, total: grandTotal,
-            status: "sent" as any,
-            store_id: activeStoreId,
+            company_id: profile.company_id, customer_id: customerId, invoice_number: invNum,
+            due_date: dueDate.toISOString().split("T")[0], subtotal: grandTotal, total: grandTotal,
+            status: "sent" as any, store_id: activeStoreId,
           }).select("id").single();
 
           if (inv) {
@@ -304,20 +417,13 @@ export default function Cashier() {
             );
           }
 
-          // Create CHARGE ledger entry
           const itemDesc = cart.map(i => `${i.name} x${i.qty}`).join(", ");
           await supabase.from("customer_ledger").insert({
-            customer_id: customerId,
-            company_id: profile.company_id,
-            store_id: activeStoreId,
-            type: "CHARGE" as any,
-            amount: grandTotal,
-            description: `POS Sale: ${itemDesc}`,
-            reference_id: sale.id,
-            due_date: dueDate.toISOString().split("T")[0],
+            customer_id: customerId, company_id: profile.company_id, store_id: activeStoreId,
+            type: "CHARGE" as any, amount: grandTotal, description: `POS Sale: ${itemDesc}`,
+            reference_id: sale.id, due_date: dueDate.toISOString().split("T")[0],
           });
 
-          // Update customer outstanding balance
           const { data: custData } = await supabase
             .from("customers").select("outstanding_balance").eq("id", customerId).single();
           await supabase.from("customers").update({
@@ -326,11 +432,17 @@ export default function Cashier() {
         }
       }
 
-      // 6. Build completed sale record
+      // 6. Open cash drawer if cash payment
+      if (hasCashPayment && posSettings.auto_open_drawer) {
+        await triggerCashDrawer("cash_payment", sale.id);
+      }
+
+      // 7. Build completed sale record
       setCompletedSale({
         id: sale.id, items: [...cart], subtotal, discount, tax, total: grandTotal,
         payments, change_given: changeGiven, cashier_name: profile.full_name,
         created_at: new Date().toISOString(), company_name: company?.name || "", currency,
+        company_logo: company?.logo_url,
       });
 
       setShowPayment(false);
@@ -347,6 +459,12 @@ export default function Cashier() {
     setCompletedSale(null); setShowReceipt(false); setCart([]); setScanValue("");
     scanRef.current?.focus();
   };
+
+  // Get categories for restaurant grid
+  const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+  const filteredGridProducts = categoryFilter
+    ? allProducts.filter(p => p.category === categoryFilter)
+    : allProducts;
 
   // SUCCESS SCREEN
   if (completedSale && !showReceipt) {
@@ -417,18 +535,22 @@ export default function Cashier() {
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-5rem)]">
       <div className="flex-1 flex flex-col gap-4 min-w-0">
         <Card className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ScanBarcode className="h-4 w-4" /> Barcode Scanner
             </div>
-            <ScannerStatus />
-            <TerminalStatus
-              status={terminal.status}
-              readerLabel={terminal.reader?.label}
-              error={terminal.error}
-              onConnect={terminal.connect}
-              onDisconnect={terminal.disconnect}
-            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <OfflineIndicator />
+              <PrinterStatusIndicator />
+              <ScannerStatus />
+              <TerminalStatus
+                status={terminal.status}
+                readerLabel={terminal.reader?.label}
+                error={terminal.error}
+                onConnect={terminal.connect}
+                onDisconnect={terminal.disconnect}
+              />
+            </div>
           </div>
           <form onSubmit={handleScan} className="flex gap-3">
             <div className="relative flex-1">
@@ -438,66 +560,104 @@ export default function Cashier() {
             </div>
             <Button type="submit" size="lg" className="h-12 px-6">Scan</Button>
           </form>
+          {/* Admin manual drawer open */}
+          {(role === "owner" || role === "manager") && (
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5"
+              onClick={() => triggerCashDrawer("manual")}>
+              <LockKeyhole className="h-3 w-3" /> Open Drawer
+            </Button>
+          )}
         </Card>
 
         <Card className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-4 border-b">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products by name, SKU, or barcode…" className="pl-10" />
+          {/* Restaurant mode: category tabs + grid */}
+          {isRestaurant && categories.length > 0 && (
+            <div className="p-3 border-b flex gap-2 flex-wrap">
+              <Badge variant={!categoryFilter ? "default" : "secondary"}
+                className="cursor-pointer" onClick={() => setCategoryFilter(null)}>All</Badge>
+              {categories.map(cat => (
+                <Badge key={cat} variant={categoryFilter === cat ? "default" : "secondary"}
+                  className="cursor-pointer" onClick={() => setCategoryFilter(cat)}>{cat}</Badge>
+              ))}
             </div>
-          </div>
-          <ScrollArea className="flex-1">
-            {products.length === 0 && searchQuery.length > 0 && !searching && (
-              <div className="p-8 text-center text-muted-foreground">
-                <Package className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No products found</p>
+          )}
+
+          {isRestaurant ? (
+            <ScrollArea className="flex-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
+                {filteredGridProducts.map((p) => (
+                  <button key={p.id} onClick={() => addToCart(p)}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-transparent hover:border-primary/40 hover:bg-primary/5 transition-all text-center group bg-card shadow-sm">
+                    <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center">
+                      <Package className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="font-medium text-sm leading-tight line-clamp-2">{p.name}</p>
+                    <p className="text-sm font-bold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                  </button>
+                ))}
               </div>
-            )}
-            {products.length === 0 && searchQuery.length === 0 && bestSellers.length > 0 && (
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Star className="h-4 w-4" /> Best Sellers — Quick Add
+            </ScrollArea>
+          ) : (
+            <>
+              <div className="p-4 border-b">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products by name, SKU, or barcode…" className="pl-10" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-                  {bestSellers.map((p) => (
+              </div>
+              <ScrollArea className="flex-1">
+                {products.length === 0 && searchQuery.length > 0 && !searching && (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Package className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No products found</p>
+                  </div>
+                )}
+                {products.length === 0 && searchQuery.length === 0 && bestSellers.length > 0 && (
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Star className="h-4 w-4" /> Best Sellers — Quick Add
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+                      {bestSellers.map((p) => (
+                        <button key={p.id} onClick={() => addToCart(p)}
+                          className="flex flex-col items-center gap-1.5 p-3 rounded-lg border border-dashed border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-colors text-center group">
+                          <Package className="h-5 w-5 text-primary/60 group-hover:text-primary transition-colors" />
+                          <p className="font-medium text-xs leading-tight truncate w-full">{p.name}</p>
+                          <p className="text-xs font-semibold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">Click any product to add to cart instantly</p>
+                  </div>
+                )}
+                {products.length === 0 && searchQuery.length === 0 && bestSellers.length === 0 && (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <ScanBarcode className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                    <p className="font-medium">Ready to scan</p>
+                    <p className="text-sm mt-1">Scan a barcode or search for products above</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 p-4">
+                  {products.map((p) => (
                     <button key={p.id} onClick={() => addToCart(p)}
-                      className="flex flex-col items-center gap-1.5 p-3 rounded-lg border border-dashed border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-colors text-center group">
-                      <Package className="h-5 w-5 text-primary/60 group-hover:text-primary transition-colors" />
-                      <p className="font-medium text-xs leading-tight truncate w-full">{p.name}</p>
-                      <p className="text-xs font-semibold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/10 hover:border-accent transition-colors text-left">
+                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{p.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{p.sku}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold text-sm">{formatMoney(p.selling_price, currency)}</p>
+                        <p className="text-xs text-muted-foreground">{p.stock_qty} in stock</p>
+                      </div>
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground text-center">Click any product to add to cart instantly</p>
-              </div>
-            )}
-            {products.length === 0 && searchQuery.length === 0 && bestSellers.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">
-                <ScanBarcode className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                <p className="font-medium">Ready to scan</p>
-                <p className="text-sm mt-1">Scan a barcode or search for products above</p>
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 p-4">
-              {products.map((p) => (
-                <button key={p.id} onClick={() => addToCart(p)}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/10 hover:border-accent transition-colors text-left">
-                  <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{p.sku}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-semibold text-sm">{formatMoney(p.selling_price, currency)}</p>
-                    <p className="text-xs text-muted-foreground">{p.stock_qty} in stock</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
+              </ScrollArea>
+            </>
+          )}
         </Card>
       </div>
 
@@ -543,7 +703,7 @@ export default function Cashier() {
                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.product_id, 1)}>
                         <Plus className="h-3 w-3" />
                       </Button>
-                      {item.qty > item.stock_qty && (
+                      {!isRestaurant && item.qty > item.stock_qty && (
                         <span className="text-[10px] text-destructive font-medium ml-1">Only {item.stock_qty}!</span>
                       )}
                     </div>

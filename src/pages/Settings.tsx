@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
-  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database, Store,
+  Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database, Store, Monitor,
 } from "lucide-react";
 import { WarehouseManager } from "@/components/WarehouseManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
@@ -26,6 +26,7 @@ import { usePlanFeatures, type Feature } from "@/hooks/use-plan-features";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
+import { PosSettingsTab } from "@/components/PosSettingsTab";
 
 export default function Settings() {
   const { company, profile, user, refreshProfile, role } = useAuth();
@@ -248,6 +249,7 @@ export default function Settings() {
           {isOwner && <TabsTrigger value="stores" className="gap-2"><Store className="h-4 w-4" /> Stores</TabsTrigger>}
           {isOwner && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
+          {isOwner && <TabsTrigger value="pos" className="gap-2"><Monitor className="h-4 w-4" /> POS</TabsTrigger>}
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
           {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
           {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
@@ -317,7 +319,7 @@ export default function Settings() {
               <div>
                 <Label>Business Type</Label>
                 <select value={companyForm.business_type} onChange={(e) => setCompanyForm({ ...companyForm, business_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="wholesale">Wholesale</option><option value="retail">Retail</option><option value="hybrid">Hybrid</option>
+                  <option value="wholesale">Wholesale</option><option value="retail">Retail</option><option value="hybrid">Hybrid</option><option value="restaurant">Restaurant / Food Service</option>
                 </select>
               </div>
               <div>
@@ -530,6 +532,13 @@ export default function Settings() {
             <TwoFactorSetup />
           </div>
         </TabsContent>
+
+        {/* POS SETTINGS TAB */}
+        {isOwner && (
+        <TabsContent value="pos">
+          <PosSettingsTab companyId={company?.id} />
+        </TabsContent>
+        )}
 
         {/* PAYMENTS TAB - Owner only */}
         {isOwner && (
