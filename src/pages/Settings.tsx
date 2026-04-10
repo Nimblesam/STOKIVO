@@ -248,6 +248,7 @@ export default function Settings() {
           {isOwner && <TabsTrigger value="stores" className="gap-2"><Store className="h-4 w-4" /> Stores</TabsTrigger>}
           {isOwner && <TabsTrigger value="warehouses" className="gap-2"><Warehouse className="h-4 w-4" /> Warehouses</TabsTrigger>}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="h-4 w-4" /> Security</TabsTrigger>
+          {isOwner && <TabsTrigger value="pos" className="gap-2"><Monitor className="h-4 w-4" /> POS</TabsTrigger>}
           {isOwner && <TabsTrigger value="payments" className="gap-2"><Banknote className="h-4 w-4" /> Payments</TabsTrigger>}
           {isOwner && <TabsTrigger value="domain" className="gap-2"><Globe className="h-4 w-4" /> Domain</TabsTrigger>}
           {isOwner && <TabsTrigger value="billing" className="gap-2"><CreditCard className="h-4 w-4" /> Billing</TabsTrigger>}
@@ -317,7 +318,7 @@ export default function Settings() {
               <div>
                 <Label>Business Type</Label>
                 <select value={companyForm.business_type} onChange={(e) => setCompanyForm({ ...companyForm, business_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="wholesale">Wholesale</option><option value="retail">Retail</option><option value="hybrid">Hybrid</option>
+                  <option value="wholesale">Wholesale</option><option value="retail">Retail</option><option value="hybrid">Hybrid</option><option value="restaurant">Restaurant / Food Service</option>
                 </select>
               </div>
               <div>
