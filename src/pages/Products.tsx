@@ -25,7 +25,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
   cost_price: "", selling_price: "", stock_qty: "", min_stock_level: "5",
-  supplier_id: "", expiry_date: "",
+  supplier_id: "", expiry_date: "", image_url: "",
 };
 
 export default function Products() {
@@ -33,6 +33,7 @@ export default function Products() {
   const { activeStoreId } = useStore();
   const { canAddProduct, limits, currentPlan, requiredPlanFor } = usePlanFeatures();
   const currency = (company?.currency || "GBP") as Currency;
+  const isRestaurant = company?.business_type === "restaurant";
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +108,7 @@ export default function Products() {
       min_stock_level: String(product.min_stock_level),
       supplier_id: product.supplier_id || "",
       expiry_date: product.expiry_date || "",
+      image_url: "",
     });
     setShowDialog(true);
   };
@@ -118,11 +120,17 @@ export default function Products() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.sku.trim()) {
-      toast.error("Name and SKU are required");
+    if (!form.name.trim()) {
+      toast.error("Name is required");
       return;
     }
-    if (form.barcode) {
+    // Restaurant: auto-generate SKU if empty
+    const sku = form.sku.trim() || (isRestaurant ? `R-${Date.now().toString(36).toUpperCase()}` : "");
+    if (!sku) {
+      toast.error("SKU is required");
+      return;
+    }
+    if (form.barcode && !isRestaurant) {
       const validation = validateBarcode(form.barcode, barcodeFormat);
       if (!validation.valid) {
         toast.error(validation.error);
@@ -136,16 +144,16 @@ export default function Products() {
 
     const payload = {
       name: form.name,
-      sku: form.sku,
+      sku,
       barcode: form.barcode || null,
       category: form.category || null,
       unit_type: form.unit_type as any,
       cost_price: costPrice,
       selling_price: sellingPrice,
-      stock_qty: parseInt(form.stock_qty || "0"),
-      min_stock_level: parseInt(form.min_stock_level || "5"),
-      supplier_id: form.supplier_id || null,
-      expiry_date: form.expiry_date || null,
+      stock_qty: isRestaurant ? 9999 : parseInt(form.stock_qty || "0"),
+      min_stock_level: isRestaurant ? 0 : parseInt(form.min_stock_level || "5"),
+      supplier_id: isRestaurant ? null : (form.supplier_id || null),
+      expiry_date: isRestaurant ? null : (form.expiry_date || null),
     };
 
     let error;
@@ -385,116 +393,147 @@ export default function Products() {
           <div className="space-y-3">
             <div>
               <Label>Name *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Indomie Carton" className="mt-1" />
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={isRestaurant ? "e.g. Chicken Shawarma" : "e.g. Indomie Carton"} className="mt-1" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>SKU *</Label>
-                <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="e.g. IND-001" className="mt-1" />
-              </div>
-              <div>
-                <Label>Barcode Format</Label>
-                <Select value={barcodeFormat} onValueChange={(v) => setBarcodeFormat(v as BarcodeFormat)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BARCODE_FORMATS.map(f => (
-                      <SelectItem key={f.value} value={f.value}>
-                        {f.label}
-                      </SelectItem>
+
+            {/* Restaurant: Image URL + Category + Price only */}
+            {isRestaurant ? (
+              <>
+                <div>
+                  <Label>Image URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://example.com/photo.jpg" className="mt-1" />
+                  {form.image_url && (
+                    <div className="mt-2 flex justify-center">
+                      <img src={form.image_url} alt="Preview" className="h-20 w-20 rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>Category</Label>
+                  <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Main Dishes, Drinks, Sides" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Selling Price *</Label>
+                  <Input type="number" step="0.01" value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: e.target.value })} placeholder="0.00" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Cost Price <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} placeholder="0.00" className="mt-1" />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Retail/Wholesale full form */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>SKU *</Label>
+                    <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="e.g. IND-001" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Barcode Format</Label>
+                    <Select value={barcodeFormat} onValueChange={(v) => setBarcodeFormat(v as BarcodeFormat)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BARCODE_FORMATS.map(f => (
+                          <SelectItem key={f.value} value={f.value}>
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label>Barcode Value</Label>
+                  <p className="text-[10px] text-muted-foreground mb-1">Type manually, scan with a scanner, or auto-generate. Format is auto-detected.</p>
+                  <div className="flex gap-2 mt-1">
+                    <div className="relative flex-1">
+                      <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={form.barcode}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setForm({ ...form, barcode: val });
+                          if (val.length > 0) {
+                            const detected = detectFormat(val);
+                            setBarcodeFormat(detected);
+                          }
+                        }}
+                        placeholder={`Enter, scan, or generate ${barcodeFormat}`}
+                        className="pl-10 font-mono"
+                        autoFocus={false}
+                      />
+                    </div>
+                    <Button type="button" variant="outline" size="icon" onClick={handleGenerateBarcode} title="Auto-generate barcode">
+                      <Wand2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {form.barcode && (
+                    <div className="mt-2 flex justify-center p-2 bg-white rounded border">
+                      <BarcodeGenerator value={form.barcode} format={barcodeFormat} height={40} width={1.5} fontSize={10} />
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Category</Label>
+                    <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Food" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Unit Type</Label>
+                    <select value={form.unit_type} onChange={(e) => setForm({ ...form, unit_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <option value="unit">Unit</option>
+                      <option value="carton">Carton</option>
+                      <option value="bag">Bag</option>
+                      <option value="kg">Kg</option>
+                      <option value="bottle">Bottle</option>
+                      <option value="tin">Tin</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <Label>Supplier</Label>
+                  <select
+                    value={form.supplier_id}
+                    onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
+                    className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">No supplier</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label>Barcode Value</Label>
-              <p className="text-[10px] text-muted-foreground mb-1">Type manually, scan with a scanner, or auto-generate. Format is auto-detected.</p>
-              <div className="flex gap-2 mt-1">
-                <div className="relative flex-1">
-                  <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={form.barcode}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setForm({ ...form, barcode: val });
-                      // Auto-detect barcode format
-                      if (val.length > 0) {
-                        const detected = detectFormat(val);
-                        setBarcodeFormat(detected);
-                      }
-                    }}
-                    placeholder={`Enter, scan, or generate ${barcodeFormat}`}
-                    className="pl-10 font-mono"
-                    autoFocus={false}
-                  />
+                  </select>
+                  <p className="text-[10px] text-muted-foreground mt-1">Link to a supplier for reorder & price tracking</p>
                 </div>
-                <Button type="button" variant="outline" size="icon" onClick={handleGenerateBarcode} title="Auto-generate barcode">
-                  <Wand2 className="h-4 w-4" />
-                </Button>
-              </div>
-              {form.barcode && (
-                <div className="mt-2 flex justify-center p-2 bg-white rounded border">
-                  <BarcodeGenerator value={form.barcode} format={barcodeFormat} height={40} width={1.5} fontSize={10} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Cost Price</Label>
+                    <Input type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} placeholder="0.00" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Selling Price</Label>
+                    <Input type="number" step="0.01" value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: e.target.value })} placeholder="0.00" className="mt-1" />
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Category</Label>
-                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Food" className="mt-1" />
-              </div>
-              <div>
-                <Label>Unit Type</Label>
-                <select value={form.unit_type} onChange={(e) => setForm({ ...form, unit_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="unit">Unit</option>
-                  <option value="carton">Carton</option>
-                  <option value="bag">Bag</option>
-                  <option value="kg">Kg</option>
-                  <option value="bottle">Bottle</option>
-                  <option value="tin">Tin</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <Label>Supplier</Label>
-              <select
-                value={form.supplier_id}
-                onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
-                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">No supplier</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <p className="text-[10px] text-muted-foreground mt-1">Link to a supplier for reorder & price tracking</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Cost Price</Label>
-                <Input type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} placeholder="0.00" className="mt-1" />
-              </div>
-              <div>
-                <Label>Selling Price</Label>
-                <Input type="number" step="0.01" value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: e.target.value })} placeholder="0.00" className="mt-1" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Stock Qty</Label>
-                <Input type="number" value={form.stock_qty} onChange={(e) => setForm({ ...form, stock_qty: e.target.value })} placeholder="0" className="mt-1" />
-              </div>
-              <div>
-                <Label>Min Stock Level</Label>
-                <Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="5" className="mt-1" />
-              </div>
-            </div>
-            <div>
-              <Label>Expiry Date <span className="text-muted-foreground font-normal">(optional — for perishable items)</span></Label>
-              <Input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="mt-1" />
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Stock Qty</Label>
+                    <Input type="number" value={form.stock_qty} onChange={(e) => setForm({ ...form, stock_qty: e.target.value })} placeholder="0" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Min Stock Level</Label>
+                    <Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="5" className="mt-1" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Expiry Date <span className="text-muted-foreground font-normal">(optional — for perishable items)</span></Label>
+                  <Input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="mt-1" />
+                </div>
+              </>
+            )}
+
             <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
             </Button>
