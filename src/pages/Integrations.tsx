@@ -114,7 +114,7 @@ const channels: Channel[] = [
 
 export default function Integrations() {
   const { profile } = useAuth();
-  const { currentPlan, isPro, requiredPlanFor } = usePlanFeatures();
+  const { currentPlan, isPro, isGrowthOrAbove, requiredPlanFor } = usePlanFeatures();
   const [channelStatuses, setChannelStatuses] = useState<Record<string, ChannelStatus>>({});
   const [connectDialog, setConnectDialog] = useState<Channel | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -229,19 +229,29 @@ export default function Integrations() {
     }
   };
 
-  if (!isPro) {
+  // Delivery integrations available on Growth+, other integrations on Pro
+  const deliveryChannelIds = ["uber_eats", "deliveroo"];
+  const isDeliveryChannel = (id: string) => deliveryChannelIds.includes(id);
+
+  const canAccessChannel = (ch: Channel): boolean => {
+    if (ch.status === "active" || ch.status === "coming_soon") return true;
+    if (isDeliveryChannel(ch.id)) return isGrowthOrAbove;
+    return isPro;
+  };
+
+  if (!isGrowthOrAbove) {
     return (
       <div className="max-w-5xl mx-auto">
         <PageHeader title="Integrations" subtitle="Connect your sales channels — inventory syncs automatically across all platforms" />
         <UpgradeModal
           open={true}
           onOpenChange={() => {}}
-          requiredPlan="pro"
+          requiredPlan="growth"
           featureLabel="Integrations"
           currentPlan={currentPlan}
         />
         <div className="text-center py-16">
-          <p className="text-muted-foreground">Integrations are available on the Pro plan.</p>
+          <p className="text-muted-foreground">Integrations are available on the Growth plan and above.</p>
         </div>
       </div>
     );
@@ -273,14 +283,21 @@ export default function Integrations() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {channels.map((ch) => {
           const status = getStatus(ch);
+          const hasAccess = canAccessChannel(ch);
+          const requiredPlan = isDeliveryChannel(ch.id) ? "growth" : "pro";
           return (
-            <Card key={ch.id} className="p-5 flex flex-col justify-between">
+            <Card key={ch.id} className={`p-5 flex flex-col justify-between ${!hasAccess ? "opacity-60" : ""}`}>
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
                     <ch.icon className="h-5 w-5 text-foreground" />
                   </div>
-                  {statusBadge(status)}
+                  <div className="flex items-center gap-1.5">
+                    {!hasAccess && (
+                      <Badge variant="outline" className="text-[10px] gap-0.5">🔒 {requiredPlan === "growth" ? "Growth" : "Pro"}</Badge>
+                    )}
+                    {statusBadge(status)}
+                  </div>
                 </div>
                 <h4 className="font-semibold text-foreground text-sm">{ch.name}</h4>
                 <p className="text-xs text-muted-foreground mt-1">{ch.desc}</p>
@@ -292,7 +309,7 @@ export default function Integrations() {
                     <CheckCircle2 className="h-3.5 w-3.5" /> Active
                   </Button>
                 )}
-                {status === "connected" && (
+                {status === "connected" && hasAccess && (
                   <>
                     <Button variant="default" size="sm" className="flex-1 gap-1" onClick={() => handleSync(ch)}
                       disabled={syncing === ch.id}>
@@ -304,12 +321,17 @@ export default function Integrations() {
                     </Button>
                   </>
                 )}
-                {status === "disconnected" && ch.configurable && (
+                {status === "disconnected" && ch.configurable && hasAccess && (
                   <Button variant="default" size="sm" className="w-full gap-1" onClick={() => {
                     setConnectDialog(ch);
                     setFormValues({});
                   }}>
                     <Link2 className="h-3.5 w-3.5" /> Connect
+                  </Button>
+                )}
+                {status === "disconnected" && ch.configurable && !hasAccess && (
+                  <Button variant="outline" size="sm" className="w-full gap-1" disabled>
+                    🔒 Upgrade to {requiredPlan === "growth" ? "Growth" : "Pro"}
                   </Button>
                 )}
                 {status === "coming_soon" && (

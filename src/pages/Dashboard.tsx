@@ -67,16 +67,9 @@ export default function Dashboard() {
   const totalStockValue = products.reduce((s, p) => s + p.cost_price * p.stock_qty, 0);
   const monthlyRevenue = sales.reduce((s, sale) => s + sale.total, 0);
 
-  // Use invoice data as the source of truth for outstanding payments
+  // Use customer outstanding_balance (synced from ledger) as single source of truth
   const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && i.total > i.amount_paid);
-  const outstandingPayments = customers.reduce((s, c) => {
-    const invoiceDebt = unpaidInvoices
-      .filter((i) => i.customer_id === c.id)
-      .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
-    // Use invoice debt if available, otherwise fall back to outstanding_balance (for manual debts without invoices)
-    const hasInvoices = unpaidInvoices.some((i) => i.customer_id === c.id);
-    return s + (hasInvoices ? invoiceDebt : c.outstanding_balance);
-  }, 0);
+  const outstandingPayments = customers.reduce((s, c) => s + Math.max(0, c.outstanding_balance), 0);
   const lowStockCount = products.filter((p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0).length;
   const priceChangeCount = alerts.filter((a) => a.type === "SUPPLIER_PRICE_CHANGE").length;
   const avgMargin = products.length > 0
@@ -89,14 +82,8 @@ export default function Dashboard() {
     .slice(0, 5);
 
   const topDebtors = customers
-    .map((c) => {
-      const invoiceDebt = unpaidInvoices
-        .filter((i) => i.customer_id === c.id)
-        .reduce((sum, i) => sum + (i.total - i.amount_paid), 0);
-      const hasInvoices = unpaidInvoices.some((i) => i.customer_id === c.id);
-      return { ...c, total_debt: hasInvoices ? invoiceDebt : c.outstanding_balance };
-    })
-    .filter((c) => c.total_debt > 0)
+    .filter((c) => c.outstanding_balance > 0)
+    .map((c) => ({ ...c, total_debt: c.outstanding_balance }))
     .sort((a, b) => b.total_debt - a.total_debt)
     .slice(0, 4);
 

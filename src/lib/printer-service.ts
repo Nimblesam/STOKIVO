@@ -53,7 +53,15 @@ export function isSerialSupported(): boolean {
   return "serial" in navigator;
 }
 
-export async function connectPrinter(): Promise<boolean> {
+export function isBluetoothSupported(): boolean {
+  return "bluetooth" in navigator;
+}
+
+export async function connectPrinter(method: "serial" | "bluetooth" = "serial"): Promise<boolean> {
+  if (method === "bluetooth") {
+    return connectBluetoothPrinter();
+  }
+
   if (!isSerialSupported()) {
     updateState({ status: "error", error: "Web Serial API not supported in this browser" });
     return false;
@@ -74,7 +82,6 @@ export async function connectPrinter(): Promise<boolean> {
 
     updateState({ port, writer, status: "connected", printerName: name, error: null });
 
-    // Send init command
     if (writer) {
       await writer.write(INIT);
     }
@@ -82,11 +89,90 @@ export async function connectPrinter(): Promise<boolean> {
     return true;
   } catch (err: any) {
     if (err.name === "NotFoundError") {
-      // User cancelled the dialog
       updateState({ status: "disconnected", error: null });
     } else {
       updateState({ status: "error", error: err.message || "Failed to connect" });
     }
+    return false;
+  }
+}
+
+async function connectBluetoothPrinter(): Promise<boolean> {
+  if (!isBluetoothSupported()) {
+    updateState({ status: "error", error: "Web Bluetooth not supported in this browser" });
+    return false;
+  }
+
+  try {
+    updateState({ status: "connecting", error: null });
+
+    const bt = (navigator as any).bluetooth;
+    const device = await bt.requestDevice({
+      filters: [{ services: ["000018f0-0000-1000-8000-00805f9b34fb"] }],
+      optionalServices: ["000018f0-0000-1000-8000-00805f9b34fb"],
+    }).catch(() => null);
+
+    if (!device) {
+      // Also try generic printers
+      const genericDevice = await bt.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ["000018f0-0000-1000-8000-00805f9b34fb"],
+      });
+      if (!genericDevice) {
+        updateState({ status: "disconnected", error: null });
+        return false;
+      }
+      return await finishBluetoothConnect(genericDevice);
+    }
+
+    return await finishBluetoothConnect(device);
+  } catch (err: any) {
+    if (err.name === "NotFoundError") {
+      updateState({ status: "disconnected", error: null });
+    } else {
+      updateState({ status: "error", error: err.message || "Bluetooth connection failed" });
+    }
+    return false;
+  }
+}
+
+async function finishBluetoothConnect(device: any): Promise<boolean> {
+  try {
+    const server = await device.gatt?.connect();
+    if (!server) {
+      updateState({ status: "error", error: "Could not connect to Bluetooth GATT" });
+      return false;
+    }
+
+    const service = await server.getPrimaryService("000018f0-0000-1000-8000-00805f9b34fb");
+    const characteristic = await service.getCharacteristic("00002af1-0000-1000-8000-00805f9b34fb");
+
+    // Create a writer-like interface for BLE
+    const bleWriter = {
+      write: async (data: Uint8Array) => {
+        // BLE has MTU limits, send in 20-byte chunks
+        for (let i = 0; i < data.length; i += 20) {
+          const chunk = data.slice(i, i + 20);
+          await characteristic.writeValue(chunk);
+        }
+      },
+      releaseLock: () => {
+        try { device.gatt?.disconnect(); } catch {}
+      },
+    };
+
+    updateState({
+      port: device,
+      writer: bleWriter,
+      status: "connected",
+      printerName: `BT: ${device.name || "Bluetooth Printer"}`,
+      error: null,
+    });
+
+    await bleWriter.write(INIT);
+    return true;
+  } catch (err: any) {
+    updateState({ status: "error", error: err.message || "Bluetooth setup failed" });
     return false;
   }
 }

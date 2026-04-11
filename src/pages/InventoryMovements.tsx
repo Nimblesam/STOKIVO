@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,7 +49,7 @@ function getExpiryLabel(days: number) {
 }
 
 export default function InventoryMovements() {
-  const { profile, company } = useAuth();
+  const { user, profile, company } = useAuth();
   const { activeStoreId } = useStore();
   const currency = (company?.currency || "GBP") as Currency;
   const [movements, setMovements] = useState<any[]>([]);
@@ -329,7 +330,31 @@ export default function InventoryMovements() {
                         <p className="text-sm font-bold text-foreground">{p.suggestedQty} units</p>
                         <p className="text-[10px] text-muted-foreground">Est. cost: {formatMoney(p.restockCost, currency)}</p>
                       </div>
-                      <Button size="sm" className="rounded-full text-xs h-8 px-4">
+                      <Button size="sm" className="rounded-full text-xs h-8 px-4"
+                        onClick={() => {
+                          // Create a stock-in movement as a reorder
+                          if (!profile?.company_id || !user) return;
+                          supabase.from("inventory_movements").insert({
+                            company_id: profile.company_id,
+                            product_id: p.id,
+                            product_name: p.name,
+                            type: "STOCK_IN" as const,
+                            qty: p.suggestedQty,
+                            user_id: user.id,
+                            user_name: profile?.full_name || "Unknown",
+                            note: `Reorder: ${p.suggestedQty} units (Est. cost: ${formatMoney(p.restockCost, currency)})`,
+                            store_id: activeStoreId || null,
+                          }).then(async ({ error }) => {
+                            if (error) { toast.error(error.message); return; }
+                            // Update stock qty
+                            await supabase.from("products").update({
+                              stock_qty: p.stock_qty + p.suggestedQty,
+                            }).eq("id", p.id);
+                            toast.success(`Reordered ${p.suggestedQty} units of ${p.name}`);
+                            // Refresh
+                            window.location.reload();
+                          });
+                        }}>
                         Reorder Now
                       </Button>
                     </div>

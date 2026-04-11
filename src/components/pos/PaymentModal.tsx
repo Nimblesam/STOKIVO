@@ -56,12 +56,11 @@ export function PaymentModal({
     });
   }, []);
 
-  const applyPayment = (method: "cash" | "card") => {
+  const applyCash = () => {
     const amountMajor = parseFloat(inputValue) || 0;
     const amountMinor = Math.round(amountMajor * 100);
     if (amountMinor <= 0) return;
-    const effectiveAmount = method === "card" ? Math.min(amountMinor, remaining) : amountMinor;
-    setPayments((prev) => [...prev, { method, amount: effectiveAmount }]);
+    setPayments((prev) => [...prev, { method: "cash", amount: amountMinor }]);
     setInputValue("0");
   };
 
@@ -293,7 +292,7 @@ export function PaymentModal({
               {/* Payment method buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <Button variant="outline" className="h-14 text-base font-semibold gap-2"
-                  onClick={() => applyPayment("cash")}>
+                  onClick={applyCash}>
                   <Banknote className="h-5 w-5" /> Cash
                 </Button>
                 <div className="relative">
