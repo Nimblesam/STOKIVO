@@ -339,28 +339,9 @@ export default function InventoryMovements() {
                       </div>
                       <Button size="sm" className="rounded-full text-xs h-8 px-4"
                         onClick={() => {
-                          // Create a stock-in movement as a reorder
-                          if (!profile?.company_id || !user) return;
-                          supabase.from("inventory_movements").insert({
-                            company_id: profile.company_id,
-                            product_id: p.id,
-                            product_name: p.name,
-                            type: "STOCK_IN" as const,
-                            qty: p.suggestedQty,
-                            user_id: user.id,
-                            user_name: profile?.full_name || "Unknown",
-                            note: `Reorder: ${p.suggestedQty} units (Est. cost: ${formatMoney(p.restockCost, currency)})`,
-                            store_id: activeStoreId || null,
-                          }).then(async ({ error }) => {
-                            if (error) { toast.error(error.message); return; }
-                            // Update stock qty
-                            await supabase.from("products").update({
-                              stock_qty: p.stock_qty + p.suggestedQty,
-                            }).eq("id", p.id);
-                            toast.success(`Reordered ${p.suggestedQty} units of ${p.name}`);
-                            // Refresh
-                            window.location.reload();
-                          });
+                          setReorderProduct(p);
+                          setReorderQty(String(p.suggestedQty));
+                          setReorderCost((p.cost_price / 100).toFixed(2));
                         }}>
                         Reorder Now
                       </Button>
@@ -372,6 +353,66 @@ export default function InventoryMovements() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Reorder Dialog */}
+      <Dialog open={!!reorderProduct} onOpenChange={(o) => { if (!o) setReorderProduct(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reorder — {reorderProduct?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="p-3 rounded-lg bg-muted/50 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Current Stock</span><span className="font-semibold">{reorderProduct?.stock_qty}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Min Level</span><span className="font-semibold">{reorderProduct?.min_stock_level}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Suggested Qty</span><span className="font-semibold text-accent">{reorderProduct?.suggestedQty}</span></div>
+            </div>
+            <div>
+              <Label>Quantity to Reorder *</Label>
+              <Input type="number" min="1" value={reorderQty} onChange={(e) => setReorderQty(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label>Unit Cost Price</Label>
+              <Input type="number" step="0.01" min="0" value={reorderCost} onChange={(e) => setReorderCost(e.target.value)} className="mt-1" />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Total: {formatMoney(Math.round(parseFloat(reorderQty || "0") * parseFloat(reorderCost || "0") * 100), currency)}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReorderProduct(null)}>Cancel</Button>
+            <Button disabled={reordering || !reorderQty || parseInt(reorderQty) <= 0}
+              onClick={async () => {
+                if (!profile?.company_id || !user || !reorderProduct) return;
+                const qty = parseInt(reorderQty);
+                const costPerUnit = Math.round(parseFloat(reorderCost || "0") * 100);
+                setReordering(true);
+                const { error } = await supabase.from("inventory_movements").insert({
+                  company_id: profile.company_id,
+                  product_id: reorderProduct.id,
+                  product_name: reorderProduct.name,
+                  type: "STOCK_IN" as const,
+                  qty,
+                  user_id: user.id,
+                  user_name: profile?.full_name || "Unknown",
+                  note: `Reorder: ${qty} units @ ${formatMoney(costPerUnit, currency)} each (Total: ${formatMoney(qty * costPerUnit, currency)})`,
+                  store_id: activeStoreId || null,
+                });
+                if (error) { toast.error(error.message); setReordering(false); return; }
+                // Update stock qty and cost price
+                await supabase.from("products").update({
+                  stock_qty: reorderProduct.stock_qty + qty,
+                  ...(costPerUnit > 0 ? { cost_price: costPerUnit } : {}),
+                }).eq("id", reorderProduct.id);
+                toast.success(`Reordered ${qty} units of ${reorderProduct.name}`);
+                setReordering(false);
+                setReorderProduct(null);
+                window.location.reload();
+              }}>
+              {reordering ? "Processing..." : "Confirm Reorder"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
