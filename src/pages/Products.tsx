@@ -110,7 +110,7 @@ export default function Products() {
       min_stock_level: String(product.min_stock_level),
       supplier_id: product.supplier_id || "",
       expiry_date: product.expiry_date || "",
-      image_url: "",
+      image_url: product.image_url || "",
     });
     setShowDialog(true);
   };
