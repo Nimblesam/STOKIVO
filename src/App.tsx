@@ -147,29 +147,29 @@ function ModeRouter() {
   const { isPosMode } = useAppMode();
 
   if (isPosMode) {
-    // POS mode: /pos is the root, everything else redirects
+    // POS mode: Login → Cashier directly, no onboarding
     return (
       <Routes>
-        <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/pending-approval" element={<PendingApproval />} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/set-password" element={<SetPassword />} />
-        <Route path="/unsubscribe" element={<Unsubscribe />} />
+
+        {/* No onboarding in POS mode — redirect to POS */}
+        <Route path="/onboarding" element={<Navigate to="/pos" replace />} />
+        <Route path="/pending-approval" element={<Navigate to="/pos" replace />} />
 
         <Route path="/pos/*" element={
-          <ProtectedRoute>
+          <PosProtectedRoute>
             <PosRoutes />
-          </ProtectedRoute>
+          </PosProtectedRoute>
         } />
 
         {/* Redirect everything else to POS */}
-        <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/pos" replace /></ProtectedRoute>} />
         <Route path="/*" element={<Navigate to="/pos" replace />} />
       </Routes>
     );
