@@ -29,7 +29,6 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Cashier (POS)", url: "/pos", icon: ScanBarcode },
   { title: "Products", url: "/products", icon: Package },
   { title: "Stock Movements", url: "/inventory/movements", icon: ArrowLeftRight },
   { title: "Suppliers", url: "/suppliers", icon: Truck, roles: ["owner", "manager"] },
@@ -44,11 +43,17 @@ const alertNav: NavItem[] = [
   { title: "Price Changes", url: "/alerts/price-changes", icon: TrendingDown, roles: ["owner", "manager"] },
 ];
 
-const otherNav: NavItem[] = [
+const intelligenceNav: NavItem[] = [
   { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["owner", "manager"], requiredFeature: "advanced_analytics" },
   { title: "AI Insights", url: "/ai-insights", icon: Brain, roles: ["owner", "manager"], requiredFeature: "ai_insights" },
+];
+
+const financeNav: NavItem[] = [
   { title: "Accounting", url: "/accounting", icon: Calculator, roles: ["owner", "manager"] },
   { title: "Payroll", url: "/payroll", icon: Wallet, roles: ["owner", "manager"] },
+];
+
+const systemNav: NavItem[] = [
   { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"], requiredFeature: "rbac_advanced" },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["owner", "manager"] },
 ];
