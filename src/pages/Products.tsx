@@ -110,7 +110,7 @@ export default function Products() {
       min_stock_level: String(product.min_stock_level),
       supplier_id: product.supplier_id || "",
       expiry_date: product.expiry_date || "",
-      image_url: "",
+      image_url: product.image_url || "",
     });
     setShowDialog(true);
   };
@@ -144,7 +144,7 @@ export default function Products() {
     const costPrice = Math.round(parseFloat(form.cost_price || "0") * 100);
     const sellingPrice = Math.round(parseFloat(form.selling_price || "0") * 100);
 
-    const payload = {
+    const payload: any = {
       name: form.name,
       sku,
       barcode: form.barcode || null,
@@ -156,6 +156,7 @@ export default function Products() {
       min_stock_level: isRestaurant ? 0 : parseInt(form.min_stock_level || "5"),
       supplier_id: isRestaurant ? null : (form.supplier_id || null),
       expiry_date: isRestaurant ? null : (form.expiry_date || null),
+      image_url: form.image_url || null,
     };
 
     let error;
@@ -405,13 +406,34 @@ export default function Products() {
             {isRestaurant ? (
               <>
                 <div>
-                  <Label>Image URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                  <Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://example.com/photo.jpg" className="mt-1" />
-                  {form.image_url && (
-                    <div className="mt-2 flex justify-center">
-                      <img src={form.image_url} alt="Preview" className="h-20 w-20 rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
-                    </div>
-                  )}
+                  <Label>Product Image <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <div className="mt-1 space-y-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !profile?.company_id) return;
+                        const ext = file.name.split(".").pop();
+                        const path = `${profile.company_id}/${Date.now()}.${ext}`;
+                        toast.info("Uploading image...");
+                        const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
+                        if (error) { toast.error("Upload failed: " + error.message); return; }
+                        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+                        setForm({ ...form, image_url: urlData.publicUrl });
+                        toast.success("Image uploaded!");
+                      }}
+                      className="cursor-pointer"
+                    />
+                    {form.image_url && (
+                      <div className="flex items-center gap-3">
+                        <img src={form.image_url} alt="Preview" className="h-16 w-16 rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
+                        <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => setForm({ ...form, image_url: "" })}>
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label>Category</Label>

@@ -588,9 +588,13 @@ export default function Cashier() {
                 {filteredGridProducts.map((p) => (
                   <button key={p.id} onClick={() => addToCart(p)}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-transparent hover:border-primary/40 hover:bg-primary/5 transition-all text-center group bg-card shadow-sm">
-                    <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center">
-                      <Package className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.name} className="h-16 w-16 rounded-xl object-cover" />
+                    ) : (
+                      <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    )}
                     <p className="font-medium text-sm leading-tight line-clamp-2">{p.name}</p>
                     <p className="text-sm font-bold text-primary">{formatMoney(p.selling_price, currency)}</p>
                   </button>
