@@ -43,6 +43,7 @@ const STEPS = [
   { label: "POS", icon: Monitor },
   { label: "Team", icon: Users },
   { label: "Activate", icon: Rocket },
+  { label: "Apps", icon: Download },
 ];
 
 type Location = { name: string; address: string; city: string; postcode: string };
