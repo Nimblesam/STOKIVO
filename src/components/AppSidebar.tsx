@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe, Brain, Lock, Wallet,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, Banknote, Calculator, Globe, Brain, Lock, Wallet,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { NavLink } from "@/components/NavLink";
