@@ -74,7 +74,7 @@ export function AddProductFromScanDialog({ barcode, open, onClose }: Props) {
     setForm({
       name: "", sku: "", cost_price: "", selling_price: "", stock_qty: "1",
       min_stock_level: "5", category: "", supplier_id: "", expiry_date: "",
-      unit_type: "unit",
+      unit_type: "unit", image_url: "",
     });
     onClose();
   };
