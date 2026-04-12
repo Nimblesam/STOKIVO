@@ -14,8 +14,9 @@ import stokivoLogo from "@/assets/stokivo-logo.png";
 import {
   Building2, MapPin, CreditCard, Monitor, Users, Rocket,
   ArrowRight, ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
-  ShieldCheck, UserPlus, Crown, Check,
+  ShieldCheck, UserPlus, Crown, Check, Download,
 } from "lucide-react";
+import { DownloadAppsSection } from "@/components/DownloadAppsSection";
 
 type PlanTier = "starter" | "growth" | "pro";
 
@@ -42,6 +43,7 @@ const STEPS = [
   { label: "POS", icon: Monitor },
   { label: "Team", icon: Users },
   { label: "Activate", icon: Rocket },
+  { label: "Apps", icon: Download },
 ];
 
 type Location = { name: string; address: string; city: string; postcode: string };
@@ -285,7 +287,7 @@ export default function Onboarding() {
 
       await refreshProfile();
       toast.success("Welcome to Stokivo! Your business is ready 🎉");
-      navigate("/dashboard");
+      setStep(7);
     } catch (err: any) {
       toast.error(err.message || "Failed to set up your business");
     } finally {
@@ -681,9 +683,25 @@ export default function Onboarding() {
             </div>
           )}
 
+          {/* STEP 7: Download Apps */}
+          {step === 7 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Download className="h-8 w-8 text-primary" />
+                </div>
+                <h1 className="text-2xl font-display font-bold text-foreground">Get the POS Apps</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Download Stokivo POS on your desktop or mobile. Just log in — your business is already set up.
+                </p>
+              </div>
+              <DownloadAppsSection variant="post-onboarding" />
+            </div>
+          )}
+
           {/* Navigation buttons */}
           <div className="flex items-center justify-between mt-8">
-            {step > 0 ? (
+            {step > 0 && step < 7 ? (
               <Button variant="outline" onClick={() => setStep(step - 1)} className="gap-2 rounded-xl">
                 <ArrowLeft className="h-4 w-4" /> Back
               </Button>
@@ -695,14 +713,18 @@ export default function Onboarding() {
                   Skip
                 </Button>
               )}
-              {step < STEPS.length - 1 ? (
+              {step < 6 ? (
                 <Button onClick={() => setStep(step + 1)} disabled={!canNext()} className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
                   Continue <ArrowRight className="h-4 w-4" />
                 </Button>
-              ) : (
+              ) : step === 6 ? (
                 <Button onClick={handleFinish} disabled={loading} className="gap-2 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 px-8">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                  Go to Dashboard
+                  Activate & Continue
+                </Button>
+              ) : (
+                <Button onClick={() => navigate("/dashboard")} className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-8">
+                  Go to Dashboard <ArrowRight className="h-4 w-4" />
                 </Button>
               )}
             </div>

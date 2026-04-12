@@ -7,12 +7,13 @@ import {
   ShieldCheck, Zap, Brain, Lock,
   ScanBarcode, FileText, CreditCard, Layers,
   AlertTriangle, PieChart, MapPin, Crown,
-  ChevronRight, Sparkles, Monitor, Smartphone,
+  ChevronRight, Sparkles, Monitor, Smartphone, Download,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import dashboardPreview from "@/assets/dashboard-preview.jpg";
 import posPreview from "@/assets/pos-preview.jpg";
 import analyticsPreview from "@/assets/analytics-preview.jpg";
+import { DownloadAppsSection } from "@/components/DownloadAppsSection";
 import { useState } from "react";
 
 const coreFeatures = [
@@ -532,23 +533,19 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Mobile + desktop callout */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
-        <div className="rounded-2xl border bg-card p-6 sm:p-10 text-center">
+      {/* Download Apps Section */}
+      <section id="download" className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+        <div className="text-center mb-10">
           <div className="flex justify-center gap-3 mb-4">
             <Monitor className="h-8 w-8 text-primary" />
             <Smartphone className="h-8 w-8 text-primary" />
           </div>
-          <h3 className="text-xl sm:text-2xl font-display font-bold text-foreground mb-2">Works on Every Device</h3>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
-            Access your inventory from your desktop, tablet, or phone. Stokivo is fully responsive and works anywhere you need it.
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">Download Stokivo Apps</h2>
+          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+            Install the POS app on your desktop or mobile device. Manage your business on the web, sell anywhere with the apps.
           </p>
-          <Link to="/register">
-            <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 h-11 font-semibold gap-2">
-              Get Started <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
         </div>
+        <DownloadAppsSection variant="landing" />
       </section>
 
       {/* Footer */}
@@ -563,6 +560,7 @@ export default function Landing() {
             <div className="flex items-center gap-6 text-xs text-muted-foreground">
               <a href="#features" className="hover:text-foreground transition-colors">Features</a>
               <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+              <a href="#download" className="hover:text-foreground transition-colors">Download</a>
               <Link to="/login" className="hover:text-foreground transition-colors">Login</Link>
               <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
               <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
