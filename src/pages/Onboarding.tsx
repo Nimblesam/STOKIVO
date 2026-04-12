@@ -14,8 +14,9 @@ import stokivoLogo from "@/assets/stokivo-logo.png";
 import {
   Building2, MapPin, CreditCard, Monitor, Users, Rocket,
   ArrowRight, ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
-  ShieldCheck, UserPlus, Crown, Check,
+  ShieldCheck, UserPlus, Crown, Check, Download,
 } from "lucide-react";
+import { DownloadAppsSection } from "@/components/DownloadAppsSection";
 
 type PlanTier = "starter" | "growth" | "pro";
 
