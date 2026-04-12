@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Truck, Users, FileText, AlertTriangle, BarChart3,
-  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, ScanBarcode, Banknote, Calculator, Globe, Brain, Lock, Wallet,
+  Settings, Bell, TrendingDown, ArrowLeftRight, LogOut, CreditCard, Banknote, Calculator, Globe, Brain, Lock, Wallet,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { NavLink } from "@/components/NavLink";
@@ -29,7 +29,6 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Cashier (POS)", url: "/pos", icon: ScanBarcode },
   { title: "Products", url: "/products", icon: Package },
   { title: "Stock Movements", url: "/inventory/movements", icon: ArrowLeftRight },
   { title: "Suppliers", url: "/suppliers", icon: Truck, roles: ["owner", "manager"] },
@@ -44,11 +43,17 @@ const alertNav: NavItem[] = [
   { title: "Price Changes", url: "/alerts/price-changes", icon: TrendingDown, roles: ["owner", "manager"] },
 ];
 
-const otherNav: NavItem[] = [
+const intelligenceNav: NavItem[] = [
   { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["owner", "manager"], requiredFeature: "advanced_analytics" },
   { title: "AI Insights", url: "/ai-insights", icon: Brain, roles: ["owner", "manager"], requiredFeature: "ai_insights" },
+];
+
+const financeNav: NavItem[] = [
   { title: "Accounting", url: "/accounting", icon: Calculator, roles: ["owner", "manager"] },
   { title: "Payroll", url: "/payroll", icon: Wallet, roles: ["owner", "manager"] },
+];
+
+const systemNav: NavItem[] = [
   { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"], requiredFeature: "rbac_advanced" },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["owner", "manager"] },
 ];
@@ -158,10 +163,32 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">More</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
+            <Brain className="h-3 w-3 mr-1 inline" /> Intelligence
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filterByRole(otherNav, role).map(renderNavItem)}
+              {filterByRole(intelligenceNav, role).map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
+            <Banknote className="h-3 w-3 mr-1 inline" /> Finance
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filterByRole(financeNav, role).map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filterByRole(systemNav, role).map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

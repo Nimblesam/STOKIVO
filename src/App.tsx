@@ -7,7 +7,9 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StoreProvider } from "@/contexts/StoreContext";
 import { AdminAuthProvider, useAdminAuth } from "@/contexts/AdminAuthContext";
+import { AppModeProvider, useAppMode } from "@/contexts/AppModeContext";
 import { AppLayout } from "@/components/AppLayout";
+import { PosLayout } from "@/components/pos/PosLayout";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -38,6 +40,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SetPassword from "./pages/SetPassword";
 import Unsubscribe from "./pages/Unsubscribe";
+import PosRefunds from "./pages/pos/PosRefunds";
+import PosReceipts from "./pages/pos/PosReceipts";
+import PosMore from "./pages/pos/PosMore";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminSetup from "./pages/admin/AdminSetup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -96,75 +101,136 @@ function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const AppRoutes = () => (
-  <Routes>
-    <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
-    <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-    <Route path="/onboarding" element={<Onboarding />} />
-    <Route path="/pending-approval" element={<PendingApproval />} />
-    <Route path="/privacy" element={<PrivacyPolicy />} />
-    <Route path="/terms" element={<TermsOfService />} />
-    <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/set-password" element={<SetPassword />} />
-    <Route path="/unsubscribe" element={<Unsubscribe />} />
+/** Web = Full business management */
+function WebRoutes() {
+  return (
+    <AppLayout>
+      <Routes>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="products" element={<Products />} />
+        <Route path="inventory/movements" element={<InventoryMovements />} />
+        <Route path="suppliers" element={<Suppliers />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="alerts/low-stock" element={<LowStockAlerts />} />
+        <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
+        <Route path="credit-ledger" element={<CreditLedger />} />
+        <Route path="payouts" element={<Payouts />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="accounting" element={<Accounting />} />
+        <Route path="payroll" element={<Payroll />} />
+        <Route path="integrations" element={<Integrations />} />
+        <Route path="ai-insights" element={<AIInsights />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AppLayout>
+  );
+}
 
-    {/* Admin routes - public */}
-    <Route path="/admin/login" element={<AdminLogin />} />
-    <Route path="/admin/setup" element={<AdminSetup />} />
+/** Desktop/Mobile = POS only */
+function PosRoutes() {
+  return (
+    <PosLayout>
+      <Routes>
+        <Route index element={<Cashier />} />
+        <Route path="refunds" element={<PosRefunds />} />
+        <Route path="receipts" element={<PosReceipts />} />
+        <Route path="more" element={<PosMore />} />
+        <Route path="*" element={<Navigate to="/pos" replace />} />
+      </Routes>
+    </PosLayout>
+  );
+}
 
-    {/* Admin routes - protected */}
-    <Route path="/admin/*" element={
-      <AdminProtectedRoute>
-        <AdminLayout>
-          <Routes>
-            <Route path="/" element={<AdminDashboard />} />
-            <Route path="companies" element={<AdminCompanies />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="admins" element={<AdminAdmins />} />
-            <Route path="subscriptions" element={<AdminSubscriptions />} />
-            <Route path="transactions" element={<AdminTransactions />} />
-            <Route path="integrations" element={<AdminIntegrations />} />
-            <Route path="system" element={<AdminSystem />} />
-            <Route path="audit-logs" element={<AdminAuditLogs />} />
-            <Route path="feature-flags" element={<AdminFeatureFlags />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="support" element={<AdminSupport />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AdminLayout>
-      </AdminProtectedRoute>
-    } />
+function ModeRouter() {
+  const { isPosMode } = useAppMode();
 
-    <Route path="/*" element={
-      <ProtectedRoute>
-        <AppLayout>
-          <Routes>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="pos" element={<Cashier />} />
-            <Route path="products" element={<Products />} />
-            <Route path="inventory/movements" element={<InventoryMovements />} />
-            <Route path="suppliers" element={<Suppliers />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="invoices" element={<Invoices />} />
-            <Route path="alerts/low-stock" element={<LowStockAlerts />} />
-            <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
-            <Route path="credit-ledger" element={<CreditLedger />} />
-            <Route path="payouts" element={<Payouts />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="accounting" element={<Accounting />} />
-            <Route path="payroll" element={<Payroll />} />
-            <Route path="integrations" element={<Integrations />} />
-            <Route path="ai-insights" element={<AIInsights />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
-      </ProtectedRoute>
-    } />
-  </Routes>
-);
+  if (isPosMode) {
+    // POS mode: /pos is the root, everything else redirects
+    return (
+      <Routes>
+        <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/pending-approval" element={<PendingApproval />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
+
+        <Route path="/pos/*" element={
+          <ProtectedRoute>
+            <PosRoutes />
+          </ProtectedRoute>
+        } />
+
+        {/* Redirect everything else to POS */}
+        <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/pos" replace /></ProtectedRoute>} />
+        <Route path="/*" element={<Navigate to="/pos" replace />} />
+      </Routes>
+    );
+  }
+
+  // Full mode: standard web app routing
+  return (
+    <Routes>
+      <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/pending-approval" element={<PendingApproval />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/set-password" element={<SetPassword />} />
+      <Route path="/unsubscribe" element={<Unsubscribe />} />
+
+      {/* Admin routes */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/setup" element={<AdminSetup />} />
+      <Route path="/admin/*" element={
+        <AdminProtectedRoute>
+          <AdminLayout>
+            <Routes>
+              <Route path="/" element={<AdminDashboard />} />
+              <Route path="companies" element={<AdminCompanies />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="admins" element={<AdminAdmins />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+              <Route path="integrations" element={<AdminIntegrations />} />
+              <Route path="system" element={<AdminSystem />} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
+              <Route path="feature-flags" element={<AdminFeatureFlags />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="support" element={<AdminSupport />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AdminLayout>
+        </AdminProtectedRoute>
+      } />
+
+      {/* POS route accessible in full mode too */}
+      <Route path="/pos/*" element={
+        <ProtectedRoute>
+          <PosRoutes />
+        </ProtectedRoute>
+      } />
+
+      {/* Web management routes */}
+      <Route path="/*" element={
+        <ProtectedRoute>
+          <WebRoutes />
+        </ProtectedRoute>
+      } />
+    </Routes>
+  );
+}
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
@@ -178,7 +244,9 @@ function App() {
           <AuthProvider>
             <StoreProvider>
               <AdminAuthProvider>
-                <AppRoutes />
+                <AppModeProvider>
+                  <ModeRouter />
+                </AppModeProvider>
               </AdminAuthProvider>
             </StoreProvider>
           </AuthProvider>
