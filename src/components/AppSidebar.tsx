@@ -163,10 +163,32 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">More</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
+            <Brain className="h-3 w-3 mr-1 inline" /> Intelligence
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filterByRole(otherNav, role).map(renderNavItem)}
+              {filterByRole(intelligenceNav, role).map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">
+            <Banknote className="h-3 w-3 mr-1 inline" /> Finance
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filterByRole(financeNav, role).map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] uppercase tracking-widest font-medium">System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filterByRole(systemNav, role).map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
