@@ -226,6 +226,9 @@ export default function Products() {
             <Button variant="outline" className="gap-2" onClick={() => setShowImport(true)}>
               <Upload className="h-4 w-4" /> Import CSV
             </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowVoice(true)} title="Add product by voice">
+              <Mic className="h-4 w-4" />
+            </Button>
             <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
               <Plus className="h-4 w-4" /> Add Product
             </Button>
