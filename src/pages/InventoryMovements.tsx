@@ -14,6 +14,9 @@ import {
   AlertTriangle, Clock, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Currency } from "@/lib/types";
 
 const typeIcons: Record<string, { icon: typeof ArrowUp; className: string }> = {
