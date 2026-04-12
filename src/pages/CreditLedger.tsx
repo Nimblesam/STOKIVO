@@ -382,8 +382,9 @@ export default function CreditLedger() {
               <Input type="number" step="0.01" value={chargeAmount} onChange={(e) => setChargeAmount(e.target.value)} placeholder="0.00" className="mt-1" />
             </div>
             <div>
-              <Label>Due Date</Label>
+              <Label>Due Date *</Label>
               <Input type="date" value={chargeDueDate} onChange={(e) => setChargeDueDate(e.target.value)} className="mt-1" />
+              <p className="text-[10px] text-muted-foreground mt-1">Payment reminders will only start after this date has passed</p>
             </div>
             <div>
               <Label>Description</Label>
