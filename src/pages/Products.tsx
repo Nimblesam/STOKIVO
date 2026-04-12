@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { VoiceProductEntry } from "@/components/VoiceProductEntry";
 
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
