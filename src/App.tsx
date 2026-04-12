@@ -81,6 +81,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** POS mode: skip onboarding/pending checks — just require auth */
+function PosProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, mfaRequired } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-xl stokivo-gradient flex items-center justify-center animate-pulse-subtle">
+            <span className="text-accent-foreground font-display font-bold">S</span>
+          </div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (mfaRequired) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile, mfaRequired } = useAuth();
   if (loading) return null;
