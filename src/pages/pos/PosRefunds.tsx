@@ -102,7 +102,7 @@ export default function PosRefunds() {
         .from("sales")
         .insert({
           company_id: profile.company_id,
-          cashier_id: profile.user_id,
+          cashier_id: profile.id,
           cashier_name: profile.full_name || "Cashier",
           subtotal: -refundTotal,
           total: -refundTotal,
@@ -152,7 +152,7 @@ export default function PosRefunds() {
               qty: refundQty,
               type: "STOCK_IN" as const,
               note: `Refund from sale ${sale.id.slice(0, 8)}`,
-              user_id: profile.user_id,
+              user_id: profile.id,
               user_name: profile.full_name,
             });
           }
@@ -236,7 +236,8 @@ export default function PosRefunds() {
           </CardHeader>
           <CardContent className="space-y-4">
             {sale.status === "refund" && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+      <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <AlertTriangle className="h-4 w-4" />
                 <AlertTriangle className="h-4 w-4" />
                 This sale has already been refunded.
               </div>

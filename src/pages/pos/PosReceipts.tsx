@@ -29,7 +29,7 @@ export default function PosReceipts() {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (activeStore) query = query.eq("store_id", activeStore);
+      if (activeStore) query = query.eq("store_id", activeStore.id);
 
       const { data } = await query;
       setSales(data || []);
