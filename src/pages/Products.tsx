@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle, Mic } from "lucide-react";
 import { ProductImport } from "@/components/ProductImport";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
