@@ -144,7 +144,7 @@ export default function Products() {
     const costPrice = Math.round(parseFloat(form.cost_price || "0") * 100);
     const sellingPrice = Math.round(parseFloat(form.selling_price || "0") * 100);
 
-    const payload = {
+    const payload: any = {
       name: form.name,
       sku,
       barcode: form.barcode || null,
@@ -156,6 +156,7 @@ export default function Products() {
       min_stock_level: isRestaurant ? 0 : parseInt(form.min_stock_level || "5"),
       supplier_id: isRestaurant ? null : (form.supplier_id || null),
       expiry_date: isRestaurant ? null : (form.expiry_date || null),
+      image_url: form.image_url || null,
     };
 
     let error;
