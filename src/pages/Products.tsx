@@ -628,6 +628,25 @@ export default function Products() {
         existingCount={products.length}
         maxProducts={limits.maxProducts}
       />
+
+      <VoiceProductEntry
+        open={showVoice}
+        onOpenChange={setShowVoice}
+        isRestaurant={isRestaurant}
+        onProductParsed={(fields) => {
+          setForm({
+            ...emptyForm,
+            name: fields.name || "",
+            sku: fields.sku || "",
+            category: fields.category || "",
+            cost_price: fields.cost_price || "",
+            selling_price: fields.selling_price || "",
+            stock_qty: fields.stock_qty || "1",
+            unit_type: fields.unit_type || "unit",
+          });
+          setShowDialog(true);
+        }}
+      />
     </div>
   );
 }
