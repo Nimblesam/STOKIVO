@@ -41,14 +41,14 @@ export default function Dashboard() {
     setLoading(true);
 
     let productsQ = supabase.from("products").select("*").eq("company_id", cid);
-    let customersQ = supabase.from("customers").select("*").eq("company_id", cid);
+    // Fetch ALL company customers regardless of store for outstanding balance
+    const customersQ = supabase.from("customers").select("*").eq("company_id", cid);
     let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false });
     let alertsQ = supabase.from("alerts").select("*").eq("company_id", cid).eq("read", false).order("created_at", { ascending: false }).limit(10);
     let salesQ = supabase.from("sales").select("total, created_at").eq("company_id", cid);
 
     if (activeStoreId) {
       productsQ = productsQ.eq("store_id", activeStoreId);
-      customersQ = customersQ.eq("store_id", activeStoreId);
       invoicesQ = invoicesQ.eq("store_id", activeStoreId);
       alertsQ = alertsQ.eq("store_id", activeStoreId);
       salesQ = salesQ.eq("store_id", activeStoreId);
