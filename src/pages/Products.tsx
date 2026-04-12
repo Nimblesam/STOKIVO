@@ -48,6 +48,7 @@ export default function Products() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
