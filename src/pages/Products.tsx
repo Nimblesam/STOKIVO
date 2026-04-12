@@ -14,13 +14,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle, Mic } from "lucide-react";
 import { ProductImport } from "@/components/ProductImport";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { VoiceProductEntry } from "@/components/VoiceProductEntry";
 
 const emptyForm = {
   name: "", sku: "", barcode: "", category: "", unit_type: "unit",
@@ -47,6 +48,7 @@ export default function Products() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
 
   // Batch print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -223,6 +225,9 @@ export default function Products() {
             )}
             <Button variant="outline" className="gap-2" onClick={() => setShowImport(true)}>
               <Upload className="h-4 w-4" /> Import CSV
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowVoice(true)} title="Add product by voice">
+              <Mic className="h-4 w-4" />
             </Button>
             <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openAdd}>
               <Plus className="h-4 w-4" /> Add Product
@@ -622,6 +627,25 @@ export default function Products() {
         onComplete={fetchProducts}
         existingCount={products.length}
         maxProducts={limits.maxProducts}
+      />
+
+      <VoiceProductEntry
+        open={showVoice}
+        onOpenChange={setShowVoice}
+        isRestaurant={isRestaurant}
+        onProductParsed={(fields) => {
+          setForm({
+            ...emptyForm,
+            name: fields.name || "",
+            sku: fields.sku || "",
+            category: fields.category || "",
+            cost_price: fields.cost_price || "",
+            selling_price: fields.selling_price || "",
+            stock_qty: fields.stock_qty || "1",
+            unit_type: fields.unit_type || "unit",
+          });
+          setShowDialog(true);
+        }}
       />
     </div>
   );
