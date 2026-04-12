@@ -59,6 +59,10 @@ export default function InventoryMovements() {
   const [products, setProducts] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reorderProduct, setReorderProduct] = useState<any | null>(null);
+  const [reorderQty, setReorderQty] = useState("");
+  const [reorderCost, setReorderCost] = useState("");
+  const [reordering, setReordering] = useState(false);
 
   useEffect(() => {
     if (!profile?.company_id) return;
