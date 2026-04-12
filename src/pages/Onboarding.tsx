@@ -287,7 +287,7 @@ export default function Onboarding() {
 
       await refreshProfile();
       toast.success("Welcome to Stokivo! Your business is ready 🎉");
-      navigate("/dashboard");
+      setStep(7);
     } catch (err: any) {
       toast.error(err.message || "Failed to set up your business");
     } finally {
