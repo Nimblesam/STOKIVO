@@ -20,7 +20,8 @@ export type Feature =
   | "invoicing"
   | "supplier_management"
   | "stripe_payouts"
-  | "rbac_advanced";
+  | "rbac_advanced"
+  | "whatsapp_messaging";
 
 const FEATURE_MIN_PLAN: Record<Feature, PlanTier> = {
   multi_location: "growth",
@@ -36,6 +37,7 @@ const FEATURE_MIN_PLAN: Record<Feature, PlanTier> = {
   advanced_analytics: "growth",
   stripe_payouts: "starter",
   rbac_advanced: "pro",
+  whatsapp_messaging: "growth",
 };
 
 export interface PlanLimits {

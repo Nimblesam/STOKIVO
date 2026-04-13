@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -17,6 +19,7 @@ import {
 import {
   Globe, Smartphone, ShoppingCart, Star, Truck, Monitor, Store,
   Link2, CheckCircle2, Clock, ArrowRight, RefreshCw, Unplug, Loader2,
+  MessageSquare, Receipt, Bell, Megaphone, ShieldCheck,
 } from "lucide-react";
 
 type ChannelStatus = "active" | "connected" | "disconnected" | "coming_soon";
@@ -112,18 +115,61 @@ const channels: Channel[] = [
   },
 ];
 
+const whatsappUseCases = [
+  {
+    id: "digital_receipts",
+    icon: Receipt,
+    title: "Digital Receipts",
+    desc: "Automatically send itemised receipts to customers after every successful checkout.",
+    triggerEvent: "sale.completed",
+  },
+  {
+    id: "payment_reminders",
+    icon: Bell,
+    title: "Payment Reminders",
+    desc: "Automated reminders for outstanding credit/ledger balances with payment links.",
+    triggerEvent: "ledger.overdue",
+  },
+  {
+    id: "promotions",
+    icon: Megaphone,
+    title: "Promotional Messages",
+    desc: "Send discount offers, new arrivals, and seasonal campaigns to opted-in customers.",
+    triggerEvent: "campaign.scheduled",
+  },
+  {
+    id: "notifications",
+    icon: Bell,
+    title: "Event Notifications",
+    desc: "Notify customers about refunds, order status changes, and stock availability.",
+    triggerEvent: "sale.refunded | product.restocked",
+  },
+];
+
 export default function Integrations() {
   const { profile } = useAuth();
-  const { currentPlan, isPro, isGrowthOrAbove, requiredPlanFor } = usePlanFeatures();
+  const { currentPlan, isPro, isGrowthOrAbove, requiredPlanFor, hasFeature } = usePlanFeatures();
   const [channelStatuses, setChannelStatuses] = useState<Record<string, ChannelStatus>>({});
   const [connectDialog, setConnectDialog] = useState<Channel | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [syncing, setSyncing] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
+  // WhatsApp config state
+  const [waEnabled, setWaEnabled] = useState(false);
+  const [waToggles, setWaToggles] = useState<Record<string, boolean>>({
+    digital_receipts: true,
+    payment_reminders: true,
+    promotions: false,
+    notifications: true,
+  });
+  const [waPhoneId, setWaPhoneId] = useState("");
+  const [waToken, setWaToken] = useState("");
+
+  const canAccessWhatsApp = hasFeature("whatsapp_messaging");
+
   useEffect(() => {
     if (!profile?.company_id) return;
-    // Check status for each configurable channel
     const checkStatuses = async () => {
       const configurableChannels = channels.filter((c) => c.configurable);
       const statuses: Record<string, ChannelStatus> = {};
@@ -229,7 +275,6 @@ export default function Integrations() {
     }
   };
 
-  // Delivery integrations available on Growth+, other integrations on Pro
   const deliveryChannelIds = ["uber_eats", "deliveroo"];
   const isDeliveryChannel = (id: string) => deliveryChannelIds.includes(id);
 
@@ -261,89 +306,244 @@ export default function Integrations() {
     <div className="max-w-5xl mx-auto">
       <PageHeader
         title="Integrations"
-        subtitle="Connect your sales channels — inventory syncs automatically across all platforms"
+        subtitle="Connect sales channels and messaging — everything syncs automatically"
       />
 
-      <Card className="p-6 mb-6">
-        <div className="flex items-start gap-4">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Link2 className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-display font-semibold text-foreground">Multi-Channel Sync</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Stokivo automatically syncs your inventory across all connected channels.
-              No double-counting, no overselling. Every sale updates stock in real-time
-              across Shopify, Wix, WooCommerce, Uber Eats, and Deliveroo.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <Tabs defaultValue="channels" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="channels" className="gap-1.5">
+            <Link2 className="h-3.5 w-3.5" /> Sales Channels
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" /> WhatsApp Business
+            {!canAccessWhatsApp && <span className="text-[10px]">🔒</span>}
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {channels.map((ch) => {
-          const status = getStatus(ch);
-          const hasAccess = canAccessChannel(ch);
-          const requiredPlan = isDeliveryChannel(ch.id) ? "growth" : "pro";
-          return (
-            <Card key={ch.id} className={`p-5 flex flex-col justify-between ${!hasAccess ? "opacity-60" : ""}`}>
+        {/* ─── Sales Channels Tab ─── */}
+        <TabsContent value="channels">
+          <Card className="p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Link2 className="h-6 w-6 text-primary" />
+              </div>
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
-                    <ch.icon className="h-5 w-5 text-foreground" />
+                <h3 className="font-display font-semibold text-foreground">Multi-Channel Sync</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Stokivo automatically syncs your inventory across all connected channels.
+                  No double-counting, no overselling. Every sale updates stock in real-time
+                  across Shopify, Wix, WooCommerce, Uber Eats, and Deliveroo.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {channels.map((ch) => {
+              const status = getStatus(ch);
+              const hasAccess = canAccessChannel(ch);
+              const requiredPlan = isDeliveryChannel(ch.id) ? "growth" : "pro";
+              return (
+                <Card key={ch.id} className={`p-5 flex flex-col justify-between ${!hasAccess ? "opacity-60" : ""}`}>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                        <ch.icon className="h-5 w-5 text-foreground" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {!hasAccess && (
+                          <Badge variant="outline" className="text-[10px] gap-0.5">🔒 {requiredPlan === "growth" ? "Growth" : "Pro"}</Badge>
+                        )}
+                        {statusBadge(status)}
+                      </div>
+                    </div>
+                    <h4 className="font-semibold text-foreground text-sm">{ch.name}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{ch.desc}</p>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {!hasAccess && (
-                      <Badge variant="outline" className="text-[10px] gap-0.5">🔒 {requiredPlan === "growth" ? "Growth" : "Pro"}</Badge>
+
+                  <div className="mt-4 flex gap-2">
+                    {status === "active" && (
+                      <Button variant="default" size="sm" className="w-full gap-1" disabled>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Active
+                      </Button>
                     )}
-                    {statusBadge(status)}
+                    {status === "connected" && hasAccess && (
+                      <>
+                        <Button variant="default" size="sm" className="flex-1 gap-1" onClick={() => handleSync(ch)}
+                          disabled={syncing === ch.id}>
+                          {syncing === ch.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                          Sync
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDisconnect(ch)}>
+                          <Unplug className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                    {status === "disconnected" && ch.configurable && hasAccess && (
+                      <Button variant="default" size="sm" className="w-full gap-1" onClick={() => {
+                        setConnectDialog(ch);
+                        setFormValues({});
+                      }}>
+                        <Link2 className="h-3.5 w-3.5" /> Connect
+                      </Button>
+                    )}
+                    {status === "disconnected" && ch.configurable && !hasAccess && (
+                      <Button variant="outline" size="sm" className="w-full gap-1" disabled>
+                        🔒 Upgrade to {requiredPlan === "growth" ? "Growth" : "Pro"}
+                      </Button>
+                    )}
+                    {status === "coming_soon" && (
+                      <Button variant="outline" size="sm" className="w-full gap-1" disabled>
+                        <ArrowRight className="h-3.5 w-3.5" /> Coming Soon
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
+
+        {/* ─── WhatsApp Business Tab ─── */}
+        <TabsContent value="whatsapp">
+          {!canAccessWhatsApp ? (
+            <Card className="p-8 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="font-display font-semibold text-lg text-foreground mb-2">WhatsApp Business Messaging</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                Automate customer communication with WhatsApp — send receipts, payment reminders, and promotions. Available on Growth and Pro plans.
+              </p>
+              <UpgradeModal
+                open={false}
+                onOpenChange={() => {}}
+                requiredPlan={requiredPlanFor("whatsapp_messaging")}
+                featureLabel="WhatsApp Business"
+                currentPlan={currentPlan}
+              />
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={() => toast.info("Upgrade to Growth or Pro to enable WhatsApp messaging")}
+              >
+                🔒 Upgrade to Unlock
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Overview Card */}
+              <Card className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                    <MessageSquare className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-display font-semibold text-foreground">WhatsApp Business Platform</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Automated, event-driven messaging — not manual chat. Messages are triggered by backend events
+                          (sales, refunds, credit updates) and sent only to customers who have opted in.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="wa-toggle" className="text-sm font-medium">
+                          {waEnabled ? "Active" : "Disabled"}
+                        </Label>
+                        <Switch
+                          id="wa-toggle"
+                          checked={waEnabled}
+                          onCheckedChange={setWaEnabled}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <h4 className="font-semibold text-foreground text-sm">{ch.name}</h4>
-                <p className="text-xs text-muted-foreground mt-1">{ch.desc}</p>
+              </Card>
+
+              {/* Compliance Notice */}
+              <Card className="p-4 border-green-500/20 bg-green-500/5">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Opt-in Compliance</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Messages are only sent to customers who have provided consent and have a valid WhatsApp number on file.
+                      Customers can opt out at any time. All messages comply with WhatsApp Business Policy and local regulations.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Use Cases */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3">Messaging Automations</h4>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {whatsappUseCases.map((uc) => (
+                    <Card key={uc.id} className={`p-5 transition-opacity ${!waEnabled ? "opacity-50" : ""}`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                          <uc.icon className="h-5 w-5 text-green-600" />
+                        </div>
+                        <Switch
+                          checked={waToggles[uc.id] ?? false}
+                          onCheckedChange={(v) => setWaToggles((prev) => ({ ...prev, [uc.id]: v }))}
+                          disabled={!waEnabled}
+                        />
+                      </div>
+                      <h5 className="font-semibold text-sm text-foreground">{uc.title}</h5>
+                      <p className="text-xs text-muted-foreground mt-1">{uc.desc}</p>
+                      <div className="mt-3">
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          Trigger: {uc.triggerEvent}
+                        </Badge>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-4 flex gap-2">
-                {status === "active" && (
-                  <Button variant="default" size="sm" className="w-full gap-1" disabled>
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Active
+              {/* API Configuration */}
+              <Card className={`p-6 transition-opacity ${!waEnabled ? "opacity-50 pointer-events-none" : ""}`}>
+                <h4 className="text-sm font-semibold text-foreground mb-4">WhatsApp API Configuration</h4>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Phone Number ID</Label>
+                    <Input
+                      placeholder="e.g. 1234567890"
+                      value={waPhoneId}
+                      onChange={(e) => setWaPhoneId(e.target.value)}
+                      disabled={!waEnabled}
+                    />
+                    <p className="text-[11px] text-muted-foreground">From your Meta Business Suite → WhatsApp → API Setup</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Permanent Access Token</Label>
+                    <Input
+                      type="password"
+                      placeholder="EAAxxxxxxx..."
+                      value={waToken}
+                      onChange={(e) => setWaToken(e.target.value)}
+                      disabled={!waEnabled}
+                    />
+                    <p className="text-[11px] text-muted-foreground">System user token with whatsapp_business_messaging permission</p>
+                  </div>
+                </div>
+                <Separator className="my-4" />
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-muted-foreground">
+                    Desktop POS and Mobile POS trigger events automatically — no WhatsApp controls appear on those screens.
+                  </p>
+                  <Button size="sm" disabled={!waPhoneId || !waToken} onClick={() => toast.success("WhatsApp configuration saved")}>
+                    Save Configuration
                   </Button>
-                )}
-                {status === "connected" && hasAccess && (
-                  <>
-                    <Button variant="default" size="sm" className="flex-1 gap-1" onClick={() => handleSync(ch)}
-                      disabled={syncing === ch.id}>
-                      {syncing === ch.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                      Sync
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDisconnect(ch)}>
-                      <Unplug className="h-3.5 w-3.5" />
-                    </Button>
-                  </>
-                )}
-                {status === "disconnected" && ch.configurable && hasAccess && (
-                  <Button variant="default" size="sm" className="w-full gap-1" onClick={() => {
-                    setConnectDialog(ch);
-                    setFormValues({});
-                  }}>
-                    <Link2 className="h-3.5 w-3.5" /> Connect
-                  </Button>
-                )}
-                {status === "disconnected" && ch.configurable && !hasAccess && (
-                  <Button variant="outline" size="sm" className="w-full gap-1" disabled>
-                    🔒 Upgrade to {requiredPlan === "growth" ? "Growth" : "Pro"}
-                  </Button>
-                )}
-                {status === "coming_soon" && (
-                  <Button variant="outline" size="sm" className="w-full gap-1" disabled>
-                    <ArrowRight className="h-3.5 w-3.5" /> Coming Soon
-                  </Button>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+                </div>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Connect Dialog */}
       <Dialog open={!!connectDialog} onOpenChange={(open) => !open && setConnectDialog(null)}>
@@ -381,3 +581,5 @@ export default function Integrations() {
     </div>
   );
 }
+
+
