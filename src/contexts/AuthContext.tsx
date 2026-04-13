@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  profileLoading: boolean;
   profile: { id: string; full_name: string; avatar_url: string | null; company_id: string | null } | null;
   company: { id: string; name: string; currency: string; brand_color: string; plan: string; status: string; stripe_account_id: string | null; country: string; business_type: string; logo_url: string | null } | null;
   role: string | null;
@@ -15,7 +16,7 @@ interface AuthState {
 }
 
 const AuthContext = createContext<AuthState>({
-  user: null, session: null, loading: true, profile: null, company: null, role: null,
+  user: null, session: null, loading: true, profileLoading: false, profile: null, company: null, role: null,
   mfaRequired: false, signOut: async () => {}, refreshProfile: async () => {},
 });
 
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [company, setCompany] = useState<AuthState["company"]>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -88,11 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           // Fire-and-forget profile hydration for sign-in / token refresh events
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "MFA_CHALLENGE_VERIFIED") {
+            setProfileLoading(true);
             checkMfaStatus().then((needsMfa) => {
               if (!needsMfa) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user.id).finally(() => setProfileLoading(false));
+              } else {
+                setProfileLoading(false);
               }
-            }).catch(() => {});
+            }).catch(() => setProfileLoading(false));
           }
         } else {
           setProfile(null);
@@ -145,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, company, role, mfaRequired, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, profileLoading, profile, company, role, mfaRequired, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
