@@ -187,7 +187,7 @@ export default function Cashier() {
     await openCashDrawer();
     const eventData = {
       company_id: profile.company_id, store_id: activeStoreId || null,
-      user_id: user.id, user_name: profile.full_name,
+      user_id: user.id, user_name: activeCashier?.name || profile.full_name,
       trigger_type: triggerType, sale_id: saleId || null,
     };
     if (navigator.onLine) {
@@ -301,7 +301,7 @@ export default function Cashier() {
         await supabase.from("products").update({ stock_qty: Math.max(0, currentStock - item.qty) }).eq("id", item.product_id);
         await supabase.from("inventory_movements").insert({
           company_id: profile.company_id, product_id: item.product_id, product_name: item.name,
-          type: "SALE" as const, qty: -item.qty, user_id: user.id, user_name: profile.full_name,
+          type: "SALE" as const, qty: -item.qty, user_id: user.id, user_name: activeCashier?.name || profile.full_name,
           note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`, store_id: activeStoreId,
         });
       }
