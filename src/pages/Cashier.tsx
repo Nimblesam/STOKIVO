@@ -541,7 +541,15 @@ export default function Cashier() {
       <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card">
         {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold text-lg">Current Order</h2>
+          <div>
+            <h2 className="font-display font-bold text-lg">Current Order</h2>
+            <button
+              onClick={() => { setActiveCashier(null); clearCart(); }}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Cashier: <span className="font-medium text-foreground">{activeCashier.name}</span> · Switch
+            </button>
+          </div>
           <div className="flex items-center gap-1">
             {cart.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:text-destructive h-8 px-2">
