@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  profileLoading: boolean;
   profile: { id: string; full_name: string; avatar_url: string | null; company_id: string | null } | null;
   company: { id: string; name: string; currency: string; brand_color: string; plan: string; status: string; stripe_account_id: string | null; country: string; business_type: string; logo_url: string | null } | null;
   role: string | null;
@@ -15,7 +16,7 @@ interface AuthState {
 }
 
 const AuthContext = createContext<AuthState>({
-  user: null, session: null, loading: true, profile: null, company: null, role: null,
+  user: null, session: null, loading: true, profileLoading: false, profile: null, company: null, role: null,
   mfaRequired: false, signOut: async () => {}, refreshProfile: async () => {},
 });
 
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [company, setCompany] = useState<AuthState["company"]>(null);
   const [role, setRole] = useState<string | null>(null);
