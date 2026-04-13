@@ -417,16 +417,24 @@ export default function Invoices() {
               <InvoiceTemplate
                 company={getInvoiceCompany()}
                 invoice={{
-                  invoice_number: selectedInvoice.invoice_number,
-                  created_at: selectedInvoice.created_at,
-                  due_date: selectedInvoice.due_date,
+                  invoiceNumber: selectedInvoice.invoice_number,
+                  createdAt: selectedInvoice.created_at,
+                  dueDate: selectedInvoice.due_date,
                   status: selectedInvoice.status as any,
                   subtotal: selectedInvoice.subtotal,
                   total: selectedInvoice.total,
-                  amount_paid: selectedInvoice.amount_paid,
+                  amountPaid: selectedInvoice.amount_paid,
+                  customerName: (selectedInvoice as any).customers?.name || "—",
+                  customerAddress: (selectedInvoice as any).customers?.address || undefined,
+                  customerPhone: (selectedInvoice as any).customers?.phone || undefined,
+                  customerEmail: (selectedInvoice as any).customers?.email || undefined,
+                  items: selectedItems.map((i: any) => ({
+                    productName: i.product_name,
+                    qty: i.qty,
+                    unitPrice: i.unit_price,
+                    total: i.total,
+                  })),
                 }}
-                customer={(selectedInvoice as any).customers || { name: "—" }}
-                items={selectedItems}
               />
             </div>
           )}
