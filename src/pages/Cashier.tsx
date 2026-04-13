@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
-import { useAppMode } from "@/contexts/AppModeContext";
+
 import { formatMoney } from "@/lib/currency";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import {
   ScanBarcode, ShoppingCart, Plus, X, CreditCard, Banknote,
-  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, LockKeyhole, MoreHorizontal, UserPlus, Percent,
-  ArrowLeft, Minus,
+  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, LockKeyhole, MoreHorizontal, UserPlus, Percent, Minus,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
@@ -61,7 +60,7 @@ export interface SaleRecord {
 export default function Cashier() {
   const { user, profile, company, role } = useAuth();
   const { activeStoreId } = useStore();
-  const { setMode } = useAppMode();
+  
   const currency = (company?.currency || "GBP") as Currency;
   const isRestaurant = company?.business_type === "restaurant";
 
@@ -369,9 +368,9 @@ export default function Cashier() {
   // Categories + filtering — deduplicate case-insensitively
   const categoryMap = new Map<string, string>();
   allProducts.forEach(p => {
-    if (p.category) {
-      const key = p.category.toLowerCase().trim();
-      if (!categoryMap.has(key)) categoryMap.set(key, p.category);
+    if (p.category && p.category.trim()) {
+      const key = p.category.trim().toLowerCase();
+      if (!categoryMap.has(key)) categoryMap.set(key, p.category.trim());
     }
   });
   const categories = Array.from(categoryMap.values());
@@ -445,15 +444,12 @@ export default function Cashier() {
 
   // MAIN POS LAYOUT
   return (
-    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-5rem)]">
+    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-3.5rem)] -m-6">
       {/* LEFT: Product Grid */}
       <div className="flex-1 flex flex-col min-w-0 border-r border-border">
         {/* Search + Status Bar */}
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setMode("full")} title="Back to Menu">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
