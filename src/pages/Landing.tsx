@@ -325,7 +325,7 @@ export default function Landing() {
           </div>
 
           {/* Showcase tabs */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8 mt-10 sm:mt-14">
             {featureShowcase.map((item, i) => (
               <button
                 key={item.title}
@@ -391,7 +391,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ PLATFORM BREAKDOWN ═══════════════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="text-center mb-10 sm:mb-14">
           <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">ONE PLATFORM, THREE MODES</p>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
