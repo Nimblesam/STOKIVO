@@ -68,7 +68,6 @@ export function PosLayout({ children }: PosLayoutProps) {
 
           <div className="flex items-center gap-2">
             <OfflineIndicator />
-            <PrinterStatusIndicator />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

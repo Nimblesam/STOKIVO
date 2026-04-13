@@ -450,6 +450,37 @@ export default function Products() {
               </>
             ) : (
               <>
+                {/* Product Image Upload — available for all business types */}
+                <div>
+                  <Label>Product Image <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <div className="mt-1 space-y-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !profile?.company_id) return;
+                        const ext = file.name.split(".").pop();
+                        const path = `${profile.company_id}/${Date.now()}.${ext}`;
+                        toast.info("Uploading image...");
+                        const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
+                        if (error) { toast.error("Upload failed: " + error.message); return; }
+                        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+                        setForm({ ...form, image_url: urlData.publicUrl });
+                        toast.success("Image uploaded!");
+                      }}
+                      className="cursor-pointer"
+                    />
+                    {form.image_url && (
+                      <div className="flex items-center gap-3">
+                        <img src={form.image_url} alt="Preview" className="h-16 w-16 rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
+                        <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => setForm({ ...form, image_url: "" })}>
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {/* Retail/Wholesale full form */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
