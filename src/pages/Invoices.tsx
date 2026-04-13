@@ -13,13 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign } from "lucide-react";
+import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 
 const statusFilters = ["all", "draft", "sent", "paid", "partially_paid", "overdue"] as const;
-
+const ITEMS_PER_PAGE = 10;
 
 interface InvoiceRow {
   id: string;
@@ -51,6 +51,7 @@ export default function Invoices() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState<InvoiceRow | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [newInv, setNewInv] = useState({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
 
@@ -75,6 +76,11 @@ export default function Invoices() {
   useEffect(() => { fetchData(); }, [profile?.company_id, activeStoreId]);
 
   const filtered = filter === "all" ? invoices : invoices.filter((i) => i.status === filter);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginatedInvoices = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // Reset page when filter changes
+  useEffect(() => { setCurrentPage(1); }, [filter]);
 
   const handleCreate = async () => {
     if (!newInv.customer_id || !newInv.due_date) { toast.error("Customer and due date are required"); return; }
@@ -195,7 +201,6 @@ export default function Invoices() {
       note: `Manual payment of ${formatMoney(amountMinor, currency)}`,
     });
 
-    // Sync customer outstanding balance from invoices
     if (paymentInvoice.customer_id) {
       await syncCustomerBalance(paymentInvoice.customer_id);
     }
@@ -274,63 +279,87 @@ export default function Invoices() {
             <FileText className="h-10 w-10 mx-auto mb-2 opacity-40" /><p>No invoices yet</p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Paid</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((inv) => {
-                const balance = inv.total - inv.amount_paid;
-                return (
-                  <TableRow key={inv.id}>
-                    <TableCell><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /><span className="font-medium text-sm">{inv.invoice_number}</span></div></TableCell>
-                    <TableCell className="text-sm">{(inv as any).customers?.name || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{inv.due_date}</TableCell>
-                    <TableCell>
-                      {inv.status === "paid" ? (
-                        <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded">PAID</span>
-                      ) : (
-                        <StatusBadge status={inv.status as InvoiceStatus} />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-medium">{formatMoney(inv.total, currency)}</TableCell>
-                    <TableCell className="text-right text-sm text-success">{formatMoney(inv.amount_paid, currency)}</TableCell>
-                    <TableCell className="text-right"><span className={`text-sm font-semibold ${balance > 0 ? "text-destructive" : "text-success"}`}>{formatMoney(balance, currency)}</span></TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
-                        {balance > 0 && (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-warning" title="Send Payment Reminder" onClick={() => sendReminder(inv)}><Bell className="h-3.5 w-3.5" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-success" title="Record Payment" onClick={() => openPaymentDialog(inv)}><DollarSign className="h-3.5 w-3.5" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" title="Mark Fully Paid" onClick={() => markFullyPaid(inv)}><CheckCircle className="h-3.5 w-3.5" /></Button>
-                          </>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Paid</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedInvoices.map((inv) => {
+                  const balance = inv.total - inv.amount_paid;
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /><span className="font-medium text-sm">{inv.invoice_number}</span></div></TableCell>
+                      <TableCell className="text-sm">{(inv as any).customers?.name || "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{inv.due_date}</TableCell>
+                      <TableCell>
+                        {inv.status === "paid" ? (
+                          <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded">PAID</span>
+                        ) : (
+                          <StatusBadge status={inv.status as InvoiceStatus} />
                         )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-accent"><Send className="h-3.5 w-3.5" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => sendViaEmail(inv)}><Mail className="h-3.5 w-3.5 mr-2" /> Send to Email</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => sendViaWhatsApp(inv)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium">{formatMoney(inv.total, currency)}</TableCell>
+                      <TableCell className="text-right text-sm text-success">{formatMoney(inv.amount_paid, currency)}</TableCell>
+                      <TableCell className="text-right"><span className={`text-sm font-semibold ${balance > 0 ? "text-destructive" : "text-success"}`}>{formatMoney(balance, currency)}</span></TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                          {balance > 0 && (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-warning" title="Send Payment Reminder" onClick={() => sendReminder(inv)}><Bell className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-success" title="Record Payment" onClick={() => openPaymentDialog(inv)}><DollarSign className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" title="Mark Fully Paid" onClick={() => markFullyPaid(inv)}><CheckCircle className="h-3.5 w-3.5" /></Button>
+                            </>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-accent"><Send className="h-3.5 w-3.5" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => sendViaEmail(inv)}><Mail className="h-3.5 w-3.5 mr-2" /> Send to Email</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => sendViaWhatsApp(inv)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <Button key={page} variant={page === currentPage ? "default" : "outline"} size="sm" className="w-8 h-8 p-0" onClick={() => setCurrentPage(page)}>
+                      {page}
+                    </Button>
+                  ))}
+                  <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -361,14 +390,11 @@ export default function Invoices() {
                   <Input type="number" className="w-20" value={item.qty} onChange={(e) => {
                     const items = [...newInv.items]; items[idx] = { ...items[idx], qty: e.target.value };
                     setNewInv({ ...newInv, items });
-                  }} min="1" />
-                  {newInv.items.length > 1 && (
-                    <Button variant="ghost" size="icon" onClick={() => setNewInv({ ...newInv, items: newInv.items.filter((_, i) => i !== idx) })}><Trash2 className="h-4 w-4" /></Button>
-                  )}
+                  }} />
                 </div>
               ))}
-              <Button variant="outline" size="sm" className="mt-2" onClick={() => setNewInv({ ...newInv, items: [...newInv.items, { product_id: "", qty: "1" }] })}>
-                <Plus className="h-3 w-3 mr-1" /> Add Line
+              <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setNewInv({ ...newInv, items: [...newInv.items, { product_id: "", qty: "1" }] })}>
+                + Add Line
               </Button>
             </div>
             <Button onClick={handleCreate} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
@@ -378,82 +404,53 @@ export default function Invoices() {
         </DialogContent>
       </Dialog>
 
-      {/* Record Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
-          {paymentInvoice && (
-            <div className="space-y-4">
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between"><span className="text-muted-foreground">Invoice</span><span className="font-medium">{paymentInvoice.invoice_number}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span>{formatMoney(paymentInvoice.total, currency)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Already Paid</span><span className="text-success">{formatMoney(paymentInvoice.amount_paid, currency)}</span></div>
-                <div className="flex justify-between font-semibold"><span>Balance Due</span><span className="text-destructive">{formatMoney(paymentInvoice.total - paymentInvoice.amount_paid, currency)}</span></div>
+      {/* View Invoice Dialog */}
+      <Dialog open={!!selectedInvoice} onOpenChange={(open) => { if (!open) setSelectedInvoice(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto print:max-w-none print:shadow-none">
+          {selectedInvoice && (
+            <div>
+              <div className="flex gap-2 mb-4 print:hidden">
+                <Button variant="outline" size="sm" onClick={() => sendViaEmail(selectedInvoice)}><Mail className="h-3.5 w-3.5 mr-1" /> Email</Button>
+                <Button variant="outline" size="sm" onClick={() => sendViaWhatsApp(selectedInvoice)}><MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={handlePrintInvoice}><Printer className="h-3.5 w-3.5 mr-1" /> Print</Button>
               </div>
-              <div>
-                <Label>Payment Amount</Label>
-                <Input type="number" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder={`Max: ${((paymentInvoice.total - paymentInvoice.amount_paid) / 100).toFixed(2)}`} className="mt-1" />
-              </div>
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={handleMarkPayment}>Record Payment</Button>
-                <Button variant="outline" className="flex-1" onClick={() => {
-                  setPaymentAmount(((paymentInvoice.total - paymentInvoice.amount_paid) / 100).toFixed(2));
-                }}>Pay Full Balance</Button>
-              </div>
+              <InvoiceTemplate
+                company={getInvoiceCompany()}
+                invoice={{
+                  invoice_number: selectedInvoice.invoice_number,
+                  created_at: selectedInvoice.created_at,
+                  due_date: selectedInvoice.due_date,
+                  status: selectedInvoice.status as any,
+                  subtotal: selectedInvoice.subtotal,
+                  total: selectedInvoice.total,
+                  amount_paid: selectedInvoice.amount_paid,
+                }}
+                customer={(selectedInvoice as any).customers || { name: "—" }}
+                items={selectedItems}
+              />
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Invoice Preview */}
-      <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
-        <DialogContent className="max-w-[900px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="print:hidden">
-           <DialogTitle className="flex items-center justify-between">
-              <span>{selectedInvoice?.invoice_number}</span>
-              <div className="flex gap-2">
-                {selectedInvoice && (selectedInvoice.total - selectedInvoice.amount_paid) > 0 && (
-                  <>
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => selectedInvoice && sendReminder(selectedInvoice)}>
-                      <Bell className="h-4 w-4" /> Send Reminder
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2 text-success" onClick={() => { if (selectedInvoice) { openPaymentDialog(selectedInvoice); setSelectedInvoice(null); } }}>
-                      <DollarSign className="h-4 w-4" /> Record Payment
-                    </Button>
-                  </>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2"><Send className="h-4 w-4" /> Send</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => selectedInvoice && sendViaEmail(selectedInvoice)}><Mail className="h-3.5 w-3.5 mr-2" /> Send to Email</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => selectedInvoice && sendViaWhatsApp(selectedInvoice)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button variant="outline" size="sm" className="gap-2" onClick={handlePrintInvoice}><Printer className="h-4 w-4" /> Print</Button>
+      {/* Record Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) setShowPaymentDialog(false); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
+          {paymentInvoice && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Balance Due</p>
+                <p className="text-2xl font-bold text-destructive">{formatMoney(paymentInvoice.total - paymentInvoice.amount_paid, currency)}</p>
               </div>
-            </DialogTitle>
-          </DialogHeader>
-          {selectedInvoice && (
-            <InvoiceTemplate
-              company={getInvoiceCompany()}
-              invoice={{
-                invoiceNumber: selectedInvoice.invoice_number,
-                status: selectedInvoice.status as any,
-                createdAt: selectedInvoice.created_at.split("T")[0],
-                dueDate: selectedInvoice.due_date,
-                customerName: (selectedInvoice as any).customers?.name || "",
-                customerAddress: (selectedInvoice as any).customers?.address,
-                customerPhone: (selectedInvoice as any).customers?.phone,
-                customerEmail: (selectedInvoice as any).customers?.email,
-                items: selectedItems.map(it => ({ productName: it.product_name, qty: it.qty, unitPrice: it.unit_price, total: it.total })),
-                subtotal: selectedInvoice.subtotal,
-                total: selectedInvoice.total,
-                amountPaid: selectedInvoice.amount_paid,
-              }}
-            />
+              <div>
+                <Label>Payment Amount</Label>
+                <Input type="number" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder="0.00" className="mt-1" autoFocus />
+              </div>
+              <Button onClick={handleMarkPayment} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                Record Payment
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>

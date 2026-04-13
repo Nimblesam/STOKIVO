@@ -3,12 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { formatMoney } from "@/lib/currency";
+import { PosReceipt } from "@/components/pos/PosReceipt";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Receipt, Clock } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Search, Receipt, Clock, Printer, ArrowLeft } from "lucide-react";
 import type { Currency } from "@/lib/types";
+import type { SaleRecord } from "@/pages/Cashier";
 
 export default function PosReceipts() {
   const { profile, company } = useAuth();
@@ -17,6 +21,7 @@ export default function PosReceipts() {
   const [sales, setSales] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedSale, setSelectedSale] = useState<SaleRecord | null>(null);
 
   useEffect(() => {
     if (!profile?.company_id) return;
@@ -24,7 +29,7 @@ export default function PosReceipts() {
       setLoading(true);
       let query = supabase
         .from("sales")
-        .select("id, created_at, total, cashier_name, status")
+        .select("id, created_at, total, subtotal, discount, tax, change_given, cashier_name, status")
         .eq("company_id", profile.company_id!)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -45,6 +50,38 @@ export default function PosReceipts() {
           s.cashier_name.toLowerCase().includes(search.toLowerCase())
       )
     : sales;
+
+  const handleViewReceipt = async (sale: any) => {
+    // Fetch sale items and payments
+    const [{ data: items }, { data: payments }] = await Promise.all([
+      supabase.from("sale_items").select("product_id, product_name, qty, unit_price, line_total").eq("sale_id", sale.id),
+      supabase.from("sale_payments").select("method, amount").eq("sale_id", sale.id),
+    ]);
+
+    setSelectedSale({
+      id: sale.id,
+      items: (items || []).map((i: any) => ({
+        product_id: i.product_id || "",
+        name: i.product_name,
+        barcode: null,
+        unit_price: i.unit_price,
+        qty: i.qty,
+        stock_qty: 0,
+        line_total: i.line_total,
+      })),
+      subtotal: sale.subtotal,
+      discount: sale.discount,
+      tax: sale.tax,
+      total: sale.total,
+      payments: (payments || []).map((p: any) => ({ method: p.method, amount: p.amount })),
+      change_given: sale.change_given,
+      cashier_name: sale.cashier_name,
+      created_at: sale.created_at,
+      company_name: company?.name || "",
+      company_logo: company?.logo_url,
+      currency,
+    });
+  };
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-4">
@@ -71,7 +108,7 @@ export default function PosReceipts() {
             <p className="text-sm text-muted-foreground text-center py-8">No sales found</p>
           ) : (
             filtered.map((sale) => (
-              <Card key={sale.id} className="cursor-pointer hover:bg-muted/30 transition-colors">
+              <Card key={sale.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleViewReceipt(sale)}>
                 <CardContent className="py-3 px-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -90,6 +127,9 @@ export default function PosReceipts() {
                       {sale.status}
                     </Badge>
                     <span className="font-semibold text-foreground">{formatMoney(sale.total, currency)}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Reprint receipt" onClick={(e) => { e.stopPropagation(); handleViewReceipt(sale); }}>
+                      <Printer className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -97,6 +137,25 @@ export default function PosReceipts() {
           )}
         </div>
       </ScrollArea>
+
+      {/* Receipt Preview Dialog */}
+      <Dialog open={!!selectedSale} onOpenChange={(open) => { if (!open) setSelectedSale(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          {selectedSale && (
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setSelectedSale(null)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                </Button>
+                <Button size="sm" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4 mr-1" /> Print
+                </Button>
+              </div>
+              <PosReceipt sale={selectedSale} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

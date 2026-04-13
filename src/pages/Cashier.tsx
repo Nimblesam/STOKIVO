@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
+import { useAppMode } from "@/contexts/AppModeContext";
 import { formatMoney } from "@/lib/currency";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -9,9 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   ScanBarcode, ShoppingCart, Plus, X, CreditCard, Banknote,
   Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, LockKeyhole, MoreHorizontal, UserPlus, Percent,
+  ArrowLeft, Minus,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ScannerStatus } from "@/components/ScannerStatus";
@@ -57,6 +61,7 @@ export interface SaleRecord {
 export default function Cashier() {
   const { user, profile, company, role } = useAuth();
   const { activeStoreId } = useStore();
+  const { setMode } = useAppMode();
   const currency = (company?.currency || "GBP") as Currency;
   const isRestaurant = company?.business_type === "restaurant";
 
@@ -70,15 +75,21 @@ export default function Cashier() {
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [taxRate, setTaxRate] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
+  const [discountType, setDiscountType] = useState<"fixed" | "percent">("fixed");
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [customerForm, setCustomerForm] = useState({ name: "", email: "", phone: "" });
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const terminal = useTerminal();
 
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
-  const discount = 0;
-  const tax = Math.round(subtotal * taxRate);
-  const grandTotal = subtotal - discount + tax;
+  const tax = Math.round((subtotal - discountAmount) * taxRate);
+  const grandTotal = subtotal - discountAmount + tax;
 
-  // Load tax rate from company country
+  // Load tax rate from store location / company country
   useEffect(() => {
     if (!company?.country) return;
     supabase.from("tax_rates").select("rate").eq("country", company.country).limit(1).maybeSingle()
@@ -166,7 +177,7 @@ export default function Cashier() {
   };
 
   const removeItem = (productId: string) => setCart((prev) => prev.filter((i) => i.product_id !== productId));
-  const clearCart = () => setCart([]);
+  const clearCart = () => { setCart([]); setDiscountAmount(0); };
   const stockErrors = isRestaurant ? [] : cart.filter((i) => i.qty > i.stock_qty);
 
   // Trigger cash drawer + log event
@@ -185,6 +196,42 @@ export default function Cashier() {
     }
   };
 
+  const handleApplyDiscount = () => {
+    const val = parseFloat(discountInput) || 0;
+    if (val <= 0) { toast.error("Enter a valid discount amount"); return; }
+    if (discountType === "percent") {
+      const amount = Math.round(subtotal * (val / 100));
+      setDiscountAmount(Math.min(amount, subtotal));
+    } else {
+      const amount = Math.round(val * 100);
+      setDiscountAmount(Math.min(amount, subtotal));
+    }
+    setShowDiscountDialog(false);
+    setDiscountInput("");
+    toast.success("Discount applied");
+  };
+
+  const handleAddCustomer = async () => {
+    if (!customerForm.name.trim()) { toast.error("Name is required"); return; }
+    if (!customerForm.email.trim()) { toast.error("Email is required"); return; }
+    if (!profile?.company_id) return;
+    setSavingCustomer(true);
+    const { error } = await supabase.from("customers").insert({
+      company_id: profile.company_id,
+      name: customerForm.name,
+      email: customerForm.email,
+      phone: customerForm.phone || null,
+      store_id: activeStoreId,
+    });
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Customer added!");
+      setShowCustomerDialog(false);
+      setCustomerForm({ name: "", email: "", phone: "" });
+    }
+    setSavingCustomer(false);
+  };
+
   const handlePaymentComplete = async (payments: { method: string; amount: number }[], customerName?: string) => {
     if (!profile?.company_id || !user) return;
     setProcessing(true);
@@ -201,7 +248,7 @@ export default function Cashier() {
           id: offlineSaleId,
           data: {
             company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
-            subtotal, discount, tax, total: grandTotal, change_given: changeGiven,
+            subtotal, discount: discountAmount, tax, total: grandTotal, change_given: changeGiven,
             status: isPayLater ? "pending" : "completed", store_id: activeStoreId,
             items: cart.map(i => ({ product_id: i.product_id, product_name: i.name, qty: i.qty, unit_price: i.unit_price, line_total: i.line_total })),
             payments, customer_name: customerName,
@@ -210,11 +257,11 @@ export default function Cashier() {
         });
         if (hasCashPayment && posSettings.auto_open_drawer) await triggerCashDrawer("cash_payment", offlineSaleId);
         setCompletedSale({
-          id: offlineSaleId, items: [...cart], subtotal, discount, tax, total: grandTotal,
+          id: offlineSaleId, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
           payments, change_given: changeGiven, cashier_name: profile.full_name,
           created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
         });
-        setShowPayment(false); setCart([]);
+        setShowPayment(false); setCart([]); setDiscountAmount(0);
         toast.success("Sale saved offline — will sync when online");
         setProcessing(false);
         return;
@@ -224,7 +271,7 @@ export default function Cashier() {
         .from("sales")
         .insert({
           company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
-          subtotal, discount, tax, total: grandTotal, change_given: changeGiven,
+          subtotal, discount: discountAmount, tax, total: grandTotal, change_given: changeGiven,
           status: isPayLater ? "pending" : "completed", store_id: activeStoreId,
         })
         .select("id").single();
@@ -301,11 +348,11 @@ export default function Cashier() {
       if (hasCashPayment && posSettings.auto_open_drawer) await triggerCashDrawer("cash_payment", sale.id);
 
       setCompletedSale({
-        id: sale.id, items: [...cart], subtotal, discount, tax, total: grandTotal,
+        id: sale.id, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
         payments, change_given: changeGiven, cashier_name: profile.full_name,
         created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
       });
-      setShowPayment(false); setCart([]);
+      setShowPayment(false); setCart([]); setDiscountAmount(0);
       toast.success(isPayLater ? "Sale recorded — added to credit ledger" : "Payment successful!");
     } catch (err: any) {
       toast.error("Payment failed", { description: err?.message });
@@ -315,14 +362,22 @@ export default function Cashier() {
   };
 
   const startNewSale = () => {
-    setCompletedSale(null); setShowReceipt(false); setCart([]); setSearchQuery("");
+    setCompletedSale(null); setShowReceipt(false); setCart([]); setSearchQuery(""); setDiscountAmount(0);
     searchRef.current?.focus();
   };
 
-  // Categories + filtering
-  const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+  // Categories + filtering — deduplicate case-insensitively
+  const categoryMap = new Map<string, string>();
+  allProducts.forEach(p => {
+    if (p.category) {
+      const key = p.category.toLowerCase().trim();
+      if (!categoryMap.has(key)) categoryMap.set(key, p.category);
+    }
+  });
+  const categories = Array.from(categoryMap.values());
+
   const filteredProducts = allProducts.filter(p => {
-    const matchesCategory = !categoryFilter || p.category === categoryFilter;
+    const matchesCategory = !categoryFilter || (p.category && p.category.toLowerCase().trim() === categoryFilter.toLowerCase().trim());
     const q = searchQuery.toLowerCase();
     const matchesSearch = !searchQuery || p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || p.barcode?.includes(searchQuery);
     return matchesCategory && matchesSearch;
@@ -396,6 +451,9 @@ export default function Cashier() {
         {/* Search + Status Bar */}
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setMode("full")} title="Back to Menu">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -447,27 +505,27 @@ export default function Cashier() {
               <p className="text-sm mt-1">Try a different search or category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-3">
               {filteredProducts.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => addToCart(p)}
-                  className="relative bg-card border border-border rounded-xl p-3 flex flex-col items-center text-center hover:border-primary/50 hover:shadow-md transition-all group"
+                  className="relative bg-card border border-border rounded-lg p-2 flex flex-col items-center text-center hover:border-primary/50 hover:shadow-md transition-all group"
                 >
                   {/* Product Image */}
-                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-muted mb-2 flex items-center justify-center">
+                  <div className="w-full aspect-square rounded-md overflow-hidden bg-muted mb-1.5 flex items-center justify-center">
                     {p.image_url ? (
                       <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
                     ) : (
-                      <Package className="h-10 w-10 text-muted-foreground/50" />
+                      <Package className="h-8 w-8 text-muted-foreground/50" />
                     )}
                   </div>
                   {/* Name + Price */}
-                  <p className="font-medium text-sm leading-tight line-clamp-2 mb-1">{p.name}</p>
-                  <p className="text-sm font-bold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                  <p className="font-medium text-xs leading-tight line-clamp-2 mb-0.5">{p.name}</p>
+                  <p className="text-xs font-bold text-primary">{formatMoney(p.selling_price, currency)}</p>
                   {/* Add button */}
-                  <div className="absolute bottom-2 right-2 h-7 w-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-                    <Plus className="h-4 w-4" />
+                  <div className="absolute bottom-1.5 right-1.5 h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+                    <Plus className="h-3.5 w-3.5" />
                   </div>
                 </button>
               ))}
@@ -530,7 +588,13 @@ export default function Cashier() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 w-24 justify-center">
-                    <span className="text-sm font-medium text-muted-foreground">x{item.qty}</span>
+                    <button
+                      onClick={() => updateQty(item.product_id, -1)}
+                      className="h-6 w-6 rounded bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-colors"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="text-sm font-medium w-6 text-center">{item.qty}</span>
                     <button
                       onClick={() => updateQty(item.product_id, 1)}
                       className="h-6 w-6 rounded bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
@@ -558,6 +622,12 @@ export default function Cashier() {
               <span className="text-muted-foreground">Subtotal</span>
               <span>{formatMoney(subtotal, currency)}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-success">
+                <span>Discount</span>
+                <span>-{formatMoney(discountAmount, currency)}</span>
+              </div>
+            )}
             {taxRate > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span>
@@ -585,14 +655,15 @@ export default function Cashier() {
           </Button>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 text-xs h-8">
+            <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => setShowCustomerDialog(true)}>
               <UserPlus className="h-3.5 w-3.5 mr-1" /> Add Customer
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 text-xs h-8">
+            <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => setShowDiscountDialog(true)}>
               <Percent className="h-3.5 w-3.5 mr-1" /> Discount
             </Button>
             <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => {
-              if (completedSale) window.print();
+              if (completedSale) setShowReceipt(true);
+              else toast.info("Complete a sale first to print a receipt");
             }}>
               <Printer className="h-3.5 w-3.5 mr-1" /> Print Receipt
             </Button>
@@ -615,6 +686,60 @@ export default function Cashier() {
           onRetryTerminal={terminal.connect}
         />
       )}
+
+      {/* Discount Dialog */}
+      <Dialog open={showDiscountDialog} onOpenChange={setShowDiscountDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Apply Discount</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button variant={discountType === "fixed" ? "default" : "outline"} size="sm" onClick={() => setDiscountType("fixed")} className="flex-1">
+                Fixed Amount
+              </Button>
+              <Button variant={discountType === "percent" ? "default" : "outline"} size="sm" onClick={() => setDiscountType("percent")} className="flex-1">
+                Percentage
+              </Button>
+            </div>
+            <div>
+              <Label>{discountType === "fixed" ? "Amount" : "Percentage"}</Label>
+              <Input type="number" step="0.01" value={discountInput} onChange={(e) => setDiscountInput(e.target.value)}
+                placeholder={discountType === "fixed" ? "0.00" : "10"} className="mt-1" autoFocus />
+            </div>
+            <div className="flex gap-2">
+              {discountAmount > 0 && (
+                <Button variant="outline" className="flex-1" onClick={() => { setDiscountAmount(0); setShowDiscountDialog(false); toast.success("Discount removed"); }}>
+                  Remove Discount
+                </Button>
+              )}
+              <Button className="flex-1" onClick={handleApplyDiscount}>Apply</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Customer Dialog */}
+      <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Add Customer</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Name *</Label>
+              <Input value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} placeholder="Customer name" className="mt-1" />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input type="email" value={customerForm.email} onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })} placeholder="customer@example.com" className="mt-1" />
+            </div>
+            <div>
+              <Label>Phone</Label>
+              <Input value={customerForm.phone} onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })} placeholder="+44..." className="mt-1" />
+            </div>
+            <Button className="w-full" onClick={handleAddCustomer} disabled={savingCustomer}>
+              {savingCustomer ? "Saving..." : "Add Customer"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
