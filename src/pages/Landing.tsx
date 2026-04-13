@@ -12,6 +12,7 @@ import {
   Cpu, Wifi, ShoppingBag, Receipt,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
+import posTerminalHero from "@/assets/pos-terminal-hero.jpg";
 import dashboardPreview from "@/assets/dashboard-preview.jpg";
 import posPreview from "@/assets/pos-preview.jpg";
 import analyticsPreview from "@/assets/analytics-preview.jpg";
