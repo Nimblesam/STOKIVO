@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import {
   ScanBarcode, ShoppingCart, Plus, X, CreditCard, Banknote,
-  Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, LockKeyhole, MoreHorizontal, UserPlus, Percent,
   Search, Package, Trash2, CheckCircle2, Printer, RotateCcw, LockKeyhole, MoreHorizontal, UserPlus, Percent, Minus,
 } from "lucide-react";
 import { PaymentModal } from "@/components/pos/PaymentModal";
