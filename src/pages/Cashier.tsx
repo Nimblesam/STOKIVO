@@ -65,6 +65,7 @@ export default function Cashier() {
   const currency = (company?.currency || "GBP") as Currency;
   const isRestaurant = company?.business_type === "restaurant";
 
+  const [activeCashier, setActiveCashier] = useState<{ id: string; name: string; role: string } | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPayment, setShowPayment] = useState(false);
