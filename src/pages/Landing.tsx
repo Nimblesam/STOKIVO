@@ -8,6 +8,8 @@ import {
   ScanBarcode, FileText, CreditCard, Layers,
   AlertTriangle, PieChart, MapPin, Crown,
   ChevronRight, Sparkles, Monitor, Smartphone, Download,
+  Mic, Calendar, TrendingUp, Boxes, RefreshCw,
+  Cpu, Wifi, ShoppingBag, Receipt,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import dashboardPreview from "@/assets/dashboard-preview.jpg";
@@ -16,64 +18,74 @@ import analyticsPreview from "@/assets/analytics-preview.jpg";
 import { DownloadAppsSection } from "@/components/DownloadAppsSection";
 import { useState } from "react";
 
+/* ─── DATA ─── */
+
 const coreFeatures = [
   {
-    icon: Package,
-    title: "Real-Time Stock Tracking",
-    desc: "Know exactly what's on the shelf, what's incoming, and what needs restocking — across every location.",
-  },
-  {
-    icon: ShoppingCart,
-    title: "Built-in POS System",
-    desc: "Process sales, accept card payments via Stripe Terminal, print receipts, and auto-update stock from one screen.",
-  },
-  {
-    icon: MapPin,
-    title: "Multi-Location & Warehouse",
-    desc: "Manage inventory across stores and warehouses. Transfer stock between locations with full audit trails.",
-  },
-  {
-    icon: BarChart3,
-    title: "Reports & Analytics",
-    desc: "Visual dashboards for best sellers, profit margins, sales trends, and seasonal patterns.",
-  },
-  {
-    icon: Bell,
-    title: "Smart Alerts & Reordering",
-    desc: "Get notified before stockouts happen. AI-powered reorder suggestions based on sales velocity.",
+    icon: ScanBarcode,
+    title: "Instant Barcode Scanning",
+    desc: "Scan products in or out with a tap. Works with USB, Bluetooth, and camera-based barcode scanners across all devices.",
+    gradient: "from-blue-500/10 to-cyan-500/10",
   },
   {
     icon: Brain,
-    title: "AI Demand Forecasting",
-    desc: "Predict future demand using sales history. See 7-day forecasts and trending products at a glance.",
+    title: "AI-Powered Stock Intelligence",
+    desc: "Let AI monitor your stock levels 24/7. Get smart reorder suggestions based on sales velocity, seasonality, and demand patterns.",
+    gradient: "from-violet-500/10 to-purple-500/10",
+  },
+  {
+    icon: Mic,
+    title: "Voice-Powered Product Entry",
+    desc: "Speak to add products. Just say the name, price, and quantity — Stokivo's voice assistant fills in the rest automatically.",
+    gradient: "from-amber-500/10 to-orange-500/10",
+  },
+  {
+    icon: Boxes,
+    title: "Live Quantity Tracking",
+    desc: "Monitor exact stock quantities across every location in real time. Every sale, return, and adjustment is reflected instantly.",
+    gradient: "from-emerald-500/10 to-green-500/10",
+  },
+  {
+    icon: Calendar,
+    title: "Expiry Date Monitoring",
+    desc: "Track product shelf life and get early warnings before items expire. Reduce waste and stay compliant with batch-level visibility.",
+    gradient: "from-rose-500/10 to-pink-500/10",
+  },
+  {
+    icon: RefreshCw,
+    title: "Automated Smart Reordering",
+    desc: "Set reorder thresholds and let the system alert you — or auto-generate purchase suggestions when stock runs low.",
+    gradient: "from-sky-500/10 to-indigo-500/10",
   },
 ];
 
-const additionalFeatures = [
-  { icon: ScanBarcode, label: "Barcode Scanning" },
-  { icon: FileText, label: "Invoicing & Billing" },
-  { icon: CreditCard, label: "Stripe Payments" },
-  { icon: Users, label: "Team & Role Access" },
-  { icon: AlertTriangle, label: "Expiry Tracking" },
-  { icon: PieChart, label: "Profit Margins" },
+const featurePills = [
+  { icon: ShoppingCart, label: "Built-in POS" },
+  { icon: CreditCard, label: "Card & Cash Payments" },
+  { icon: Receipt, label: "Receipt Printing" },
+  { icon: MapPin, label: "Multi-Location" },
+  { icon: FileText, label: "Invoicing" },
+  { icon: Users, label: "Team Roles & Access" },
+  { icon: TrendingUp, label: "Profit Tracking" },
   { icon: Lock, label: "2FA Security" },
   { icon: Globe, label: "Custom Domains" },
+  { icon: PieChart, label: "Advanced Analytics" },
 ];
 
 const whoIsItFor = [
-  { title: "Retail Shops", desc: "High street stores, convenience shops, electronics retailers", icon: ShoppingCart },
-  { title: "Wholesale Distributors", desc: "Bulk suppliers, cash-and-carry, B2B distributors", icon: Package },
-  { title: "Grocery & Food Stores", desc: "Supermarkets, mini-marts, fresh produce with expiry tracking", icon: Layers },
-  { title: "Pharmacies", desc: "Medicine stock management with batch and expiry tracking", icon: ShieldCheck },
+  { title: "Retail Shops", desc: "Electronics, clothing, convenience, and high-street stores", icon: ShoppingBag },
+  { title: "Wholesale Distributors", desc: "Cash-and-carry, B2B suppliers, bulk distributors", icon: Package },
+  { title: "Grocery & Food Stores", desc: "Supermarkets, mini-marts, fresh produce with expiry alerts", icon: Layers },
+  { title: "Pharmacies", desc: "Medicine tracking with batch control and expiry management", icon: ShieldCheck },
   { title: "E-Commerce Sellers", desc: "Multi-channel sellers on Amazon, eBay, Etsy, TikTok Shop", icon: Globe },
-  { title: "Restaurants & Cafes", desc: "Ingredient tracking, supplier management, cost control", icon: Star },
+  { title: "Restaurants & Cafes", desc: "Ingredient tracking, supplier costs, menu item management", icon: Star },
 ];
 
 const howItWorks = [
-  { step: "01", title: "Sign Up & Set Up", desc: "Create your account, add your business details, and configure your first store location in minutes." },
-  { step: "02", title: "Add Your Products", desc: "Import or manually add inventory. Set prices, stock levels, suppliers, and reorder thresholds." },
-  { step: "03", title: "Start Selling", desc: "Use the built-in POS to process sales. Stock updates automatically. Get alerts when items run low." },
-  { step: "04", title: "Grow Smarter", desc: "Use analytics, AI forecasts, and reorder suggestions to make data-driven decisions." },
+  { step: "01", title: "Sign Up in Minutes", desc: "Create your account, set up your business, and configure your first store — no technical knowledge required." },
+  { step: "02", title: "Add Products Your Way", desc: "Import via CSV, scan barcodes, or simply speak — voice entry fills in product details automatically." },
+  { step: "03", title: "Sell from Any Device", desc: "Use the web dashboard for management, desktop app as a register, or mobile app as a portable POS." },
+  { step: "04", title: "Let AI Do the Rest", desc: "Smart alerts, demand forecasts, and reorder suggestions keep your shelves stocked and your profits growing." },
 ];
 
 const plans = [
@@ -125,13 +137,36 @@ const featureShowcase = [
   },
 ];
 
+const platformFeatures = [
+  {
+    icon: Monitor,
+    platform: "Web App",
+    tagline: "Your Business Command Centre",
+    features: ["Full inventory management", "Accounting & payroll", "Supplier management", "AI analytics & insights", "Team & role management"],
+  },
+  {
+    icon: Monitor,
+    platform: "Desktop POS",
+    tagline: "Professional Cash Register",
+    features: ["Fast checkout terminal", "Barcode scanning", "Receipt printing", "Refund processing", "Card & cash payments"],
+  },
+  {
+    icon: Smartphone,
+    platform: "Mobile POS",
+    tagline: "Portable Sales Terminal",
+    features: ["Sell from anywhere", "Camera barcode scan", "Offline-ready", "Touch-optimised UI", "Bluetooth printing"],
+  },
+];
+
+/* ─── COMPONENT ─── */
+
 export default function Landing() {
   const [annual, setAnnual] = useState(false);
   const [activeShowcase, setActiveShowcase] = useState(0);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
+      {/* ═══════════════ NAVIGATION ═══════════════ */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
           <div className="flex items-center gap-2.5">
@@ -145,6 +180,9 @@ export default function Landing() {
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#product" className="hover:text-foreground transition-colors">Product</a>
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+            <a href="#download" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+              <Download className="h-3.5 w-3.5" /> Download
+            </a>
             <Link to="/login" className="hover:text-foreground transition-colors">Login</Link>
           </div>
           <Link to="/register">
@@ -155,24 +193,28 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero */}
+      {/* ═══════════════ HERO ═══════════════ */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
+        {/* Decorative blobs */}
+        <div className="absolute top-20 -left-32 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute top-40 -right-32 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 sm:pt-20 sm:pb-12 lg:pt-24 lg:pb-16 relative">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 border border-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6 sm:mb-8">
-              <Sparkles className="h-3.5 w-3.5" /> Now with AI-powered demand forecasting
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 border border-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6 sm:mb-8 animate-fade-in">
+              <Sparkles className="h-3.5 w-3.5" /> AI-powered inventory that thinks ahead
             </div>
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-foreground leading-[1.08] tracking-tight">
-              Smart Inventory{" "}
+              Stock Smarter.{" "}
               <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                Management
+                Sell Faster.
               </span>
               <br className="hidden sm:block" />
-              <span className="text-foreground"> for Growing Businesses</span>
+              <span className="text-foreground"> Grow Bigger.</span>
             </h1>
             <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mt-4 sm:mt-6 max-w-2xl mx-auto leading-relaxed">
-              Track stock across locations, sell through a built-in POS, manage suppliers, and let AI handle reordering — all in one platform built for SMEs.
+              The all-in-one inventory and POS platform that tracks every product, predicts what you'll need, and keeps your business running — from warehouse to checkout.
             </p>
             <div className="flex flex-wrap justify-center gap-3 mt-6 sm:mt-8">
               <Link to="/register">
@@ -180,9 +222,9 @@ export default function Landing() {
                   Start Free 30-Day Trial <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <a href="#product">
+              <a href="#download">
                 <Button size="lg" variant="outline" className="rounded-full px-6 sm:px-8 h-12 sm:h-13 gap-2 text-base">
-                  <Monitor className="h-4 w-4" /> See the Product
+                  <Download className="h-4 w-4" /> Download Apps
                 </Button>
               </a>
             </div>
@@ -199,9 +241,9 @@ export default function Landing() {
             <div className="rounded-xl sm:rounded-2xl overflow-hidden border shadow-2xl shadow-primary/10 mx-auto max-w-5xl">
               <div className="bg-card border-b px-4 py-2.5 flex items-center gap-2">
                 <div className="flex gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-accent/60" />
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="bg-muted/60 rounded-md px-4 py-1 text-[10px] text-muted-foreground font-mono">app.stokivo.com/dashboard</div>
@@ -219,7 +261,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats bar */}
+      {/* ═══════════════ STATS BAR ═══════════════ */}
       <section className="border-y bg-muted/20 py-8 sm:py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
@@ -233,12 +275,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Feature pills */}
-      <section className="py-8 sm:py-10">
+      {/* ═══════════════ FEATURE PILLS RIBBON ═══════════════ */}
+      <section className="py-8 sm:py-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-            {additionalFeatures.map((f) => (
-              <div key={f.label} className="flex items-center gap-2 rounded-full bg-card border px-4 py-2 text-xs sm:text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow">
+            {featurePills.map((f) => (
+              <div key={f.label} className="flex items-center gap-2 rounded-full bg-card border px-4 py-2 text-xs sm:text-sm font-medium text-foreground shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-default">
                 <f.icon className="h-3.5 w-3.5 text-primary" />
                 {f.label}
               </div>
@@ -247,31 +289,35 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Core Features */}
+      {/* ═══════════════ CORE FEATURES ═══════════════ */}
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
         <div className="text-center mb-10 sm:mb-14">
-          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">EVERYTHING YOU NEED</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">POWERFUL CAPABILITIES</p>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
-            One Platform for Your Entire Inventory
+            Everything You Need to Run Your Inventory
           </h2>
           <p className="text-muted-foreground mt-3 max-w-2xl mx-auto text-sm sm:text-base">
-            From receiving stock to selling products, Stokivo handles every step with smart automation and real-time visibility.
+            From barcode scanning to AI-driven reordering — every feature is designed to save you time and eliminate guesswork.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {coreFeatures.map((f) => (
-            <div key={f.title} className="group rounded-2xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
-              <div className="h-12 w-12 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                <f.icon className="h-6 w-6 text-primary" />
+            <div key={f.title} className="group relative rounded-2xl border bg-card p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
+              {/* Subtle gradient background */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className="relative">
+                <div className="h-12 w-12 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/10 group-hover:scale-110 transition-all duration-300">
+                  <f.icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-base font-display font-bold text-foreground mb-2">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
               </div>
-              <h3 className="text-base font-display font-bold text-foreground mb-2">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Product Showcase - tabbed screenshots */}
+      {/* ═══════════════ PRODUCT SHOWCASE ═══════════════ */}
       <section id="product" className="bg-muted/20 border-y py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
@@ -331,9 +377,9 @@ export default function Landing() {
               <div className="rounded-xl sm:rounded-2xl overflow-hidden border shadow-xl">
                 <div className="bg-card border-b px-3 py-2 flex items-center gap-2">
                   <div className="flex gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-red-400" />
-                    <div className="h-2 w-2 rounded-full bg-yellow-400" />
-                    <div className="h-2 w-2 rounded-full bg-green-400" />
+                    <div className="h-2 w-2 rounded-full bg-destructive/60" />
+                    <div className="h-2 w-2 rounded-full bg-warning/60" />
+                    <div className="h-2 w-2 rounded-full bg-accent/60" />
                   </div>
                 </div>
                 <img
@@ -350,29 +396,70 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Who Is It For */}
+      {/* ═══════════════ PLATFORM BREAKDOWN ═══════════════ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
-        <div className="text-center mb-10 sm:mb-12">
-          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">WHO IT'S FOR</p>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">Built for Every Type of Business</h2>
+        <div className="text-center mb-10 sm:mb-14">
+          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">ONE PLATFORM, THREE MODES</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
+            Manage on Web. Sell on Desktop & Mobile.
+          </h2>
           <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-sm sm:text-base">
-            Whether you run a single shop or manage multiple warehouses, Stokivo adapts to your workflow.
+            Your business brain lives on the web. Your point of sale lives wherever you need it.
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {whoIsItFor.map((item) => (
-            <div key={item.title} className="rounded-2xl border bg-card p-5 sm:p-6 hover:shadow-md hover:border-primary/15 transition-all group">
-              <div className="h-10 w-10 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                <item.icon className="h-5 w-5 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+          {platformFeatures.map((p, i) => (
+            <div
+              key={p.platform}
+              className={`rounded-2xl border-2 p-6 sm:p-7 transition-all hover:shadow-lg ${
+                i === 0
+                  ? "border-primary/30 bg-primary/[0.02]"
+                  : "border-border bg-card hover:border-primary/20"
+              }`}
+            >
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <p.icon className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-sm font-display font-bold text-foreground mb-1">{item.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              <h3 className="text-lg font-display font-bold text-foreground">{p.platform}</h3>
+              <p className="text-sm text-primary font-medium mb-4">{p.tagline}</p>
+              <ul className="space-y-2">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* ═══════════════ WHO IS IT FOR ═══════════════ */}
+      <section className="bg-muted/20 border-y py-14 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-12">
+            <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">WHO IT'S FOR</p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">Built for Every Type of Business</h2>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-sm sm:text-base">
+              Whether you run a single shop or manage multiple warehouses, Stokivo adapts to your workflow.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {whoIsItFor.map((item) => (
+              <div key={item.title} className="rounded-2xl border bg-card p-5 sm:p-6 hover:shadow-md hover:border-primary/15 transition-all group">
+                <div className="h-10 w-10 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+                  <item.icon className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="text-sm font-display font-bold text-foreground mb-1">{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ HOW IT WORKS ═══════════════ */}
       <section id="how-it-works" className="bg-primary text-primary-foreground py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
@@ -398,7 +485,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* ═══════════════ PRICING ═══════════════ */}
       <section id="pricing" className="py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
@@ -406,7 +493,6 @@ export default function Landing() {
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">Simple, Transparent Pricing</h2>
             <p className="text-muted-foreground mt-2 max-w-md mx-auto text-sm sm:text-base">Choose the plan that fits your business. Upgrade anytime.</p>
 
-            {/* Billing toggle — fixed */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8">
               <span className={`text-sm font-medium transition-colors ${!annual ? "text-foreground" : "text-muted-foreground"}`}>Monthly</span>
               <Switch
@@ -419,7 +505,7 @@ export default function Landing() {
                 Annual
               </span>
               {annual && (
-                <span className="inline-flex items-center rounded-full bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">
+                <span className="inline-flex items-center rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-xs font-semibold text-accent">
                   Save 20%
                 </span>
               )}
@@ -458,7 +544,7 @@ export default function Landing() {
                     {annual && (
                       <p className="text-xs text-muted-foreground mt-1">
                         <span className="line-through">£{plan.monthly}/month</span>{" "}
-                        <span className="text-green-600 font-medium">billed annually</span>
+                        <span className="text-accent font-medium">billed annually</span>
                       </p>
                     )}
                   </div>
@@ -489,7 +575,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonial + CTA */}
+      {/* ═══════════════ TESTIMONIAL + CTA ═══════════════ */}
       <section className="border-y bg-muted/20 py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
@@ -517,7 +603,7 @@ export default function Landing() {
                   Ready to Take Control of Your Inventory?
                 </h3>
                 <p className="text-primary-foreground/70 text-sm mt-3 leading-relaxed">
-                  Join thousands of SMEs across the UK who use Stokivo to manage stock, process sales, and grow their business smarter.
+                  Join thousands of SMEs who use Stokivo to manage stock, process sales, and grow their business smarter.
                 </p>
               </div>
               <div className="mt-6">
@@ -526,29 +612,41 @@ export default function Landing() {
                     Start Your Free Trial <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
-                <p className="text-[11px] text-primary-foreground/50 text-center mt-3">No credit card • 14 days free • Cancel anytime</p>
+                <p className="text-[11px] text-primary-foreground/50 text-center mt-3">No credit card • 30 days free • Cancel anytime</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Download Apps Section */}
+      {/* ═══════════════ DOWNLOAD APPS ═══════════════ */}
       <section id="download" className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
         <div className="text-center mb-10">
-          <div className="flex justify-center gap-3 mb-4">
-            <Monitor className="h-8 w-8 text-primary" />
-            <Smartphone className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">Download Stokivo Apps</h2>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-            Install the POS app on your desktop or mobile device. Manage your business on the web, sell anywhere with the apps.
+          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">AVAILABLE EVERYWHERE</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground mb-2">Download Stokivo Apps</h2>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+            Use the <strong className="text-foreground">web app</strong> for full business management.
+            Install the <strong className="text-foreground">desktop or mobile app</strong> as your dedicated POS terminal.
           </p>
         </div>
         <DownloadAppsSection variant="landing" />
+
+        {/* Hardware compatibility */}
+        <div className="mt-10 rounded-2xl border bg-muted/30 p-6 sm:p-8 text-center">
+          <div className="flex justify-center gap-3 mb-3">
+            <Cpu className="h-5 w-5 text-primary" />
+            <Wifi className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="text-base font-display font-bold text-foreground mb-2">Works With Your Hardware</h3>
+          <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Compatible with Android POS devices, including SUNMI terminals and standard retail hardware.
+            Stokivo works seamlessly with USB and Bluetooth barcode scanners, receipt printers, cash drawers, and touchscreen displays —
+            no proprietary equipment required.
+          </p>
+        </div>
       </section>
 
-      {/* Footer */}
+      {/* ═══════════════ FOOTER ═══════════════ */}
       <footer className="border-t py-8 sm:py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -557,12 +655,12 @@ export default function Landing() {
               <span className="font-display font-bold text-sm">Stokivo</span>
               <span className="text-[10px] text-muted-foreground">Smart Inventory Management</span>
             </div>
-            <div className="flex items-center gap-6 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-muted-foreground">
               <a href="#features" className="hover:text-foreground transition-colors">Features</a>
               <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
               <a href="#download" className="hover:text-foreground transition-colors">Download</a>
               <Link to="/login" className="hover:text-foreground transition-colors">Login</Link>
-              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
               <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             </div>
             <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Stokivo. All rights reserved.</p>
