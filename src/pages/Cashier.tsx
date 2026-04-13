@@ -384,6 +384,11 @@ export default function Cashier() {
     return matchesCategory && matchesSearch;
   });
 
+  // PIN GATE — require cashier authentication before using POS
+  if (!activeCashier) {
+    return <CashierPinScreen onAuthenticated={setActiveCashier} />;
+  }
+
   // SUCCESS SCREEN
   if (completedSale && !showReceipt) {
     return (
