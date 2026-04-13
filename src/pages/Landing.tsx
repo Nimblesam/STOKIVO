@@ -235,22 +235,22 @@ export default function Landing() {
         <div className="absolute top-40 -right-32 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 sm:pt-20 sm:pb-12 lg:pt-24 lg:pb-16 relative">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             {/* Left — Text */}
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 border border-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6 sm:mb-8 animate-fade-in">
-                <Sparkles className="h-3.5 w-3.5" /> AI-powered inventory that thinks ahead
+                <Brain className="h-3.5 w-3.5" /> AI monitors your stock 24/7
               </div>
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-display font-bold text-foreground leading-[1.08] tracking-tight">
-                Your Counter.{" "}
+                Stock Smarter.{" "}
                 <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                  Your Rules.
+                  Sell Faster.
                 </span>
                 <br />
-                <span className="text-foreground">One Tap to Sell.</span>
+                <span className="text-foreground">Grow Bigger.</span>
               </h1>
               <p className="text-base sm:text-lg lg:text-lg text-muted-foreground mt-4 sm:mt-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Turn any touchscreen into a powerful point of sale. Track inventory, ring up sales, and grow your business — all from one sleek terminal.
+                AI-powered inventory management that watches your stock levels, predicts demand, and keeps your shelves perfectly stocked — so you never miss a sale.
               </p>
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-6 sm:mt-8">
                 <Link to="/register">
@@ -271,26 +271,54 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Right — POS Terminal Image */}
-            <div className="relative flex justify-center lg:justify-end">
-              <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent rounded-3xl blur-2xl" />
-                <img
-                  src={posTerminalHero}
-                  alt="Modern touchscreen POS terminal running Stokivo checkout software in a retail store"
-                  className="relative rounded-2xl shadow-2xl shadow-primary/15 w-full max-w-md lg:max-w-lg"
-                  width={1024}
-                  height={1024}
-                />
-                {/* Floating badge */}
-                <div className="absolute -bottom-4 -left-4 sm:-bottom-5 sm:-left-6 bg-card border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-fade-in">
-                  <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                    <Zap className="h-5 w-5 text-accent" />
+            {/* Right — Auto-playing Carousel */}
+            <div className="relative">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 border border-primary/10">
+                {/* Slides */}
+                <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                  {heroSlides.map((slide, i) => (
+                    <img
+                      key={i}
+                      src={slide.image}
+                      alt={slide.caption}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === heroSlide ? "opacity-100" : "opacity-0"}`}
+                      width={1280}
+                      height={720}
+                    />
+                  ))}
+                  {/* Gradient overlay at bottom */}
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
+                  {/* Caption */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+                    <div>
+                      <span className="inline-block bg-primary/90 text-primary-foreground text-[10px] font-bold uppercase tracking-wider rounded px-2 py-0.5 mb-1">
+                        {heroSlides[heroSlide].label}
+                      </span>
+                      <p className="text-white text-sm font-medium drop-shadow-lg">
+                        {heroSlides[heroSlide].caption}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-display font-bold text-foreground">Ready in 5 min</p>
-                    <p className="text-xs text-muted-foreground">Plug in & start selling</p>
-                  </div>
+                </div>
+                {/* Dot indicators */}
+                <div className="absolute bottom-4 right-4 flex gap-1.5">
+                  {heroSlides.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setHeroSlide(i)}
+                      className={`h-2 rounded-full transition-all duration-300 ${i === heroSlide ? "w-6 bg-primary" : "w-2 bg-white/50 hover:bg-white/80"}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              {/* Floating badge */}
+              <div className="absolute -bottom-4 -left-4 sm:-bottom-5 sm:-left-6 bg-card border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-fade-in z-10">
+                <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Brain className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-display font-bold text-foreground">AI Stock Monitor</p>
+                  <p className="text-xs text-muted-foreground">Always watching, always learning</p>
                 </div>
               </div>
             </div>
@@ -322,7 +350,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* ═══════════════ STATS BAR ═══════════════ */}
       <section className="border-y bg-muted/20 py-8 sm:py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
