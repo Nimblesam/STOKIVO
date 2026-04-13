@@ -60,7 +60,7 @@ export interface SaleRecord {
 export default function Cashier() {
   const { user, profile, company, role } = useAuth();
   const { activeStoreId } = useStore();
-  const { setMode } = useAppMode();
+  
   const currency = (company?.currency || "GBP") as Currency;
   const isRestaurant = company?.business_type === "restaurant";
 
