@@ -90,11 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           // Fire-and-forget profile hydration for sign-in / token refresh events
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "MFA_CHALLENGE_VERIFIED") {
+            setProfileLoading(true);
             checkMfaStatus().then((needsMfa) => {
               if (!needsMfa) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user.id).finally(() => setProfileLoading(false));
+              } else {
+                setProfileLoading(false);
               }
-            }).catch(() => {});
+            }).catch(() => setProfileLoading(false));
           }
         } else {
           setProfile(null);
@@ -147,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, company, role, mfaRequired, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, profileLoading, profile, company, role, mfaRequired, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
