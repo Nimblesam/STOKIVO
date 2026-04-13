@@ -61,8 +61,8 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile, company, mfaRequired } = useAuth();
-  if (loading) {
+  const { user, loading, profile, company, mfaRequired, profileLoading } = useAuth();
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
