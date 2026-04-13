@@ -704,11 +704,6 @@ export default function Settings() {
                     </div>
                   )}
 
-                  {companyForm.custom_domain && (
-                    <div className="text-xs text-muted-foreground mt-2">
-                      Priority: Custom domain → Stokivo subdomain ({subdomain}.stokivo.com)
-                    </div>
-                  )}
                 </>
               )}
             </div>
