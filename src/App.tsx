@@ -102,8 +102,8 @@ function PosProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile, mfaRequired } = useAuth();
-  if (loading) return null;
+  const { user, loading, profile, mfaRequired, profileLoading } = useAuth();
+  if (loading || profileLoading) return null;
   if (mfaRequired) return <>{children}</>;
   if (user && profile?.company_id) return <Navigate to="/dashboard" replace />;
   if (user && !profile?.company_id) return <Navigate to="/onboarding" replace />;
