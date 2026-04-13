@@ -12,13 +12,38 @@ import {
   Cpu, Wifi, ShoppingBag, Receipt,
 } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
-import posTerminalHero from "@/assets/pos-terminal-hero.jpg";
+import heroSlidePos from "@/assets/hero-slide-pos.jpg";
+import heroSlideDashboard from "@/assets/hero-slide-dashboard.jpg";
+import heroSlideAi from "@/assets/hero-slide-ai.jpg";
+import heroSlideScanning from "@/assets/hero-slide-scanning.jpg";
 import dashboardPreview from "@/assets/dashboard-preview.jpg";
 import posPreview from "@/assets/pos-preview.jpg";
 import analyticsPreview from "@/assets/analytics-preview.jpg";
 import { DownloadAppsSection } from "@/components/DownloadAppsSection";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
+const heroSlides = [
+  {
+    image: heroSlidePos,
+    label: "Point of Sale",
+    caption: "Ring up sales instantly from any touchscreen",
+  },
+  {
+    image: heroSlideDashboard,
+    label: "Smart Dashboard",
+    caption: "Real-time stock levels & AI insights at a glance",
+  },
+  {
+    image: heroSlideAi,
+    label: "AI Monitoring",
+    caption: "24/7 AI watches your stock so you don't have to",
+  },
+  {
+    image: heroSlideScanning,
+    label: "Barcode Scanning",
+    caption: "Scan in, scan out — inventory updates in real time",
+  },
+];
 /* ─── DATA ─── */
 
 const coreFeatures = [
