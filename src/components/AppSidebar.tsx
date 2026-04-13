@@ -55,7 +55,7 @@ const financeNav: NavItem[] = [
 ];
 
 const systemNav: NavItem[] = [
-  { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"], requiredFeature: "rbac_advanced" },
+  { title: "Integrations", url: "/integrations", icon: Globe, roles: ["owner"] },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["owner", "manager"] },
 ];
 
