@@ -235,10 +235,18 @@ function ModeRouter() {
         </AdminProtectedRoute>
       } />
 
-      {/* POS route accessible in full mode too */}
+      {/* POS route accessible in full mode too — uses AppLayout so sidebar is visible */}
       <Route path="/pos/*" element={
         <ProtectedRoute>
-          <PosRoutes />
+          <AppLayout>
+            <Routes>
+              <Route index element={<Cashier />} />
+              <Route path="refunds" element={<PosRefunds />} />
+              <Route path="receipts" element={<PosReceipts />} />
+              <Route path="more" element={<PosMore />} />
+              <Route path="*" element={<Navigate to="/pos" replace />} />
+            </Routes>
+          </AppLayout>
         </ProtectedRoute>
       } />
 

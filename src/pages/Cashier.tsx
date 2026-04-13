@@ -369,9 +369,9 @@ export default function Cashier() {
   // Categories + filtering — deduplicate case-insensitively
   const categoryMap = new Map<string, string>();
   allProducts.forEach(p => {
-    if (p.category) {
-      const key = p.category.toLowerCase().trim();
-      if (!categoryMap.has(key)) categoryMap.set(key, p.category);
+    if (p.category && p.category.trim()) {
+      const key = p.category.trim().toLowerCase();
+      if (!categoryMap.has(key)) categoryMap.set(key, p.category.trim());
     }
   });
   const categories = Array.from(categoryMap.values());
@@ -451,9 +451,6 @@ export default function Cashier() {
         {/* Search + Status Bar */}
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setMode("full")} title="Back to Menu">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
