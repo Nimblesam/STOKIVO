@@ -189,7 +189,16 @@ const platformFeatures = [
 export default function Landing() {
   const [annual, setAnnual] = useState(false);
   const [activeShowcase, setActiveShowcase] = useState(0);
+  const [heroSlide, setHeroSlide] = useState(0);
 
+  const nextHeroSlide = useCallback(() => {
+    setHeroSlide((s) => (s + 1) % heroSlides.length);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(nextHeroSlide, 4000);
+    return () => clearInterval(id);
+  }, [nextHeroSlide]);
   return (
     <div className="min-h-screen bg-background">
       {/* ═══════════════ NAVIGATION ═══════════════ */}
