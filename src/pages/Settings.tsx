@@ -20,6 +20,7 @@ import {
   Building2, Users, CreditCard, Globe, Check, Loader2, Banknote, Star, Crown, Zap, UserPlus, ShieldCheck, Warehouse, AlertTriangle, Copy, CheckCircle2, Download, Trash2, Database, Store, Monitor,
 } from "lucide-react";
 import { WarehouseManager } from "@/components/WarehouseManager";
+import { CashierUserManager } from "@/components/CashierUserManager";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { StatusBadge } from "@/components/StatusBadge";
 import { usePlanFeatures, type Feature } from "@/hooks/use-plan-features";
@@ -535,8 +536,10 @@ export default function Settings() {
 
         {/* POS SETTINGS TAB */}
         {isOwner && (
-        <TabsContent value="pos">
+        <TabsContent value="pos" className="space-y-8">
           <PosSettingsTab companyId={company?.id} />
+          <Separator />
+          <CashierUserManager />
         </TabsContent>
         )}
 

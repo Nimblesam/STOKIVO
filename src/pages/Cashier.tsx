@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { CashierPinScreen } from "@/components/pos/CashierPinScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
@@ -64,6 +65,7 @@ export default function Cashier() {
   const currency = (company?.currency || "GBP") as Currency;
   const isRestaurant = company?.business_type === "restaurant";
 
+  const [activeCashier, setActiveCashier] = useState<{ id: string; name: string; role: string } | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPayment, setShowPayment] = useState(false);
@@ -185,7 +187,7 @@ export default function Cashier() {
     await openCashDrawer();
     const eventData = {
       company_id: profile.company_id, store_id: activeStoreId || null,
-      user_id: user.id, user_name: profile.full_name,
+      user_id: user.id, user_name: activeCashier?.name || profile.full_name,
       trigger_type: triggerType, sale_id: saleId || null,
     };
     if (navigator.onLine) {
@@ -246,7 +248,7 @@ export default function Cashier() {
         await queueOfflineSale({
           id: offlineSaleId,
           data: {
-            company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
+            company_id: profile.company_id, cashier_id: user.id, cashier_name: activeCashier.name,
             subtotal, discount: discountAmount, tax, total: grandTotal, change_given: changeGiven,
             status: isPayLater ? "pending" : "completed", store_id: activeStoreId,
             items: cart.map(i => ({ product_id: i.product_id, product_name: i.name, qty: i.qty, unit_price: i.unit_price, line_total: i.line_total })),
@@ -257,7 +259,7 @@ export default function Cashier() {
         if (hasCashPayment && posSettings.auto_open_drawer) await triggerCashDrawer("cash_payment", offlineSaleId);
         setCompletedSale({
           id: offlineSaleId, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
-          payments, change_given: changeGiven, cashier_name: profile.full_name,
+          payments, change_given: changeGiven, cashier_name: activeCashier.name,
           created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
         });
         setShowPayment(false); setCart([]); setDiscountAmount(0);
@@ -269,7 +271,7 @@ export default function Cashier() {
       const { data: sale, error: saleErr } = await supabase
         .from("sales")
         .insert({
-          company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
+          company_id: profile.company_id, cashier_id: user.id, cashier_name: activeCashier.name,
           subtotal, discount: discountAmount, tax, total: grandTotal, change_given: changeGiven,
           status: isPayLater ? "pending" : "completed", store_id: activeStoreId,
         })
@@ -299,7 +301,7 @@ export default function Cashier() {
         await supabase.from("products").update({ stock_qty: Math.max(0, currentStock - item.qty) }).eq("id", item.product_id);
         await supabase.from("inventory_movements").insert({
           company_id: profile.company_id, product_id: item.product_id, product_name: item.name,
-          type: "SALE" as const, qty: -item.qty, user_id: user.id, user_name: profile.full_name,
+          type: "SALE" as const, qty: -item.qty, user_id: user.id, user_name: activeCashier?.name || profile.full_name,
           note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`, store_id: activeStoreId,
         });
       }
@@ -348,7 +350,7 @@ export default function Cashier() {
 
       setCompletedSale({
         id: sale.id, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
-        payments, change_given: changeGiven, cashier_name: profile.full_name,
+        payments, change_given: changeGiven, cashier_name: activeCashier.name,
         created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
       });
       setShowPayment(false); setCart([]); setDiscountAmount(0);
@@ -381,6 +383,11 @@ export default function Cashier() {
     const matchesSearch = !searchQuery || p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || p.barcode?.includes(searchQuery);
     return matchesCategory && matchesSearch;
   });
+
+  // PIN GATE — require cashier authentication before using POS
+  if (!activeCashier) {
+    return <CashierPinScreen onAuthenticated={setActiveCashier} />;
+  }
 
   // SUCCESS SCREEN
   if (completedSale && !showReceipt) {
@@ -534,7 +541,15 @@ export default function Cashier() {
       <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card">
         {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold text-lg">Current Order</h2>
+          <div>
+            <h2 className="font-display font-bold text-lg">Current Order</h2>
+            <button
+              onClick={() => { setActiveCashier(null); clearCart(); }}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Cashier: <span className="font-medium text-foreground">{activeCashier.name}</span> · Switch
+            </button>
+          </div>
           <div className="flex items-center gap-1">
             {cart.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:text-destructive h-8 px-2">

@@ -241,6 +241,57 @@ export type Database = {
           },
         ]
       }
+      cashier_users: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          pin: string
+          role: string
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          pin: string
+          role?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          pin?: string
+          role?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashier_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashier_users_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
@@ -2012,6 +2063,10 @@ export type Database = {
       }
       user_has_store_access: {
         Args: { _store_id: string; _user_id: string }
+        Returns: boolean
+      }
+      verify_cashier_pin: {
+        Args: { _cashier_id: string; _company_id: string; _pin: string }
         Returns: boolean
       }
     }
