@@ -248,7 +248,7 @@ export default function Cashier() {
         await queueOfflineSale({
           id: offlineSaleId,
           data: {
-            company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
+            company_id: profile.company_id, cashier_id: user.id, cashier_name: activeCashier.name,
             subtotal, discount: discountAmount, tax, total: grandTotal, change_given: changeGiven,
             status: isPayLater ? "pending" : "completed", store_id: activeStoreId,
             items: cart.map(i => ({ product_id: i.product_id, product_name: i.name, qty: i.qty, unit_price: i.unit_price, line_total: i.line_total })),
@@ -259,7 +259,7 @@ export default function Cashier() {
         if (hasCashPayment && posSettings.auto_open_drawer) await triggerCashDrawer("cash_payment", offlineSaleId);
         setCompletedSale({
           id: offlineSaleId, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
-          payments, change_given: changeGiven, cashier_name: profile.full_name,
+          payments, change_given: changeGiven, cashier_name: activeCashier.name,
           created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
         });
         setShowPayment(false); setCart([]); setDiscountAmount(0);
@@ -271,7 +271,7 @@ export default function Cashier() {
       const { data: sale, error: saleErr } = await supabase
         .from("sales")
         .insert({
-          company_id: profile.company_id, cashier_id: user.id, cashier_name: profile.full_name,
+          company_id: profile.company_id, cashier_id: user.id, cashier_name: activeCashier.name,
           subtotal, discount: discountAmount, tax, total: grandTotal, change_given: changeGiven,
           status: isPayLater ? "pending" : "completed", store_id: activeStoreId,
         })
@@ -350,7 +350,7 @@ export default function Cashier() {
 
       setCompletedSale({
         id: sale.id, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
-        payments, change_given: changeGiven, cashier_name: profile.full_name,
+        payments, change_given: changeGiven, cashier_name: activeCashier.name,
         created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
       });
       setShowPayment(false); setCart([]); setDiscountAmount(0);
