@@ -623,26 +623,6 @@ export default function Settings() {
           <div className="space-y-6">
             <div className="stokivo-card p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <Globe className="h-5 w-5 text-accent" />
-                <div>
-                  <h3 className="font-display font-semibold text-foreground">Your Stokivo Subdomain</h3>
-                  <p className="text-sm text-muted-foreground">Available on all plans — automatically generated from your business name</p>
-                </div>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-3">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{subdomain}.stokivo.com</p>
-                  <p className="text-xs text-muted-foreground mt-1">This is your default store URL</p>
-                </div>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => copyToClipboard(`${subdomain}.stokivo.com`, "subdomain")}>
-                  {copiedRecord === "subdomain" ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copiedRecord === "subdomain" ? "Copied" : "Copy"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="stokivo-card p-6 space-y-4">
-              <div className="flex items-center gap-3">
                 <Crown className="h-5 w-5 text-amber-500" />
                 <div>
                   <h3 className="font-display font-semibold text-foreground">Custom Domain</h3>
