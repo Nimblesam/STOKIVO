@@ -77,6 +77,7 @@ export function CashierUserManager() {
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Name is required"); return; }
     if (!/^\d{4}$/.test(form.pin)) { toast.error("PIN must be exactly 4 digits"); return; }
+    if (!form.store_id) { toast.error("Please assign a store"); return; }
     if (!profile?.company_id) return;
 
     setSaving(true);
@@ -285,22 +286,20 @@ export function CashierUserManager() {
                 </SelectContent>
               </Select>
             </div>
-            {stores.length > 1 && (
-              <div>
-                <Label>Assigned Store</Label>
-                <Select value={form.store_id} onValueChange={(v) => setForm({ ...form, store_id: v })}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="All stores" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All stores</SelectItem>
-                    {stores.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div>
+              <Label>Assigned Store *</Label>
+              <Select value={form.store_id} onValueChange={(v) => setForm({ ...form, store_id: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a store" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Each cashier must be assigned to a specific store</p>
+            </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
                 Cancel
