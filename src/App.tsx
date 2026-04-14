@@ -170,7 +170,7 @@ function ModeRouter() {
     // POS mode: Login → Cashier directly, no onboarding
     return (
       <Routes>
-        <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
