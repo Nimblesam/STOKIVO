@@ -51,38 +51,75 @@ export function PayoutOnboarding({ stripeStatus, loadingStripeStatus, onRefreshS
   const [country, setCountry] = useState("GB");
   const [connecting, setConnecting] = useState(false);
 
+  // Verification progress helper
+  const getVerificationSteps = () => {
+    const steps = [
+      { label: "Account Connected", done: !!stripeStatus?.connected, icon: ShieldCheck },
+      { label: "Details Submitted", done: !!stripeStatus?.details_submitted, icon: User },
+      { label: "Charges Enabled", done: !!stripeStatus?.charges_enabled, icon: CreditCard },
+      { label: "Payouts Enabled", done: !!stripeStatus?.payouts_enabled, icon: Banknote },
+    ];
+    const completed = steps.filter(s => s.done).length;
+    return { steps, completed, total: steps.length, allDone: completed === steps.length };
+  };
+
   // Connected state
   if (stripeStatus?.connected && stripeStatus.details_submitted) {
+    const { steps: verifySteps, completed, total, allDone } = getVerificationSteps();
     return (
       <div className="space-y-6">
-        <div className="p-6 rounded-2xl border-2 border-green-500/30 bg-gradient-to-br from-green-500/5 to-green-500/10">
+        <div className={`p-6 rounded-2xl border-2 ${allDone ? "border-green-500/30 bg-gradient-to-br from-green-500/5 to-green-500/10" : "border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-yellow-500/10"}`}>
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-green-500/10 flex items-center justify-center">
-              <Check className="h-7 w-7 text-green-600" />
+            <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${allDone ? "bg-green-500/10" : "bg-yellow-500/10"}`}>
+              {allDone ? <Check className="h-7 w-7 text-green-600" /> : <Loader2 className="h-7 w-7 text-yellow-600 animate-spin" />}
             </div>
             <div className="flex-1">
-              <h3 className="font-display font-bold text-lg text-foreground">Payouts Active</h3>
-              <p className="text-sm text-muted-foreground">Your account is connected and ready to receive payments</p>
+              <h3 className="font-display font-bold text-lg text-foreground">
+                {allDone ? "Payouts Active" : "Verification In Progress"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {allDone ? "Your account is fully verified and ready to receive payments" : `${completed} of ${total} steps completed`}
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => handleConnectStripe()} disabled={connecting} className="gap-2">
               {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
               Manage
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-5">
-            <div className="p-3 rounded-xl bg-background border">
-              <p className="text-xs text-muted-foreground">Charges</p>
-              <p className="font-semibold text-sm mt-1 flex items-center gap-1.5">
-                {stripeStatus.charges_enabled ? <><Check className="h-3.5 w-3.5 text-green-600" /> Enabled</> : <><AlertCircle className="h-3.5 w-3.5 text-yellow-600" /> Pending</>}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-background border">
-              <p className="text-xs text-muted-foreground">Payouts</p>
-              <p className="font-semibold text-sm mt-1 flex items-center gap-1.5">
-                {stripeStatus.payouts_enabled ? <><Check className="h-3.5 w-3.5 text-green-600" /> Enabled</> : <><AlertCircle className="h-3.5 w-3.5 text-yellow-600" /> Pending</>}
-              </p>
+
+          {/* Progress bar */}
+          <div className="mt-4">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${allDone ? "bg-green-500" : "bg-yellow-500"}`}
+                style={{ width: `${(completed / total) * 100}%` }}
+              />
             </div>
           </div>
+
+          {/* Verification steps */}
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {verifySteps.map((s) => (
+              <div key={s.label} className="p-3 rounded-xl bg-background border flex items-center gap-3">
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${s.done ? "bg-green-500/10" : "bg-muted"}`}>
+                  {s.done ? <Check className="h-4 w-4 text-green-600" /> : <s.icon className="h-4 w-4 text-muted-foreground" />}
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold ${s.done ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</p>
+                  <p className={`text-[10px] ${s.done ? "text-green-600" : "text-muted-foreground"}`}>{s.done ? "Complete" : "Pending"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!allDone && (
+            <div className="mt-4 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Some verification steps are still pending. This usually completes within 1-2 business days. Click "Manage" to check or update your details.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
