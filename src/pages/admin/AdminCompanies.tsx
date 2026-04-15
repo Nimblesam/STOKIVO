@@ -210,9 +210,9 @@ export default function AdminCompanies() {
                 <TableCell>{getStatusBadge(c.status)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{format(new Date(c.created_at), "dd MMM yyyy")}</TableCell>
                 <TableCell>
-                  <Badge variant={c.stripe_account_id ? "default" : "secondary"} className="text-[10px]">
-                    {c.stripe_account_id ? "Connected" : "No"}
-                  </Badge>
+                  {c.stripe_account_id ? (
+                    <Badge variant="default" className="text-[10px]">Connected</Badge>
+                  ) : null}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

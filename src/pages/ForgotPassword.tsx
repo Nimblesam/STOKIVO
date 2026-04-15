@@ -68,10 +68,13 @@ export default function ForgotPassword() {
             </Button>
           )}
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <Link to="/login" className="text-sm text-muted-foreground hover:text-accent inline-flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" /> Back to login
             </Link>
+            <p className="text-xs text-muted-foreground">
+              Need help? Contact <a href="mailto:support@stokivo.com" className="text-accent hover:underline">support@stokivo.com</a>
+            </p>
           </div>
         </CardContent>
       </Card>
