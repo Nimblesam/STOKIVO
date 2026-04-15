@@ -174,6 +174,9 @@ export default function Register() {
           <p className="text-center text-sm text-muted-foreground mt-2">
             Already have an account? <Link to="/login" className="text-accent hover:underline font-medium">Sign in</Link>
           </p>
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            Need help? <a href="mailto:support@stokivo.com" className="text-accent hover:underline">support@stokivo.com</a>
+          </p>
         </div>
       </div>
     </div>
