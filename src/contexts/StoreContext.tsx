@@ -39,11 +39,13 @@ export const useStore = () => useContext(StoreContext);
 const ACTIVE_STORE_KEY = "stokivo_active_store";
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const { user, profile } = useAuth();
+  const { user, profile, role } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [assignments, setAssignments] = useState<{ store_id: string; can_switch_store: boolean }[]>([]);
   const [activeStoreId, setActiveStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isOwner = role === "owner";
 
   const fetchStoresAndAssignments = useCallback(async () => {
     if (!user || !profile?.company_id) {
@@ -73,50 +75,60 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setStores(storeList);
     setAssignments(assignList);
 
-    // Filter to only assigned stores
+    // Owners get access to ALL stores; other roles only see assigned stores
     const assignedIds = new Set(assignList.map((a) => a.store_id));
-    const assignedStores = storeList.filter((s) => assignedIds.has(s.id));
+    const accessibleStores = isOwner ? storeList : storeList.filter((s) => assignedIds.has(s.id));
 
     // Resolve active store
     const savedId = localStorage.getItem(ACTIVE_STORE_KEY);
     let resolvedId: string | null = null;
 
-    if (savedId && assignedIds.has(savedId)) {
+    const accessibleIds = new Set(accessibleStores.map((s) => s.id));
+
+    if (savedId && accessibleIds.has(savedId)) {
       resolvedId = savedId;
-    } else if (assignedStores.length > 0) {
-      // Pick default or first assigned
-      const defaultStore = assignedStores.find((s) => s.is_default);
-      resolvedId = defaultStore?.id || assignedStores[0].id;
+    } else if (accessibleStores.length > 0) {
+      const defaultStore = accessibleStores.find((s) => s.is_default);
+      resolvedId = defaultStore?.id || accessibleStores[0].id;
     }
 
     setActiveStoreId(resolvedId);
     if (resolvedId) localStorage.setItem(ACTIVE_STORE_KEY, resolvedId);
     setLoading(false);
-  }, [user, profile?.company_id]);
+  }, [user, profile?.company_id, isOwner]);
 
   useEffect(() => {
     fetchStoresAndAssignments();
   }, [fetchStoresAndAssignments]);
 
   const switchStore = useCallback((storeId: string) => {
-    const assignedIds = new Set(assignments.map((a) => a.store_id));
-    if (!assignedIds.has(storeId)) return;
+    // Owners can switch to any store
+    if (isOwner) {
+      const storeExists = stores.some((s) => s.id === storeId);
+      if (!storeExists) return;
+    } else {
+      const assignedIds = new Set(assignments.map((a) => a.store_id));
+      if (!assignedIds.has(storeId)) return;
+    }
 
     setActiveStoreId(storeId);
     localStorage.setItem(ACTIVE_STORE_KEY, storeId);
-  }, [assignments]);
+  }, [assignments, stores, isOwner]);
 
-  const canSwitchStore = assignments.some((a) => a.can_switch_store) && assignments.length > 1;
+  const canSwitchStore = isOwner
+    ? stores.length > 1
+    : assignments.some((a) => a.can_switch_store) && assignments.length > 1;
+
   const activeStore = stores.find((s) => s.id === activeStoreId) || null;
 
-  // Filter stores to only assigned ones for the switcher
+  // For the switcher: owners see all stores, others see only assigned
   const assignedIds = new Set(assignments.map((a) => a.store_id));
-  const assignedStores = stores.filter((s) => assignedIds.has(s.id));
+  const visibleStores = isOwner ? stores : stores.filter((s) => assignedIds.has(s.id));
 
   return (
     <StoreContext.Provider
       value={{
-        stores: assignedStores,
+        stores: visibleStores,
         activeStore,
         activeStoreId,
         canSwitchStore,
