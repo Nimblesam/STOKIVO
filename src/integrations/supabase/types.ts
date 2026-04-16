@@ -1539,6 +1539,12 @@ export type Database = {
           max_users: number
           plan: Database["public"]["Enums"]["plan_tier"]
           started_at: string
+          stripe_subscription_status: string | null
+          trial_ends_at: string | null
+          trial_expired_email_sent: boolean
+          trial_reminder_sent_1d: boolean
+          trial_reminder_sent_3d: boolean
+          trial_reminder_sent_7d: boolean
         }
         Insert: {
           company_id: string
@@ -1548,6 +1554,12 @@ export type Database = {
           max_users?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
           started_at?: string
+          stripe_subscription_status?: string | null
+          trial_ends_at?: string | null
+          trial_expired_email_sent?: boolean
+          trial_reminder_sent_1d?: boolean
+          trial_reminder_sent_3d?: boolean
+          trial_reminder_sent_7d?: boolean
         }
         Update: {
           company_id?: string
@@ -1557,6 +1569,12 @@ export type Database = {
           max_users?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
           started_at?: string
+          stripe_subscription_status?: string | null
+          trial_ends_at?: string | null
+          trial_expired_email_sent?: boolean
+          trial_reminder_sent_1d?: boolean
+          trial_reminder_sent_3d?: boolean
+          trial_reminder_sent_7d?: boolean
         }
         Relationships: [
           {
@@ -2019,6 +2037,17 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_trial_status: {
+        Args: { _user_id: string }
+        Returns: {
+          company_id: string
+          days_remaining: number
+          has_active_subscription: boolean
+          is_expired: boolean
+          is_trialing: boolean
+          trial_ends_at: string
+        }[]
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       get_user_default_store: { Args: { _user_id: string }; Returns: string }
