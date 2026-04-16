@@ -223,6 +223,11 @@ function ModeRouter() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/set-password" element={<SetPassword />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
+      <Route path="/trial-expired" element={
+        <ProtectedRoute>
+          <TrialExpired />
+        </ProtectedRoute>
+      } />
 
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
