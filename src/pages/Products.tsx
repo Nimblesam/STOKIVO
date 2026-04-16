@@ -392,7 +392,7 @@ export default function Products() {
 
       {/* Add/Edit Product Dialog */}
       <Dialog open={showDialog} onOpenChange={(o) => { if (!o) { setShowDialog(false); setEditingProduct(null); } else setShowDialog(true); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
           </DialogHeader>
