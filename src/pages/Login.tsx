@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import loginHero from "@/assets/login-hero.jpg";
-import { Package, BarChart3, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
+import { Package, BarChart3, CreditCard, ShieldCheck, Loader2, ArrowLeft } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -159,6 +159,12 @@ export default function Login() {
             </div>
           ) : (
             <>
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to home
+              </Link>
               <div className="mb-8">
                 <h2 className="text-2xl font-display font-bold text-foreground">Welcome back</h2>
                 <p className="text-sm text-muted-foreground mt-1">Sign in to manage your business</p>
