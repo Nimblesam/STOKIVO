@@ -663,7 +663,7 @@ export default function Landing() {
             <p className="text-xs text-muted-foreground">
               Designed and developed by{" "}
               <a
-                href="https://revolttech.co.uk"
+                href="https://revoltqa.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-foreground hover:text-primary transition-colors"
