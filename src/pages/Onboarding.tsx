@@ -94,7 +94,10 @@ export default function Onboarding() {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
-  if (profile?.company_id) return <Navigate to="/dashboard" replace />;
+  // If user already has a company, route based on approval status — never re-show onboarding
+  if (profile?.company_id) {
+    return <Navigate to="/pending-approval" replace />;
+  }
 
   const progress = ((step + 1) / STEPS.length) * 100;
 
