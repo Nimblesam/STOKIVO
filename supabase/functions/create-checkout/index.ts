@@ -51,14 +51,21 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/settings?tab=billing&success=true`,
       cancel_url: `${req.headers.get("origin")}/settings?tab=billing`,
-      payment_method_collection: "always",
     };
 
-    // Add 30-day free trial for new subscribers only
+    // Add 30-day free trial for new subscribers (no credit card required upfront)
     if (!hasActiveSubscription) {
+      sessionParams.payment_method_collection = "if_required";
       sessionParams.subscription_data = {
         trial_period_days: 30,
+        trial_settings: {
+          end_behavior: {
+            missing_payment_method: "cancel",
+          },
+        },
       };
+    } else {
+      sessionParams.payment_method_collection = "always";
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

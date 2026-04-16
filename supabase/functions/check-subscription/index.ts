@@ -39,22 +39,29 @@ serve(async (req) => {
     }
 
     const customerId = customers.data[0].id;
+    // Include both active and trialing subscriptions so trial users have full access
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      status: "all",
+      limit: 10,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
+    const validSub = subscriptions.data.find(
+      (s) => s.status === "active" || s.status === "trialing"
+    );
+    const hasActiveSub = !!validSub;
     let productId = null;
     let subscriptionEnd = null;
     let priceId = null;
+    let isTrialing = false;
+    let trialEnd = null;
 
-    if (hasActiveSub) {
-      const sub = subscriptions.data[0];
-      subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
-      productId = sub.items.data[0].price.product;
-      priceId = sub.items.data[0].price.id;
+    if (validSub) {
+      subscriptionEnd = new Date(validSub.current_period_end * 1000).toISOString();
+      productId = validSub.items.data[0].price.product;
+      priceId = validSub.items.data[0].price.id;
+      isTrialing = validSub.status === "trialing";
+      trialEnd = validSub.trial_end ? new Date(validSub.trial_end * 1000).toISOString() : null;
     }
 
     return new Response(JSON.stringify({
@@ -62,6 +69,8 @@ serve(async (req) => {
       product_id: productId,
       price_id: priceId,
       subscription_end: subscriptionEnd,
+      is_trialing: isTrialing,
+      trial_end: trialEnd,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
