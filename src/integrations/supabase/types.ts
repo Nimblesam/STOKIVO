@@ -1532,7 +1532,9 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          cancel_at_period_end: boolean
           company_id: string
+          current_period_end: string | null
           expires_at: string | null
           id: string
           max_products: number
@@ -1547,7 +1549,9 @@ export type Database = {
           trial_reminder_sent_7d: boolean
         }
         Insert: {
+          cancel_at_period_end?: boolean
           company_id: string
+          current_period_end?: string | null
           expires_at?: string | null
           id?: string
           max_products?: number
@@ -1562,7 +1566,9 @@ export type Database = {
           trial_reminder_sent_7d?: boolean
         }
         Update: {
+          cancel_at_period_end?: boolean
           company_id?: string
+          current_period_end?: string | null
           expires_at?: string | null
           id?: string
           max_products?: number
