@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppMode } from "@/contexts/AppModeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -13,38 +14,46 @@ import { Package, BarChart3, CreditCard, ShieldCheck, Loader2, ArrowLeft } from 
 export default function Login() {
   const navigate = useNavigate();
   const { isFullMode } = useAppMode();
+  const { mfaRequired, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
-  const [mfaStep, setMfaStep] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaVerifying, setMfaVerifying] = useState(false);
 
+  // Sync MFA factor when context detects MFA is required (covers refresh / direct landing).
+  useEffect(() => {
+    if (mfaRequired && !mfaFactorId) {
+      supabase.auth.mfa.listFactors().then(({ data }) => {
+        const verified = data?.totp?.filter(f => f.status === "verified") || [];
+        if (verified.length > 0) setMfaFactorId(verified[0].id);
+      });
+    }
+  }, [mfaRequired, mfaFactorId]);
+
+  const mfaStep = mfaRequired;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
-    // Check if MFA is required
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const verifiedFactors = factors?.totp?.filter(f => f.status === "verified") || [];
-    if (verifiedFactors.length > 0) {
-      setMfaFactorId(verifiedFactors[0].id);
-      setMfaStep(true);
-    } else {
-      navigate("/", { replace: true });
-    }
+    // AuthContext listener will detect whether MFA is needed.
+    // If MFA enrolled → mfaRequired flips to true → MFA panel renders.
+    // If no MFA → profile hydrates → PublicRoute redirects to dashboard.
+    setLoading(false);
   };
 
   const handleMfaVerify = async () => {
     if (mfaCode.length !== 6) { toast.error("Enter a 6-digit code"); return; }
+    if (!mfaFactorId) { toast.error("MFA factor not loaded. Please refresh and try again."); return; }
     setMfaVerifying(true);
     try {
       const { data: challenge, error: cErr } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
@@ -55,9 +64,13 @@ export default function Login() {
         code: mfaCode,
       });
       if (vErr) throw vErr;
+      toast.success("Verified — signing you in…");
+      // Force refresh of MFA + profile state, then navigate to dashboard.
+      await refreshProfile();
       navigate("/", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Invalid code. Please try again.");
+      setMfaCode("");
     }
     setMfaVerifying(false);
   };
