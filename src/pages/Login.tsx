@@ -166,7 +166,7 @@ export default function Login() {
               >
                 {mfaVerifying ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Verifying…</> : "Verify & Sign In"}
               </Button>
-              <Button variant="ghost" className="w-full" onClick={() => { setMfaStep(false); setMfaCode(""); supabase.auth.signOut(); }}>
+              <Button variant="ghost" className="w-full" onClick={async () => { setMfaCode(""); await supabase.auth.signOut(); }}>
                 Back to Login
               </Button>
             </div>
