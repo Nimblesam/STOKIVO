@@ -12,9 +12,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
   );
 
   try {
@@ -22,60 +23,92 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError) throw userError;
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated");
+
+    // Resolve company for this user
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("company_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const companyId = profile?.company_id ?? null;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    const customerId = customers.data[0].id;
-    // Include both active and trialing subscriptions so trial users have full access
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "all",
-      limit: 10,
-    });
-
-    const validSub = subscriptions.data.find(
-      (s) => s.status === "active" || s.status === "trialing"
-    );
-    const hasActiveSub = !!validSub;
-    let productId = null;
-    let subscriptionEnd = null;
-    let priceId = null;
+    let status: string | null = null;
+    let productId: string | null = null;
+    let priceId: string | null = null;
+    let subscriptionEnd: string | null = null;
+    let trialEnd: string | null = null;
+    let cancelAtPeriodEnd = false;
+    let hasActiveSub = false;
     let isTrialing = false;
-    let trialEnd = null;
 
-    if (validSub) {
-      subscriptionEnd = new Date(validSub.current_period_end * 1000).toISOString();
-      productId = validSub.items.data[0].price.product;
-      priceId = validSub.items.data[0].price.id;
-      isTrialing = validSub.status === "trialing";
-      trialEnd = validSub.trial_end ? new Date(validSub.trial_end * 1000).toISOString() : null;
+    if (customers.data.length > 0) {
+      const customerId = customers.data[0].id;
+      const subs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "all",
+        limit: 10,
+      });
+
+      // Prefer active/trialing; otherwise the most recent subscription
+      const validSub =
+        subs.data.find((s) => s.status === "active" || s.status === "trialing") ??
+        subs.data.sort((a, b) => b.created - a.created)[0];
+
+      if (validSub) {
+        status = validSub.status;
+        hasActiveSub = status === "active" || status === "trialing";
+        isTrialing = status === "trialing";
+        subscriptionEnd = validSub.current_period_end
+          ? new Date(validSub.current_period_end * 1000).toISOString()
+          : null;
+        trialEnd = validSub.trial_end
+          ? new Date(validSub.trial_end * 1000).toISOString()
+          : null;
+        cancelAtPeriodEnd = !!validSub.cancel_at_period_end;
+        productId = validSub.items.data[0].price.product as string;
+        priceId = validSub.items.data[0].price.id;
+      }
     }
 
-    return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      product_id: productId,
-      price_id: priceId,
-      subscription_end: subscriptionEnd,
-      is_trialing: isTrialing,
-      trial_end: trialEnd,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Sync to database — Stripe is the source of truth
+    if (companyId) {
+      await supabaseAdmin
+        .from("subscriptions")
+        .update({
+          stripe_subscription_status: status,
+          trial_ends_at: trialEnd,
+          current_period_end: subscriptionEnd,
+          cancel_at_period_end: cancelAtPeriodEnd,
+          expires_at: subscriptionEnd,
+        })
+        .eq("company_id", companyId);
+    }
+
+    return new Response(
+      JSON.stringify({
+        subscribed: hasActiveSub,
+        status,
+        product_id: productId,
+        price_id: priceId,
+        subscription_end: subscriptionEnd,
+        is_trialing: isTrialing,
+        trial_end: trialEnd,
+        cancel_at_period_end: cancelAtPeriodEnd,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
