@@ -40,6 +40,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SetPassword from "./pages/SetPassword";
 import Unsubscribe from "./pages/Unsubscribe";
+import TrialExpired from "./pages/TrialExpired";
+import { useTrialStatus } from "@/hooks/use-trial-status";
 import PosRefunds from "./pages/pos/PosRefunds";
 import PosReceipts from "./pages/pos/PosReceipts";
 import PosMore from "./pages/pos/PosMore";
@@ -62,6 +64,7 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile, company, mfaRequired, profileLoading, authResolved } = useAuth();
+  const trial = useTrialStatus();
   if (loading || profileLoading || !authResolved) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -78,6 +81,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (mfaRequired) return <Navigate to="/login" replace />;
   if (!profile?.company_id) return <Navigate to="/onboarding" replace />;
   if (company && company.status !== "active") return <Navigate to="/pending-approval" replace />;
+
+  // Lock features when trial has expired and there's no active subscription.
+  // Allow Settings (billing tab) so users can upgrade.
+  if (!trial.loading && trial.isExpired && !trial.hasActiveSubscription) {
+    const path = window.location.pathname;
+    const allowed = path.startsWith("/settings") || path === "/trial-expired";
+    if (!allowed) return <Navigate to="/trial-expired" replace />;
+  }
+
   return <>{children}</>;
 }
 
