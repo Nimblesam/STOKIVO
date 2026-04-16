@@ -39,7 +39,7 @@ export default function Login() {
       setMfaFactorId(verifiedFactors[0].id);
       setMfaStep(true);
     } else {
-      navigate("/dashboard");
+      navigate("/", { replace: true });
     }
   };
 
@@ -55,7 +55,7 @@ export default function Login() {
         code: mfaCode,
       });
       if (vErr) throw vErr;
-      navigate("/dashboard");
+      navigate("/", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Invalid code. Please try again.");
     }

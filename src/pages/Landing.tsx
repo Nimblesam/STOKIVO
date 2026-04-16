@@ -252,14 +252,14 @@ export default function Landing() {
               <p className="text-base sm:text-lg lg:text-lg text-muted-foreground mt-4 sm:mt-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 AI-powered inventory management that watches your stock levels, predicts demand, and keeps your shelves perfectly stocked — so you never miss a sale.
               </p>
-              <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-6 sm:mt-8">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center lg:justify-start gap-3 mt-6 sm:mt-8">
                 <Link to="/register">
-                  <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 sm:px-8 h-12 sm:h-13 font-semibold gap-2 text-base shadow-lg shadow-primary/20">
+                  <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 sm:px-8 h-12 sm:h-13 font-semibold gap-2 text-base shadow-lg shadow-primary/20">
                     Start Free 30-Day Trial <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <a href="#download">
-                  <Button size="lg" variant="outline" className="rounded-full px-6 sm:px-8 h-12 sm:h-13 gap-2 text-base">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full px-6 sm:px-8 h-12 sm:h-13 gap-2 text-base">
                     <Download className="h-4 w-4" /> Download Apps
                   </Button>
                 </a>
@@ -312,7 +312,7 @@ export default function Landing() {
                 </div>
               </div>
               {/* Floating badge */}
-              <div className="absolute -bottom-4 -left-4 sm:-bottom-5 sm:-left-6 bg-card border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-fade-in z-10">
+              <div className="relative mt-4 mx-auto max-w-xs sm:max-w-none sm:absolute sm:mt-0 sm:-bottom-5 sm:-left-6 bg-card border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-fade-in z-10">
                 <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
                   <Brain className="h-5 w-5 text-accent" />
                 </div>
@@ -330,7 +330,7 @@ export default function Landing() {
               <button
                 key={item.title}
                 onClick={() => setActiveShowcase(i)}
-                className={`flex items-center gap-2 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all ${
+                className={`flex min-w-[140px] sm:min-w-0 items-center justify-center gap-2 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all ${
                   activeShowcase === i
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                     : "bg-card border text-muted-foreground hover:text-foreground hover:border-primary/20"
@@ -361,8 +361,8 @@ export default function Landing() {
                   </span>
                 ))}
               </div>
-              <Link to="/register">
-                <Button className="rounded-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to="/register" className="block sm:inline-block">
+                <Button className="w-full sm:w-auto rounded-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                   Try It Free <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
