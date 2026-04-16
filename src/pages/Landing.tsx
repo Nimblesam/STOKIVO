@@ -391,7 +391,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ PLATFORM BREAKDOWN ═══════════════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <section id="product" className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 scroll-mt-20">
         <div className="text-center mb-10 sm:mb-14">
           <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">ONE PLATFORM, THREE MODES</p>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
@@ -430,7 +430,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ WHO IS IT FOR ═══════════════ */}
-      <section className="bg-muted/20 border-y py-14 sm:py-20">
+      <section id="features" className="bg-muted/20 border-y py-14 sm:py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
             <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">WHO IT'S FOR</p>
@@ -480,7 +480,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ PRICING ═══════════════ */}
-      <section id="pricing" className="py-14 sm:py-20">
+      <section id="pricing" className="py-14 sm:py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
             <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">PRICING</p>
@@ -614,7 +614,7 @@ export default function Landing() {
       </section>
 
       {/* ═══════════════ DOWNLOAD APPS ═══════════════ */}
-      <section id="download" className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+      <section id="download" className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">AVAILABLE EVERYWHERE</p>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground mb-2">Download Stokivo Apps</h2>
