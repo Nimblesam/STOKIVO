@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle, Mail, Phone, MessageCircle } from "lucide-react";
+import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle, Mail, Phone, MessageCircle, Trash2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { AdminPagination } from "@/components/admin/AdminPagination";
@@ -23,6 +23,8 @@ export default function AdminCompanies() {
   const [detail, setDetail] = useState<any | null>(null);
   const [usage, setUsage] = useState<any>(null);
   const [confirmAction, setConfirmAction] = useState<{ company: any; action: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -91,6 +93,32 @@ export default function AdminCompanies() {
     await logAction("company_plan_change", "company", companyId, { plan });
     toast({ title: "Plan updated on company and subscription" });
     load();
+  };
+
+  const deleteCompany = async (company: any) => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-company", {
+        body: { companyId: company.id },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "Failed to delete company");
+      }
+      toast({
+        title: "Company deleted",
+        description: `${company.name} and all associated data have been permanently removed.`,
+      });
+      setConfirmDelete(null);
+      load();
+    } catch (e: any) {
+      toast({
+        title: "Delete failed",
+        description: e?.message || "Could not delete company",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const viewDetails = async (company: any) => {
@@ -257,6 +285,17 @@ export default function AdminCompanies() {
                               <Unlock className="h-4 w-4 mr-2" />Re-activate
                             </DropdownMenuItem>
                           )}
+                          {c.status === "disabled" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setConfirmDelete(c)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />Delete Permanently
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </>
                       )}
                     </DropdownMenuContent>
@@ -404,6 +443,37 @@ export default function AdminCompanies() {
               }}
             >
               {confirmAction?.action === "suspended" ? "Suspend" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent Delete Confirmation */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open && !deleting) setConfirmDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete {confirmDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. It will permanently delete the company and all
+              associated data — including products, sales, invoices, customers, staff, stores,
+              warehouses, subscriptions, and user accounts that belong to this company.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDelete) deleteCompany(confirmDelete);
+              }}
+            >
+              {deleting ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting...</>
+              ) : (
+                <><Trash2 className="h-4 w-4 mr-2" />Delete Permanently</>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
