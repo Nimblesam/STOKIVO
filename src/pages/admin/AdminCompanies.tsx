@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle, Mail, Phone, MessageCircle } from "lucide-react";
+import { MoreHorizontal, Search, Eye, Ban, Unlock, CheckCircle, XCircle, Mail, Phone, MessageCircle, Trash2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { AdminPagination } from "@/components/admin/AdminPagination";
