@@ -11,8 +11,10 @@ export interface TemplateEntry {
 
 import { template as accountApproved } from './account-approved.tsx'
 import { template as welcome } from './welcome.tsx'
+import { template as trialReminder } from './trial-reminder.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'account-approved': accountApproved,
   'welcome': welcome,
+  'trial-reminder': trialReminder,
 }
