@@ -104,10 +104,16 @@ export default function PendingApproval() {
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          Need help? Contact us at{" "}
-          <a href="mailto:support@stokivo.com" className="text-primary underline">support@stokivo.com</a>
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            Need help? Email{" "}
+            <a href="mailto:support@stokivo.com" className="text-primary underline">support@stokivo.com</a>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Approval enquiries:{" "}
+            <a href="mailto:admin@stokivo.com" className="text-primary underline">admin@stokivo.com</a>
+          </p>
+        </div>
       </div>
     </div>
   );
