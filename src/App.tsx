@@ -61,8 +61,8 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile, company, mfaRequired, profileLoading } = useAuth();
-  if (loading || profileLoading) {
+  const { user, loading, profile, company, mfaRequired, profileLoading, authResolved } = useAuth();
+  if (loading || profileLoading || !authResolved) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
@@ -102,10 +102,12 @@ function PosProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, profile, mfaRequired, profileLoading } = useAuth();
-  if (loading || profileLoading) return null;
+  const { user, loading, profile, company, mfaRequired, profileLoading, authResolved } = useAuth();
+  if (loading || profileLoading || !authResolved) return null;
   if (mfaRequired) return <>{children}</>;
-  if (user && profile?.company_id) return <Navigate to="/dashboard" replace />;
+  if (user && profile?.company_id) {
+    return <Navigate to={company && company.status !== "active" ? "/pending-approval" : "/dashboard"} replace />;
+  }
   if (user && !profile?.company_id) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }

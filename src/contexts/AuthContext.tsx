@@ -7,6 +7,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   profileLoading: boolean;
+  authResolved: boolean;
   profile: { id: string; full_name: string; avatar_url: string | null; company_id: string | null } | null;
   company: { id: string; name: string; currency: string; brand_color: string; plan: string; status: string; stripe_account_id: string | null; country: string; business_type: string; logo_url: string | null } | null;
   role: string | null;
@@ -17,7 +18,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState>({
   user: null, session: null, loading: true, profileLoading: false, profile: null, company: null, role: null,
-  mfaRequired: false, signOut: async () => {}, refreshProfile: async () => {},
+  authResolved: false, mfaRequired: false, signOut: async () => {}, refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [authResolved, setAuthResolved] = useState(false);
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [company, setCompany] = useState<AuthState["company"]>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -57,25 +59,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from("profiles")
       .select("id, full_name, avatar_url, company_id")
       .eq("user_id", userId)
-      .single();
-    setProfile(prof);
+      .maybeSingle();
 
-    if (prof?.company_id) {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role, company_id, created_at")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .order("created_at", { ascending: true });
+
+    const primaryRole = roles?.[0] ?? null;
+    const effectiveCompanyId = prof?.company_id ?? primaryRole?.company_id ?? null;
+
+    setProfile(
+      prof
+        ? {
+            ...prof,
+            company_id: effectiveCompanyId,
+          }
+        : null
+    );
+
+    setRole(primaryRole?.role || null);
+
+    if (effectiveCompanyId) {
       const { data: comp } = await supabase
         .from("companies")
         .select("id, name, currency, brand_color, plan, status, stripe_account_id, country, business_type, logo_url")
-        .eq("id", prof.company_id)
-        .single();
+        .eq("id", effectiveCompanyId)
+        .maybeSingle();
       setCompany(comp);
-
-      const { data: ur } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("company_id", prof.company_id)
-        .single();
-      setRole(ur?.role || null);
+    } else {
+      setCompany(null);
     }
+
+    if (prof && !prof.company_id && effectiveCompanyId) {
+      void supabase
+        .from("profiles")
+        .update({ company_id: effectiveCompanyId })
+        .eq("id", prof.id);
+    }
+
+    setAuthResolved(true);
   };
 
   useEffect(() => {
@@ -104,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCompany(null);
           setRole(null);
           setMfaRequired(false);
+          setAuthResolved(true);
         }
       }
     );
@@ -117,10 +143,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const needsMfa = await checkMfaStatus();
           if (!needsMfa) {
             await fetchProfile(session.user.id);
+          } else {
+            setAuthResolved(true);
           }
         } catch {
           // Continue even if profile fetch fails
+          setAuthResolved(true);
         }
+      } else {
+        setAuthResolved(true);
       }
       setLoading(false);
       clearTimeout(timeout);
@@ -140,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCompany(null);
     setRole(null);
     setMfaRequired(false);
+    setAuthResolved(true);
   };
 
   const refreshProfile = async () => {
@@ -150,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profileLoading, profile, company, role, mfaRequired, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, profileLoading, authResolved, profile, company, role, mfaRequired, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

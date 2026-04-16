@@ -17,24 +17,59 @@ export default function ResetPassword() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    const resolveRecoverySession = async () => {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const queryParams = new URLSearchParams(window.location.search);
+
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        const hashType = hashParams.get("type");
+        const code = queryParams.get("code");
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error && mounted) {
+            setIsRecovery(true);
+          }
+        } else if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (!error && mounted) {
+            setIsRecovery(hashType === "recovery" || true);
+          }
+        } else if (hashType === "recovery") {
+          setIsRecovery(true);
+        } else {
+          const { data } = await supabase.auth.getSession();
+          if (data.session && mounted) {
+            setIsRecovery(true);
+          }
+        }
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    };
+
     // Listen for the PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
       }
-      setChecking(false);
     });
 
-    // Also check hash fragment for type=recovery
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
-      setIsRecovery(true);
-    }
-    
-    // Fallback timeout
-    const timer = setTimeout(() => setChecking(false), 3000);
+    void resolveRecoverySession();
+
+    const timer = setTimeout(() => {
+      if (mounted) setChecking(false);
+    }, 4000);
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       clearTimeout(timer);
     };
@@ -59,7 +94,8 @@ export default function ResetPassword() {
       toast.error(error.message);
     } else {
       toast.success("Password updated successfully!");
-      navigate("/dashboard");
+      await supabase.auth.signOut();
+      navigate("/login", { replace: true });
     }
   };
 
