@@ -4,6 +4,8 @@ import { Clock, LogOut, RefreshCw } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function PendingApproval() {
   const { signOut, refreshProfile, company, user, profile } = useAuth();
@@ -13,10 +15,41 @@ export default function PendingApproval() {
   useEffect(() => {
     if (!user) {
       navigate("/login", { replace: true });
-    } else if (company && company.status === "active") {
-      navigate("/dashboard", { replace: true });
+      return;
     }
-  }, [user, company, navigate]);
+    if (company && company.status === "active") {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
+    // If we have a company_id but the company is missing/pending, subscribe to live updates.
+    // When the platform admin approves, we'll auto-redirect to the dashboard.
+    if (!profile?.company_id) return;
+    const companyId = profile.company_id;
+    const channel = supabase
+      .channel(`company-status-${companyId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "companies", filter: `id=eq.${companyId}` },
+        async (payload) => {
+          const next = (payload.new as { status?: string } | null)?.status;
+          if (next === "active") {
+            toast.success("Your account has been approved! Welcome to Stokivo.");
+            await refreshProfile();
+            navigate("/dashboard", { replace: true });
+          }
+        }
+      )
+      .subscribe();
+
+    // Soft-poll every 30s as a backup in case realtime drops
+    const interval = setInterval(() => { void refreshProfile(); }, 30000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [user, company, profile?.company_id, navigate, refreshProfile]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -71,10 +104,16 @@ export default function PendingApproval() {
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          Need help? Contact us at{" "}
-          <a href="mailto:support@stokivo.com" className="text-primary underline">support@stokivo.com</a>
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            Need help? Email{" "}
+            <a href="mailto:support@stokivo.com" className="text-primary underline">support@stokivo.com</a>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Approval enquiries:{" "}
+            <a href="mailto:admin@stokivo.com" className="text-primary underline">admin@stokivo.com</a>
+          </p>
+        </div>
       </div>
     </div>
   );
