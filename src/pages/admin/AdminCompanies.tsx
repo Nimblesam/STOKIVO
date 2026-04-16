@@ -95,6 +95,32 @@ export default function AdminCompanies() {
     load();
   };
 
+  const deleteCompany = async (company: any) => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-company", {
+        body: { companyId: company.id },
+      });
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "Failed to delete company");
+      }
+      toast({
+        title: "Company deleted",
+        description: `${company.name} and all associated data have been permanently removed.`,
+      });
+      setConfirmDelete(null);
+      load();
+    } catch (e: any) {
+      toast({
+        title: "Delete failed",
+        description: e?.message || "Could not delete company",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const viewDetails = async (company: any) => {
     setDetail(company);
     const [products, users, invoices, sales, subscription] = await Promise.all([
