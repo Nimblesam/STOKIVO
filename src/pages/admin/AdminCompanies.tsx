@@ -285,6 +285,17 @@ export default function AdminCompanies() {
                               <Unlock className="h-4 w-4 mr-2" />Re-activate
                             </DropdownMenuItem>
                           )}
+                          {c.status === "disabled" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setConfirmDelete(c)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />Delete Permanently
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </>
                       )}
                     </DropdownMenuContent>
