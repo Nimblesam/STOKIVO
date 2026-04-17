@@ -37,14 +37,21 @@ jobs:
       - name: Build Vite app
         run: npm run build
 
-      # 🚨 HARD DISABLE ALL PUBLISHING
-      - name: Build Electron app
-        run: npx electron-builder --publish=never
+      # 🔴 HARD BLOCK: prevent ANY electron publish behavior
+      - name: Build Electron app (NO PUBLISH)
+        run: npx electron-builder build --dir
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
           GH_TOKEN: ""
           GITHUB_TOKEN: ""
-          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: "true"
+
+      # 🔵 Manually package ONLY final installers
+      - name: Package installers
+        run: npx electron-builder --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -54,7 +61,6 @@ jobs:
             release/*.exe
             release/*.dmg
             release/*.AppImage
-            release/*.zip
 
   release:
     needs: build
@@ -73,7 +79,6 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.dmg
             artifacts/**/*.AppImage
-            artifacts/**/*.zip
           generate_release_notes: true
           fail_on_unmatched_files: false
         env:
