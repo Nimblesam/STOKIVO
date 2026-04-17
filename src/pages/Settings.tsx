@@ -547,6 +547,14 @@ export default function Settings() {
         {isOwner && (
         <TabsContent value="payments">
           <div className="space-y-6">
+            {/* Header */}
+            <div className="space-y-1">
+              <h2 className="font-display font-bold text-xl text-foreground">Bank Accounts & Payouts</h2>
+              <p className="text-sm text-muted-foreground">
+                Connect one or more providers to accept customer payments and receive payouts to your bank.
+              </p>
+            </div>
+
             {/* Loading state */}
             {loadingStripeStatus && (
               <div className="stokivo-card p-6">
@@ -556,66 +564,124 @@ export default function Settings() {
               </div>
             )}
 
-            {/* Hero card when not connected or onboarding incomplete */}
-            {!loadingStripeStatus && (!stripeStatus?.connected || !stripeStatus?.details_submitted) && (
-              <div className="relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/5 via-background to-accent/10 p-8">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="relative z-10 text-center max-w-md mx-auto">
-                  <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                    <Banknote className="h-8 w-8 text-accent" />
+            {!loadingStripeStatus && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Stripe Connect Card */}
+                <div className="stokivo-card p-6 flex flex-col gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-11 w-11 rounded-xl bg-accent/10 flex items-center justify-center">
+                        <Banknote className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-semibold text-foreground">Stripe</h3>
+                        <p className="text-xs text-muted-foreground">Global card payments & payouts</p>
+                      </div>
+                    </div>
+                    {stripeStatus?.connected && stripeStatus?.details_submitted ? (
+                      <Badge variant="outline" className="gap-1 border-green-600/40 text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="h-3 w-3" /> Connected
+                      </Badge>
+                    ) : stripeStatus?.connected ? (
+                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                        Setup incomplete
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Not connected</Badge>
+                    )}
                   </div>
-                  <h2 className="font-display font-bold text-2xl text-foreground mb-2">
-                    {stripeStatus?.connected ? "Complete Your Setup" : "Start Receiving Payments"}
-                  </h2>
-                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                    {stripeStatus?.connected
-                      ? "Your account is created but setup is incomplete. Please finish connecting your bank account."
-                      : "Connect your bank account to accept customer payments directly. Funds are deposited automatically to your account."}
-                  </p>
+
+                  <ul className="text-xs text-muted-foreground space-y-1.5">
+                    <li className="flex items-center gap-2"><Check className="h-3 w-3 text-accent" /> International cards & digital wallets</li>
+                    <li className="flex items-center gap-2"><Check className="h-3 w-3 text-accent" /> Automatic bank payouts</li>
+                    <li className="flex items-center gap-2"><Check className="h-3 w-3 text-accent" /> Powered by Stripe Connect</li>
+                  </ul>
+
+                  {stripeStatus?.connected && stripeStatus?.details_submitted ? (
+                    <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Charges</span>
+                        <span className="font-medium">{stripeStatus.charges_enabled ? "Enabled" : "Pending"}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Payouts</span>
+                        <span className="font-medium">{stripeStatus.payouts_enabled ? "Enabled" : "Pending"}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 mt-auto"
+                      onClick={async () => {
+                        try {
+                          const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+                            body: { business_type: "individual", country: "GB" },
+                          });
+                          if (error) throw new Error(error.message || "Edge function error");
+                          if (data?.error) throw new Error(data.error);
+                          if (data?.url) window.location.href = data.url;
+                          else throw new Error("No redirect URL received");
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to start setup");
+                        }
+                      }}
+                    >
+                      <Banknote className="h-4 w-4" />
+                      {stripeStatus?.connected ? "Complete setup" : "Connect Stripe"}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Teya Card (scaffold — logic only, not yet live) */}
+                <div className="stokivo-card p-6 flex flex-col gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 h-24 w-24 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                  <div className="flex items-start justify-between gap-3 relative">
+                    <div className="flex items-center gap-3">
+                      <div className="h-11 w-11 rounded-xl bg-accent/10 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+                          Teya
+                          <Badge variant="secondary" className="text-[10px]">UK / EU</Badge>
+                        </h3>
+                        <p className="text-xs text-muted-foreground">In-store Tap to Pay & local settlement</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                      Coming soon
+                    </Badge>
+                  </div>
+
+                  <ul className="text-xs text-muted-foreground space-y-1.5 relative">
+                    <li className="flex items-center gap-2"><Check className="h-3 w-3 text-accent" /> Optimised for UK & European businesses</li>
+                    <li className="flex items-center gap-2"><Check className="h-3 w-3 text-accent" /> Fast next-day settlement</li>
+                    <li className="flex items-center gap-2"><Check className="h-3 w-3 text-accent" /> Tap to Pay on Android (in-store)</li>
+                  </ul>
+
                   <Button
-                    size="lg"
-                    className="h-14 px-8 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 gap-3 rounded-xl shadow-lg shadow-accent/20"
-                    onClick={async () => {
-                      try {
-                        const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
-                          body: { business_type: "individual", country: "GB" },
-                        });
-                        if (error) throw new Error(error.message || "Edge function error");
-                        if (data?.error) throw new Error(data.error);
-                        if (data?.url) window.location.href = data.url;
-                        else throw new Error("No redirect URL received");
-                      } catch (err: any) {
-                        toast.error(err.message || "Failed to start setup");
-                      }
+                    variant="outline"
+                    className="gap-2 mt-auto"
+                    onClick={() => {
+                      toast.info("Teya is being prepared", {
+                        description: "We're finalising the integration. You'll be able to connect your Teya account here soon.",
+                      });
                     }}
                   >
-                    <Banknote className="h-5 w-5" />
-                    Connect Bank Account
+                    <CreditCard className="h-4 w-4" />
+                    Notify me when available
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    Powered by Stripe · Secure · PCI Compliant
-                  </p>
                 </div>
               </div>
             )}
 
-            {/* Connected status */}
-            {!loadingStripeStatus && stripeStatus?.connected && stripeStatus?.details_submitted && (
-              <div className="stokivo-card p-6">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-semibold text-foreground">Bank Account Connected</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Charges: {stripeStatus.charges_enabled ? "Enabled ✓" : "Pending"} · Payouts: {stripeStatus.payouts_enabled ? "Enabled ✓" : "Pending"}
-                    </p>
-                  </div>
-                </div>
+            {/* Reassurance footer */}
+            <div className="rounded-xl border border-border/50 bg-muted/30 p-4 flex items-start gap-3">
+              <ShieldCheck className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-medium text-foreground">Secure by design.</span> Stokivo never stores your bank credentials.
+                Each provider handles its own KYC, payouts and PCI compliance. You can connect multiple providers and choose a default in <span className="font-medium text-foreground">Settings → POS</span>.
               </div>
-            )}
-
+            </div>
           </div>
         </TabsContent>
         )}
