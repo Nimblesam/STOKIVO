@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-# 🔒 Prevent duplicate runs / race conditions
+# Prevent race conditions
 concurrency:
   group: stokivo-release-${{ github.ref }}
   cancel-in-progress: true
@@ -43,15 +43,16 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+      # ✅ ONLY upload final installers (fixes your error)
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}-${{ github.ref_name }}
           path: |
-            dist-electron/*.exe
-            dist-electron/*.dmg
-            dist-electron/*.AppImage
-            dist-electron/*.zip
+            **/*.exe
+            **/*.dmg
+            **/*.AppImage
+            **/*.zip
 
   release:
     needs: build
@@ -63,16 +64,15 @@ jobs:
         with:
           path: artifacts
 
-      # 🧹 Flatten artifacts to avoid nested structure issues
-      - name: Prepare release files
-        run: |
-          mkdir release-files
-          find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} release-files/ \;
-
+      # ✅ Only release installer files
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release-files/*
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+            artifacts/**/*.AppImage
+            artifacts/**/*.zip
           generate_release_notes: true
           fail_on_unmatched_files: false
         env:
