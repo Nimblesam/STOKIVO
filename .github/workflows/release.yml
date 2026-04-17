@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -42,15 +43,16 @@ jobs:
         with:
           name: ${{ matrix.os }}-build
           path: |
-            dist/**
-            dist-electron/**
-            release/**
-            out/**
+            dist-electron/*.exe
+            dist-electron/*.dmg
+            dist-electron/*.AppImage
+            dist-electron/*.zip
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
 
     steps:
       - name: Download artifacts
