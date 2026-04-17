@@ -3,12 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Monitor, Loader2 } from "lucide-react";
+import { Monitor, Loader2, CreditCard, Globe, MapPin } from "lucide-react";
 import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+
+type ProviderId = "stripe" | "teya";
 
 export function PosSettingsTab({ companyId }: { companyId?: string }) {
   const [autoOpenDrawer, setAutoOpenDrawer] = useState(true);
+  const [paymentProvider, setPaymentProvider] = useState<ProviderId>("stripe");
+  const [providerStatus, setProviderStatus] = useState<Record<ProviderId, boolean>>({
+    stripe: true,
+    teya: false,
+  });
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -16,17 +25,36 @@ export function PosSettingsTab({ companyId }: { companyId?: string }) {
     if (!companyId) return;
     supabase.from("pos_settings").select("*").eq("company_id", companyId).maybeSingle()
       .then(({ data }) => {
-        if (data) setAutoOpenDrawer(data.auto_open_drawer);
+        if (data) {
+          setAutoOpenDrawer(data.auto_open_drawer);
+          const provider = (data as { payment_provider?: ProviderId }).payment_provider;
+          if (provider === "stripe" || provider === "teya") setPaymentProvider(provider);
+        }
         setLoaded(true);
       });
+
+    supabase.functions.invoke("payment-providers-status").then(({ data }) => {
+      const items = (data as { providers?: { id: ProviderId; configured: boolean }[] })?.providers;
+      if (items) {
+        setProviderStatus(items.reduce((acc, p) => {
+          acc[p.id] = p.configured;
+          return acc;
+        }, { stripe: false, teya: false } as Record<ProviderId, boolean>));
+      }
+    }).catch(() => {/* ignore — falls back to defaults */});
   }, [companyId]);
 
   const handleSave = async () => {
     if (!companyId) return;
+    if (paymentProvider === "teya" && !providerStatus.teya) {
+      toast.error("Teya is not yet configured. Add Teya credentials to enable it.");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("pos_settings").upsert({
       company_id: companyId,
       auto_open_drawer: autoOpenDrawer,
+      payment_provider: paymentProvider,
     } as any, { onConflict: "company_id" });
     setSaving(false);
     if (error) toast.error(error.message);
