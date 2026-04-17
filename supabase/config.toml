@@ -38,8 +38,10 @@ project_id = "lsujpckltpgrydbfuadt"
   [functions.handle-email-suppression]
     verify_jwt = false
   [functions.create-terminal-token]
-    verify_jwt = false
+    verify_jwt = true
   [functions.create-terminal-payment]
-    verify_jwt = false
+    verify_jwt = true
+  [functions.terminal-locations]
+    verify_jwt = true
   [functions.stripe-ledger-webhook]
     verify_jwt = false
