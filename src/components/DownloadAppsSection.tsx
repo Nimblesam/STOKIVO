@@ -1,36 +1,48 @@
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Smartphone, Apple, Download, ArrowRight, ExternalLink } from "lucide-react";
-import stokivoLogo from "@/assets/stokivo-logo.png";
+import { Monitor, Smartphone, Apple, Download, Terminal } from "lucide-react";
 
 interface DownloadAppsSectionProps {
   variant?: "landing" | "post-onboarding";
 }
 
+const RELEASE_BASE = "https://github.com/Nimblesam/wholesale-hub/releases/latest/download";
+
 const apps = [
   {
-    platform: "Windows",
-    icon: Monitor,
-    description: "Desktop POS terminal for Windows 10/11",
-    fileType: ".exe",
-    downloadUrl: "#", // Placeholder — will be updated with actual download URL
+    platform: "macOS",
+    cta: "Download for Mac",
+    icon: Apple,
+    description: "Desktop POS for Mac (Intel & Apple Silicon)",
+    fileType: "DMG",
+    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.dmg`,
     available: true,
   },
   {
-    platform: "macOS",
-    icon: Apple,
-    description: "Desktop POS terminal for Mac (Intel & Apple Silicon)",
-    fileType: ".dmg",
-    downloadUrl: "#",
+    platform: "Windows",
+    cta: "Download for Windows",
+    icon: Monitor,
+    description: "Desktop POS for Windows 10/11",
+    fileType: "EXE",
+    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.exe`,
+    available: true,
+  },
+  {
+    platform: "Linux",
+    cta: "Download for Linux",
+    icon: Terminal,
+    description: "Desktop POS as portable AppImage",
+    fileType: "AppImage",
+    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.AppImage`,
     available: true,
   },
   {
     platform: "Android",
+    cta: "Download for Android",
     icon: Smartphone,
     description: "Mobile POS for Android phones & tablets",
-    fileType: "APK / Play Store",
-    downloadUrl: "#",
+    fileType: "APK",
+    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.apk`,
     available: true,
   },
 ];
