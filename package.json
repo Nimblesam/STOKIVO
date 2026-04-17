@@ -23,35 +23,46 @@
   },
 
   "build": {
-  "appId": "com.stokivo.app",
-  "productName": "Stokivo",
+    "appId": "com.stokivo.app",
+    "productName": "Stokivo",
 
-  "publish": null,
+    "publish": {
+      "provider": "generic",
+      "url": ""
+    },
 
-  "artifactName": "Stokivo-${version}-${os}-${arch}.${ext}",
+    "artifactName": "Stokivo-${version}-${os}-${arch}.${ext}",
 
-  "directories": {
-    "output": "release"
-  },
+    "directories": {
+      "output": "release"
+    },
 
-  "files": [
-    "dist/**/*",
-    "electron/**/*",
-    "package.json"
-  ],
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
 
-  "mac": {
-    "target": "dmg",
-    "identity": null
-  },
+    "mac": {
+      "target": "dmg",
+      "identity": null,
+      "publish": null
+    },
 
-  "win": {
-    "target": "nsis"
-  },
+    "win": {
+      "target": "nsis",
+      "publish": null
+    },
 
-  "linux": {
-    "target": "AppImage"
-  }
+    "linux": {
+      "target": "AppImage",
+      "publish": null
+    },
+
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true
+    }
   },
 
   "dependencies": {
