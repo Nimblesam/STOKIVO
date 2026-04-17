@@ -7,18 +7,37 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+node_modules/
+
+# Vite / Frontend builds
+dist/
+dist-ssr/
+
+# Electron builds (CRITICAL)
+release/
+out/
+dist-electron/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Optional local files
 *.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# OS files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# TypeScript / build artifacts
+*.tsbuildinfo
+
+# Optional package manager files
+.pnpm-store/
