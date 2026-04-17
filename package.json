@@ -26,11 +26,6 @@
     "appId": "com.stokivo.app",
     "productName": "Stokivo",
 
-    "publish": {
-      "provider": "generic",
-      "url": ""
-    },
-
     "artifactName": "Stokivo-${version}-${os}-${arch}.${ext}",
 
     "directories": {
@@ -45,24 +40,23 @@
 
     "mac": {
       "target": "dmg",
-      "identity": null,
-      "publish": null
+      "identity": null
     },
 
     "win": {
-      "target": "nsis",
-      "publish": null
+      "target": "nsis"
     },
 
     "linux": {
-      "target": "AppImage",
-      "publish": null
+      "target": "AppImage"
     },
 
-    "nsis": {
-      "oneClick": false,
-      "perMachine": true
-    }
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://example.com"
+      }
+    ]
   },
 
   "dependencies": {
