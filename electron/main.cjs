@@ -11,12 +11,13 @@ function createWindow() {
     },
   });
 
-  if (app.isPackaged) {
-    // ✅ PRODUCTION (Mac / Windows app)
-    win.loadFile(path.join(__dirname, "../dist/index.html"));
-  } else {
-    // ✅ DEVELOPMENT
+  const isDev = !app.isPackaged;
+
+  if (isDev) {
+    // 🔥 USE THIS (your known working state)
     win.loadURL("http://localhost:5173");
+  } else {
+    win.loadFile(path.join(__dirname, "../dist/index.html"));
   }
 }
 
