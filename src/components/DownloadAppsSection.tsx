@@ -42,7 +42,7 @@ const apps = [
     icon: Smartphone,
     description: "Mobile POS for Android phones & tablets",
     fileType: "APK",
-    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.apk`,
+    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/v0.0.1/app-debug.apk",
     available: true,
   },
 ];
