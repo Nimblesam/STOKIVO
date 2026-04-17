@@ -15,7 +15,7 @@ const apps = [
     icon: Apple,
     description: "Desktop POS for Mac (Intel & Apple Silicon)",
     fileType: "DMG",
-    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.dmg`,
+    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/untagged-35029bc6db3c6f367bbe/Stokivo-0.0.4-mac-arm64.dmg",
     available: true,
   },
   {
@@ -24,7 +24,7 @@ const apps = [
     icon: Monitor,
     description: "Desktop POS for Windows 10/11",
     fileType: "EXE",
-    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.exe`,
+    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/untagged-35029bc6db3c6f367bbe/Stokivo-0.0.4-win-x64.exe",
     available: true,
   },
   {
@@ -33,7 +33,7 @@ const apps = [
     icon: Terminal,
     description: "Desktop POS as portable AppImage",
     fileType: "AppImage",
-    downloadUrl: `${RELEASE_BASE}/Stokivo-0.0.2.AppImage`,
+    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/untagged-35029bc6db3c6f367bbe/Stokivo-0.0.4-linux-x86_64.AppImage",
     available: true,
   },
   {
