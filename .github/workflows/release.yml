@@ -13,13 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+  build-macos:
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repo
@@ -37,49 +32,71 @@ jobs:
       - name: Build Vite app
         run: npm run build
 
-      # 🔴 HARD BLOCK: prevent ANY electron publish behavior
-      - name: Build Electron app (NO PUBLISH)
-        run: npx electron-builder build --dir
+      - name: Build macOS Electron (NO PUBLISH)
+        run: npx electron-builder --mac --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          GH_TOKEN: ""
-          GITHUB_TOKEN: ""
 
-      # 🔵 Manually package ONLY final installers
-      - name: Package installers
-        run: npx electron-builder --publish never
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          GH_TOKEN: ""
-          GITHUB_TOKEN: ""
-
-      - name: Upload artifacts
+      - name: Upload mac artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}-${{ github.ref_name }}
-          path: |
-            release/*.exe
-            release/*.dmg
-            release/*.AppImage
+          name: mac-artifacts
+          path: release/**
 
-  release:
-    needs: build
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite app
+        run: npm run build
+
+      - name: Build Windows Electron (NO PUBLISH)
+        run: npx electron-builder --win --publish never
+
+      - name: Upload win artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-artifacts
+          path: release/**
+
+  build-linux:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          files: |
-            artifacts/**/*.exe
-            artifacts/**/*.dmg
-            artifacts/**/*.AppImage
-          generate_release_notes: true
-          fail_on_unmatched_files: false
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite app
+        run: npm run build
+
+      - name: Build Linux Electron (PUBLISH ONCE)
+        run: npx electron-builder --linux --publish always
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: release/**
