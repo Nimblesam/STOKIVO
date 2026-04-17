@@ -2,8 +2,6 @@ name: Build & Release Stokivo
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
 
