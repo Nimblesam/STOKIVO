@@ -1,7 +1,8 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppMode } from "@/contexts/AppModeContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor } from "lucide-react";
@@ -25,7 +26,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { setMode } = useAppMode();
-  const isMobile = window.innerWidth < 768;
+  const isMobile = useIsMobile();
 
   const isActive = (path: string) => location.pathname === path;
 
