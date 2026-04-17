@@ -65,7 +65,7 @@ export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSection
         </div>
       )}
 
-      <div className={`grid gap-4 ${isPostOnboarding ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 md:grid-cols-3"}`}>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {apps.map((app) => (
           <Card key={app.platform} className="overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-5 flex flex-col items-center text-center gap-3">
@@ -76,19 +76,13 @@ export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSection
                 <h3 className="font-display font-bold text-foreground text-base">{app.platform}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{app.description}</p>
               </div>
-              <Button
-                className="w-full gap-2 rounded-full mt-auto"
-                variant={app.available ? "default" : "outline"}
-                disabled={!app.available}
-                onClick={() => {
-                  if (app.downloadUrl !== "#") {
-                    window.open(app.downloadUrl, "_blank");
-                  }
-                }}
-              >
-                <Download className="h-4 w-4" />
-                {app.available ? `Download ${app.fileType}` : "Coming Soon"}
+              <Button asChild className="w-full gap-2 rounded-full mt-auto">
+                <a href={app.downloadUrl} download rel="noopener noreferrer">
+                  <Download className="h-4 w-4" />
+                  {app.cta}
+                </a>
               </Button>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{app.fileType}</span>
             </CardContent>
           </Card>
         ))}
