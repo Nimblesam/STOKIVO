@@ -45,3 +45,5 @@ project_id = "lsujpckltpgrydbfuadt"
     verify_jwt = true
   [functions.stripe-ledger-webhook]
     verify_jwt = false
+  [functions.teya-webhook]
+    verify_jwt = false
