@@ -89,6 +89,67 @@ export function PosSettingsTab({ companyId }: { companyId?: string }) {
           </div>
           <PrinterStatusIndicator />
         </div>
+
+        <div className="rounded-xl bg-muted/50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-accent" />
+            <Label className="text-sm font-medium">Default payment provider</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Used for invoice payment links and Tap to Pay at the cashier.
+          </p>
+          <RadioGroup
+            value={paymentProvider}
+            onValueChange={(v) => setPaymentProvider(v as ProviderId)}
+            className="grid gap-2"
+          >
+            <label
+              htmlFor="provider-stripe"
+              className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 cursor-pointer hover:border-accent/50 transition-colors"
+            >
+              <RadioGroupItem value="stripe" id="provider-stripe" className="mt-1" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium">Stripe</span>
+                  <Badge variant="secondary" className="gap-1 text-[10px]">
+                    <Globe className="h-3 w-3" /> Global
+                  </Badge>
+                  {providerStatus.stripe && (
+                    <Badge variant="outline" className="text-[10px]">Active</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  International cards and digital wallets. Best for global online payments.
+                </p>
+              </div>
+            </label>
+
+            <label
+              htmlFor="provider-teya"
+              className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 cursor-pointer hover:border-accent/50 transition-colors"
+            >
+              <RadioGroupItem value="teya" id="provider-teya" className="mt-1" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium">Teya</span>
+                  <Badge variant="secondary" className="gap-1 text-[10px]">
+                    <MapPin className="h-3 w-3" /> UK / EU
+                  </Badge>
+                  {providerStatus.teya ? (
+                    <Badge variant="outline" className="text-[10px]">Active</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                      Setup pending
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Optimised for UK & European businesses. Fast settlement and business-friendly fees.
+                </p>
+              </div>
+            </label>
+          </RadioGroup>
+        </div>
       </div>
 
       <Button onClick={handleSave} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving}>
