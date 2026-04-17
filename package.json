@@ -4,41 +4,53 @@
   "version": "0.0.2",
   "type": "module",
   "main": "electron/main.cjs",
+
   "scripts": {
     "dev": "vite",
     "dev:electron": "electron .",
     "build": "vite build",
     "preview": "vite preview",
+
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:linux": "npm run build && electron-builder --linux",
+
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"
   },
+
   "build": {
     "appId": "com.stokivo.app",
     "productName": "Stokivo",
+
+    "artifactName": "Stokivo-${version}-${os}-${arch}.${ext}",
+
     "directories": {
       "output": "release"
     },
+
     "files": [
       "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
+
     "mac": {
       "target": "dmg",
       "identity": null
     },
+
     "win": {
       "target": "nsis"
     },
+
     "linux": {
       "target": "AppImage"
     }
   },
+
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@lovable.dev/cloud-auth-js": "^1.0.0",
@@ -93,6 +105,7 @@
     "vaul": "^0.9.9",
     "zod": "^3.25.76"
   },
+
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
