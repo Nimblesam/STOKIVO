@@ -172,12 +172,14 @@ export default function Login() {
             </div>
           ) : (
             <>
-              <Link
-                to="/"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-              >
-                <ArrowLeft className="h-4 w-4" /> Back to home
-              </Link>
+              {isFullMode && (
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Back to home
+                </Link>
+              )}
               <div className="mb-8">
                 <h2 className="text-2xl font-display font-bold text-foreground">Welcome back</h2>
                 <p className="text-sm text-muted-foreground mt-1">Sign in to manage your business</p>
@@ -230,10 +232,12 @@ export default function Login() {
                   </Button>
                 </form>
 
-                <p className="text-center text-sm text-muted-foreground">
-                  Don't have an account?{" "}
-                  <Link to="/register" className="text-accent hover:underline font-medium">Create one free</Link>
-                </p>
+                {isFullMode && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Don't have an account?{" "}
+                    <Link to="/register" className="text-accent hover:underline font-medium">Create one free</Link>
+                  </p>
+                )}
               </div>
             </>
           )}
