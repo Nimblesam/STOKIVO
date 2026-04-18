@@ -108,6 +108,9 @@ export function PosLayout({ children }: PosLayoutProps) {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto">
+          <div className="px-4 pt-3">
+            <LowStockNotification />
+          </div>
           {children}
         </main>
       </div>
@@ -156,6 +159,9 @@ export function PosLayout({ children }: PosLayoutProps) {
 
       {/* Content */}
       <main className="flex-1 overflow-auto pb-16">
+        <div className="px-3 pt-2">
+          <LowStockNotification />
+        </div>
         {children}
       </main>
 
