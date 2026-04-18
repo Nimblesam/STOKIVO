@@ -222,15 +222,35 @@ export default function Cashier() {
     toast.success(`${product.name} added`, { duration: 1000 });
   }, []);
 
-  // Global barcode scan listener
+  // Global barcode scan listener (HID + SUNMI native)
   useEffect(() => {
     const handler = (e: Event) => {
       const product = (e as CustomEvent).detail;
       if (product) addToCart(product);
     };
     window.addEventListener("global-barcode-scan", handler);
-    return () => window.removeEventListener("global-barcode-scan", handler);
-  }, [addToCart]);
+
+    // SUNMI native scanner — look up product by barcode then dispatch
+    const sunmiHandler = async (e: Event) => {
+      const barcode = (e as CustomEvent).detail?.barcode;
+      if (!barcode || !profile?.company_id) return;
+      let q = supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty, image_url")
+        .eq("company_id", profile.company_id)
+        .eq("barcode", barcode);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q.maybeSingle();
+      if (data) addToCart(data as any);
+      else toast.error(`Unknown barcode: ${barcode}`);
+    };
+    window.addEventListener("sunmi-barcode", sunmiHandler);
+
+    return () => {
+      window.removeEventListener("global-barcode-scan", handler);
+      window.removeEventListener("sunmi-barcode", sunmiHandler);
+    };
+  }, [addToCart, profile?.company_id, activeStoreId]);
 
   const updateQty = (productId: string, delta: number) => {
     setCart((prev) =>
