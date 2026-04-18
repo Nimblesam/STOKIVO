@@ -8,6 +8,8 @@ import type { InvoiceStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
+import { renderNodeToPdfBlob, uploadInvoicePdf } from "@/lib/invoice-pdf";
+import { createRoot } from "react-dom/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
