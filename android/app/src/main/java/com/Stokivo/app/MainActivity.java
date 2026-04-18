@@ -5,11 +5,14 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
+import com.Stokivo.app.sunmi.SunmiPlugin;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Register custom plugins BEFORE super.onCreate
+        registerPlugin(SunmiPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Enable edge-to-edge layout
@@ -17,15 +20,9 @@ public class MainActivity extends BridgeActivity {
 
         // Handle window insets for the root view
         ViewCompat.setOnApplyWindowInsetsListener(getBridge().getWebView(), (v, windowInsets) -> {
-            // Get system bar insets
             int bottomInset = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
-
-            // Apply bottom padding to WebView to account for system navigation bar
-            // Add extra 16dp for better UX spacing
             int extraSpacing = (int) (16 * getResources().getDisplayMetrics().density);
             v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), bottomInset + extraSpacing);
-
-            // Return consumed insets
             return WindowInsetsCompat.CONSUMED;
         });
     }
