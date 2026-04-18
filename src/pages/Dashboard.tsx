@@ -155,12 +155,43 @@ export default function Dashboard() {
       <SmartSuggestions />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <KPICard title="Stock Value" value={formatMoney(totalStockValue, currency)} icon={<Package className="h-4 w-4" />} subtitle={`${products.length} products`} />
-        <KPICard title="Sales Revenue" value={formatMoney(monthlyRevenue, currency)} icon={<TrendingUp className="h-4 w-4" />} subtitle={`${sales.length} sales`} />
-        <KPICard title="Profit Margin" value={`${avgMargin.toFixed(1)}%`} icon={<DollarSign className="h-4 w-4" />} variant="success" />
-        <KPICard title="Credit Owed" value={formatMoney(outstandingPayments, currency)} icon={<CreditCard className="h-4 w-4" />} variant={outstandingPayments > 0 ? "warning" : "default"} />
-        <KPICard title="Low Stock" value={String(lowStockCount)} icon={<AlertTriangle className="h-4 w-4" />} variant={lowStockCount > 0 ? "critical" : "default"} />
-        <KPICard title="Price Changes" value={String(priceChangeCount)} icon={<TrendingDown className="h-4 w-4" />} variant={priceChangeCount > 0 ? "warning" : "default"} />
+        <KPICard
+          title="Stock Value (Cost)"
+          value={formatMoney(stockValueAtCost, currency)}
+          icon={<Package className="h-4 w-4" />}
+          subtitle={`${products.length} products`}
+        />
+        <KPICard
+          title="Retail Value"
+          value={formatMoney(stockValueAtRetail, currency)}
+          icon={<ShoppingBag className="h-4 w-4" />}
+          subtitle="Potential revenue"
+        />
+        <KPICard
+          title="Revenue (This Month)"
+          value={formatMoney(monthlyRevenue, currency)}
+          icon={<TrendingUp className="h-4 w-4" />}
+          subtitle={`${monthSales.length} sales`}
+        />
+        <KPICard
+          title="Profit Margin"
+          value={`${avgMargin.toFixed(1)}%`}
+          icon={<DollarSign className="h-4 w-4" />}
+          variant="success"
+          subtitle="Stock-weighted"
+        />
+        <KPICard
+          title="Credit Owed"
+          value={formatMoney(outstandingPayments, currency)}
+          icon={<CreditCard className="h-4 w-4" />}
+          variant={outstandingPayments > 0 ? "warning" : "default"}
+        />
+        <KPICard
+          title="Low Stock"
+          value={String(lowStockCount)}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          variant={lowStockCount > 0 ? "critical" : "default"}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
