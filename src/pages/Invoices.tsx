@@ -54,6 +54,8 @@ export default function Invoices() {
   const [paymentInvoice, setPaymentInvoice] = useState<InvoiceRow | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [newInv, setNewInv] = useState({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
 
