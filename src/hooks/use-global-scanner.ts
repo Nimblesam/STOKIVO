@@ -32,16 +32,22 @@ export function useGlobalScanner() {
     try {
       let q = supabase
         .from("products")
-        .select("id, name, barcode, selling_price, stock_qty")
+        .select("id, name, barcode, selling_price, stock_qty, image_url")
         .eq("company_id", profile.company_id)
         .eq("barcode", barcode);
       if (activeStoreId) q = q.eq("store_id", activeStoreId);
       const { data } = await q.maybeSingle();
 
       if (data) {
-        window.dispatchEvent(new CustomEvent("global-barcode-scan", { detail: data }));
+        const dispatchScan = () => {
+          window.dispatchEvent(new CustomEvent("global-barcode-scan", { detail: data }));
+        };
         if (location.pathname !== "/pos") {
           navigate("/pos");
+          // Wait for Cashier to mount its listener before dispatching
+          setTimeout(dispatchScan, 250);
+        } else {
+          dispatchScan();
         }
         toast.success(`${data.name} scanned`, { duration: 1500 });
       } else {

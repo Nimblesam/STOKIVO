@@ -1018,6 +1018,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          payment_provider: string
           printer_name: string | null
           updated_at: string
         }
@@ -1026,6 +1027,7 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
+          payment_provider?: string
           printer_name?: string | null
           updated_at?: string
         }
@@ -1034,6 +1036,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
+          payment_provider?: string
           printer_name?: string | null
           updated_at?: string
         }

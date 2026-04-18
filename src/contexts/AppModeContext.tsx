@@ -12,22 +12,39 @@ interface AppModeContextValue {
 const AppModeContext = createContext<AppModeContextValue | undefined>(undefined);
 
 function detectMode(): AppMode {
+  if (typeof window === "undefined") return "full";
+
+  const ua = navigator.userAgent || "";
+
   // Check URL param first (?mode=pos)
   const params = new URLSearchParams(window.location.search);
   const urlMode = params.get("mode");
   if (urlMode === "pos") return "pos";
+  if (urlMode === "full") return "full";
 
   // Check localStorage override
   const stored = localStorage.getItem("stokivo_app_mode");
   if (stored === "pos") return "pos";
+  if (stored === "full") return "full";
 
-  // Check if running in Electron
-  if (typeof window !== "undefined" && (window as any).electronAPI) return "pos";
+  // Check if running in Electron (desktop app)
+  if ((window as any).electronAPI || / Electron\//i.test(ua)) return "pos";
+
+  // Check if running inside Capacitor/Cordova (native mobile shell)
+  if ((window as any).Capacitor || (window as any).cordova) return "pos";
+
+  // Check if running inside an Android WebView (APK using WebView to load the site).
+  // Android WebView UA contains "; wv)" — distinct from Chrome on Android.
+  const isAndroidWebView = /Android/i.test(ua) && /\bwv\b/i.test(ua);
+  if (isAndroidWebView) return "pos";
+
+  // Custom UA marker we can inject from the APK shell for unambiguous detection
+  if (/Stokivo(POS)?\//i.test(ua)) return "pos";
 
   // Check if standalone PWA on mobile
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches
     || (navigator as any).standalone === true;
-  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  const isMobile = /Android|iPhone|iPad/i.test(ua);
   if (isStandalone && isMobile) return "pos";
 
   return "full";

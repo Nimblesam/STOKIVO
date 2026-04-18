@@ -8,11 +8,19 @@
     "dev": "vite",
     "dev:electron": "electron .",
     "build": "vite build",
+    "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
+<<<<<<< HEAD
     "dist:win": "npm run build && electron-builder --win",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:linux": "npm run build && electron-builder --linux",
+=======
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:linux": "npm run build && electron-builder --linux --publish never",
+
+>>>>>>> f912202f42bbe31e98c39034cfc6b8890867e48d
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -20,6 +28,12 @@
   "build": {
     "appId": "com.stokivo.app",
     "productName": "Stokivo",
+<<<<<<< HEAD
+=======
+
+    "publish": null,
+
+>>>>>>> f912202f42bbe31e98c39034cfc6b8890867e48d
     "artifactName": "Stokivo-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
