@@ -11,16 +11,9 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
-<<<<<<< HEAD
     "dist:win": "npm run build && electron-builder --win",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:linux": "npm run build && electron-builder --linux",
-=======
-    "dist:win": "npm run build && electron-builder --win --publish never",
-    "dist:mac": "npm run build && electron-builder --mac --publish never",
-    "dist:linux": "npm run build && electron-builder --linux --publish never",
-
->>>>>>> f912202f42bbe31e98c39034cfc6b8890867e48d
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -28,12 +21,6 @@
   "build": {
     "appId": "com.stokivo.app",
     "productName": "Stokivo",
-<<<<<<< HEAD
-=======
-
-    "publish": null,
-
->>>>>>> f912202f42bbe31e98c39034cfc6b8890867e48d
     "artifactName": "Stokivo-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
@@ -55,6 +42,9 @@
     }
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@hookform/resolvers": "^3.10.0",
     "@lovable.dev/cloud-auth-js": "^1.0.0",
     "@radix-ui/react-accordion": "^1.2.11",
@@ -118,6 +108,8 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
@@ -129,8 +121,6 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
-    "vitest": "^3.2.4",
-    "electron": "^30.0.0",
-    "electron-builder": "^24.13.3"
+    "vitest": "^3.2.4"
   }
 }
