@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -53,6 +54,8 @@ export default function Invoices() {
   const [paymentInvoice, setPaymentInvoice] = useState<InvoiceRow | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [newInv, setNewInv] = useState({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
 
@@ -119,6 +122,28 @@ export default function Invoices() {
     const { data } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
     setSelectedItems(data || []);
     setSelectedInvoice(inv);
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Delete child rows first (in case FKs aren't cascading)
+      await supabase.from("invoice_items").delete().eq("invoice_id", deleteTarget.id);
+      await supabase.from("payments").delete().eq("invoice_id", deleteTarget.id);
+      await supabase.from("reminder_logs").delete().eq("invoice_id", deleteTarget.id);
+      const { error } = await supabase.from("invoices").delete().eq("id", deleteTarget.id);
+      if (error) throw error;
+      // Recompute customer outstanding balance from ledger
+      try { await syncCustomerBalance(deleteTarget.customer_id); } catch {}
+      toast.success(`Invoice ${deleteTarget.invoice_number} deleted`);
+      setDeleteTarget(null);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete invoice");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const sendViaEmail = (inv: InvoiceRow) => {
@@ -331,6 +356,9 @@ export default function Invoices() {
                               <DropdownMenuItem onClick={() => sendViaWhatsApp(inv)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Delete Invoice" onClick={() => setDeleteTarget(inv)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -463,6 +491,28 @@ export default function Invoices() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Invoice Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && !deleting) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete invoice {deleteTarget?.invoice_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the invoice along with its line items, recorded payments, and reminder history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteInvoice(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete Invoice"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
