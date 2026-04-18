@@ -42,6 +42,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   // Desktop: Top bar navigation
   if (!isMobile) {
     return (
+      <>
       <div className="min-h-screen flex flex-col bg-background">
         {/* Top Bar */}
         <header className="h-14 border-b bg-card flex items-center px-4 gap-4 shrink-0">
