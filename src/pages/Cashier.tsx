@@ -25,6 +25,8 @@ import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useTerminal } from "@/hooks/use-terminal";
 import { openCashDrawer } from "@/lib/printer-service";
+import { sunmiPrint, sunmiOpenDrawer, sunmiStatus } from "@/lib/sunmi-service";
+import { buildReceiptText } from "@/lib/sunmi-receipt";
 import {
   cacheProducts, getCachedProductByBarcode, getCachedProducts,
   queueOfflineSale, queueDrawerEvent,
@@ -220,15 +222,35 @@ export default function Cashier() {
     toast.success(`${product.name} added`, { duration: 1000 });
   }, []);
 
-  // Global barcode scan listener
+  // Global barcode scan listener (HID + SUNMI native)
   useEffect(() => {
     const handler = (e: Event) => {
       const product = (e as CustomEvent).detail;
       if (product) addToCart(product);
     };
     window.addEventListener("global-barcode-scan", handler);
-    return () => window.removeEventListener("global-barcode-scan", handler);
-  }, [addToCart]);
+
+    // SUNMI native scanner — look up product by barcode then dispatch
+    const sunmiHandler = async (e: Event) => {
+      const barcode = (e as CustomEvent).detail?.barcode;
+      if (!barcode || !profile?.company_id) return;
+      let q = supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty, image_url")
+        .eq("company_id", profile.company_id)
+        .eq("barcode", barcode);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q.maybeSingle();
+      if (data) addToCart(data as any);
+      else toast.error(`Unknown barcode: ${barcode}`);
+    };
+    window.addEventListener("sunmi-barcode", sunmiHandler);
+
+    return () => {
+      window.removeEventListener("global-barcode-scan", handler);
+      window.removeEventListener("sunmi-barcode", sunmiHandler);
+    };
+  }, [addToCart, profile?.company_id, activeStoreId]);
 
   const updateQty = (productId: string, delta: number) => {
     setCart((prev) =>
@@ -244,10 +266,11 @@ export default function Cashier() {
   const clearCart = () => { setCart([]); setDiscountAmount(0); };
   const stockErrors = isRestaurant ? [] : cart.filter((i) => i.qty > i.stock_qty);
 
-  // Trigger cash drawer + log event
+  // Trigger cash drawer + log event (tries SUNMI native first, then ESC/POS)
   const triggerCashDrawer = async (triggerType: "cash_payment" | "manual", saleId?: string) => {
     if (!profile?.company_id || !user) return;
-    await openCashDrawer();
+    const sunmiOpened = await sunmiOpenDrawer();
+    if (!sunmiOpened) await openCashDrawer();
     const eventData = {
       company_id: profile.company_id, store_id: activeStoreId || null,
       user_id: user.id, user_name: activeCashier?.name || profile.full_name,
@@ -411,11 +434,39 @@ export default function Cashier() {
 
       if (hasCashPayment && posSettings.auto_open_drawer) await triggerCashDrawer("cash_payment", sale.id);
 
-      setCompletedSale({
+      const finalSale: SaleRecord = {
         id: sale.id, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
         payments, change_given: changeGiven, cashier_name: activeCashier.name,
         created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
-      });
+      };
+
+      // Auto-print receipt on SUNMI hardware (silent no-op elsewhere)
+      try {
+        const status = await sunmiStatus();
+        if (status.printerReady) {
+          await sunmiPrint(buildReceiptText(finalSale));
+        }
+      } catch { /* ignore print errors */ }
+
+      // KDS broadcast for restaurants
+      if (isRestaurant && !isPayLater) {
+        try {
+          const orderNumber = `KDS-${sale.id.slice(0, 6).toUpperCase()}`;
+          const { data: kds } = await supabase.from("kitchen_orders").insert({
+            company_id: profile.company_id, store_id: activeStoreId, sale_id: sale.id,
+            order_number: orderNumber, status: "pending", cashier_name: activeCashier.name,
+          }).select("id").single();
+          if (kds) {
+            await supabase.from("kitchen_order_items").insert(
+              cart.map((i) => ({
+                order_id: kds.id, product_id: i.product_id, product_name: i.name, qty: i.qty,
+              }))
+            );
+          }
+        } catch { /* KDS errors should never block a sale */ }
+      }
+
+      setCompletedSale(finalSale);
       setShowPayment(false); setCart([]); setDiscountAmount(0);
       toast.success(isPayLater ? "Sale recorded — added to credit ledger" : "Payment successful!");
     } catch (err: any) {

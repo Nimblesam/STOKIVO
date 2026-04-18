@@ -1,10 +1,12 @@
-import { ReactNode } from "react";
+import { ReactNode, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppMode } from "@/contexts/AppModeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useGlobalScanner } from "@/hooks/use-global-scanner";
+import { useSunmiScanner } from "@/hooks/use-sunmi-scanner";
 import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog";
+import { LowStockNotification } from "@/components/LowStockNotification";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor } from "lucide-react";
@@ -30,6 +32,12 @@ export function PosLayout({ children }: PosLayoutProps) {
   const { setMode } = useAppMode();
   const isMobile = useIsMobile();
   const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
+
+  // Bridge SUNMI hardware scanner -> Cashier's product lookup pipeline.
+  const handleSunmiScan = useCallback((barcode: string) => {
+    window.dispatchEvent(new CustomEvent("sunmi-barcode", { detail: { barcode } }));
+  }, []);
+  useSunmiScanner(handleSunmiScan);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -100,6 +108,9 @@ export function PosLayout({ children }: PosLayoutProps) {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto">
+          <div className="px-4 pt-3">
+            <LowStockNotification />
+          </div>
           {children}
         </main>
       </div>
@@ -148,6 +159,9 @@ export function PosLayout({ children }: PosLayoutProps) {
 
       {/* Content */}
       <main className="flex-1 overflow-auto pb-16">
+        <div className="px-3 pt-2">
+          <LowStockNotification />
+        </div>
         {children}
       </main>
 

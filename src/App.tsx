@@ -59,6 +59,7 @@ import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminFeatureFlags from "./pages/admin/AdminFeatureFlags";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import KitchenDisplay from "./pages/KitchenDisplay";
 
 const queryClient = new QueryClient();
 
@@ -155,6 +156,7 @@ function WebRoutes() {
         <Route path="payroll" element={<Payroll />} />
         <Route path="integrations" element={<Integrations />} />
         <Route path="ai-insights" element={<AIInsights />} />
+        <Route path="kds" element={<KitchenDisplay />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
