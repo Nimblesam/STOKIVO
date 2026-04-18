@@ -43,13 +43,14 @@ export const SceneCaption: React.FC<{
       <h1
         style={{
           fontFamily: "'Plus Jakarta Sans', Inter, sans-serif",
-          fontSize: 64,
+          fontSize: 52,
           fontWeight: 800,
           color: COLORS.text,
           margin: 0,
-          letterSpacing: -2,
+          letterSpacing: -1.5,
           lineHeight: 1.05,
-          maxWidth: 900,
+          maxWidth: 1500,
+          whiteSpace: "nowrap",
         }}
       >
         {title}
@@ -57,10 +58,10 @@ export const SceneCaption: React.FC<{
       {subtitle && (
         <p
           style={{
-            fontSize: 24,
+            fontSize: 22,
             color: COLORS.textMuted,
-            marginTop: 12,
-            maxWidth: 800,
+            marginTop: 10,
+            maxWidth: 1200,
             lineHeight: 1.4,
           }}
         >
