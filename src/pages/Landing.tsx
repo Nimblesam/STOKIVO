@@ -390,6 +390,31 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ═══════════════ DEMO VIDEO ═══════════════ */}
+      <section id="demo" className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 scroll-mt-20">
+        <div className="text-center mb-8 sm:mb-10">
+          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-3">SEE IT IN ACTION</p>
+          <h2 className="text-3xl sm:text-5xl font-display font-bold text-foreground tracking-tight">
+            From signup to sale — in <span className="text-primary">90 seconds</span>
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground mt-3 max-w-2xl mx-auto">
+            Watch a complete merchant journey: onboarding, inventory, POS checkout, card payment, receipts and reporting.
+          </p>
+        </div>
+        <div className="relative rounded-2xl overflow-hidden border border-border shadow-2xl bg-black">
+          <video
+            src="/stokivo-demo.mp4"
+            controls
+            playsInline
+            preload="metadata"
+            poster=""
+            className="w-full h-auto block"
+          >
+            Your browser does not support video playback.
+          </video>
+        </div>
+      </section>
+
       {/* ═══════════════ PLATFORM BREAKDOWN ═══════════════ */}
       <section id="product" className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 scroll-mt-20">
         <div className="text-center mb-10 sm:mb-14">
