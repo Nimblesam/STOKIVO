@@ -208,6 +208,76 @@ export default function Invoices() {
     }
   };
 
+  /**
+   * Render the invoice template offscreen and trigger a browser download
+   * of the PDF (no Supabase upload). Saves directly to the merchant's computer.
+   */
+  const downloadInvoicePdf = async (inv: InvoiceRow) => {
+    const t = toast.loading("Preparing invoice PDF...");
+    // Load items if not already loaded for this invoice
+    let items = selectedInvoice?.id === inv.id ? selectedItems : [];
+    if (items.length === 0) {
+      const { data } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
+      items = data || [];
+    }
+
+    const host = document.createElement("div");
+    host.style.position = "fixed";
+    host.style.left = "-10000px";
+    host.style.top = "0";
+    host.style.width = "800px";
+    host.style.background = "#ffffff";
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    try {
+      const cust = (inv as any).customers;
+      root.render(
+        <InvoiceTemplate
+          company={getInvoiceCompany()}
+          invoice={{
+            invoiceNumber: inv.invoice_number,
+            createdAt: inv.created_at,
+            dueDate: inv.due_date,
+            status: inv.status as any,
+            subtotal: inv.subtotal,
+            total: inv.total,
+            amountPaid: inv.amount_paid,
+            customerName: cust?.name || "—",
+            customerAddress: cust?.address || undefined,
+            customerPhone: cust?.phone || undefined,
+            customerEmail: cust?.email || undefined,
+            items: items.map((i: any) => ({
+              productName: i.product_name,
+              qty: i.qty,
+              unitPrice: i.unit_price,
+              total: i.total,
+            })),
+          }}
+        />
+      );
+      await new Promise((r) => setTimeout(r, 350));
+      const blob = await renderNodeToPdfBlob(host.firstElementChild as HTMLElement);
+      const safeNumber = inv.invoice_number.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.dismiss(t);
+      toast.success(`Invoice ${inv.invoice_number} downloaded`);
+    } catch (err: any) {
+      toast.dismiss(t);
+      toast.error(err?.message || "Failed to download invoice");
+    } finally {
+      root.unmount();
+      host.remove();
+    }
+  };
+
   const sendViaEmail = async (inv: InvoiceRow) => {
     const cust = (inv as any).customers;
     if (!cust?.email) { toast.error("Customer has no email address"); return; }
