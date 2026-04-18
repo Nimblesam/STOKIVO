@@ -65,8 +65,9 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile, company, mfaRequired, profileLoading, authResolved } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
   const trial = useTrialStatus();
-  if (loading || profileLoading || !authResolved) {
+  if (loading || profileLoading || !authResolved || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
@@ -80,6 +81,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
   if (!user) return <Navigate to="/login" replace />;
   if (mfaRequired) return <Navigate to="/login" replace />;
+  // Platform admins should never see merchant pages
+  if (isAdmin) return <Navigate to="/admin" replace />;
   if (!profile?.company_id) return <Navigate to="/onboarding" replace />;
   if (company && company.status !== "active") return <Navigate to="/pending-approval" replace />;
 
@@ -116,8 +119,11 @@ function PosProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile, company, mfaRequired, profileLoading, authResolved } = useAuth();
-  if (loading || profileLoading || !authResolved) return null;
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
+  if (loading || profileLoading || !authResolved || adminLoading) return null;
   if (mfaRequired) return <>{children}</>;
+  // Platform admins: allow them to stay on public pages without onboarding redirects
+  if (isAdmin) return <Navigate to="/admin" replace />;
   if (user && profile?.company_id) {
     return <Navigate to={company && company.status !== "active" ? "/pending-approval" : "/dashboard"} replace />;
   }
