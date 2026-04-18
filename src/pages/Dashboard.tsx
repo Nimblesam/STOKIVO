@@ -64,16 +64,38 @@ export default function Dashboard() {
     });
   }, [profile?.company_id, activeStoreId]);
 
-  const totalStockValue = products.reduce((s, p) => s + p.cost_price * p.stock_qty, 0);
-  const monthlyRevenue = sales.reduce((s, sale) => s + sale.total, 0);
+  // Stock value at COST (what was paid) — minor units
+  const stockValueAtCost = products.reduce(
+    (s, p) => s + (Number(p.cost_price) || 0) * (Number(p.stock_qty) || 0),
+    0,
+  );
+  // Stock value at RETAIL (potential revenue) — minor units
+  const stockValueAtRetail = products.reduce(
+    (s, p) => s + (Number(p.selling_price) || 0) * (Number(p.stock_qty) || 0),
+    0,
+  );
+
+  // Revenue: limit to current calendar month so the KPI reflects "this month"
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const monthSales = sales.filter((sale) => new Date(sale.created_at).getTime() >= monthStart);
+  const monthlyRevenue = monthSales.reduce((s, sale) => s + (Number(sale.total) || 0), 0);
 
   // Use customer outstanding_balance (synced from ledger) as single source of truth
   const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && i.total > i.amount_paid);
-  const outstandingPayments = customers.reduce((s, c) => s + Math.max(0, c.outstanding_balance), 0);
-  const lowStockCount = products.filter((p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0).length;
+  const outstandingPayments = customers.reduce(
+    (s, c) => s + Math.max(0, Number(c.outstanding_balance) || 0),
+    0,
+  );
+  const lowStockCount = products.filter(
+    (p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0,
+  ).length;
   const priceChangeCount = alerts.filter((a) => a.type === "SUPPLIER_PRICE_CHANGE").length;
-  const avgMargin = products.length > 0
-    ? products.reduce((s, p) => s + (p.profit_margin || 0), 0) / products.length
+
+  // Value-weighted profit margin = (retail - cost) / retail across stock on hand.
+  // This is more accurate than averaging per-product percentages, which over-weights cheap items.
+  const avgMargin = stockValueAtRetail > 0
+    ? ((stockValueAtRetail - stockValueAtCost) / stockValueAtRetail) * 100
     : 0;
 
   const criticalStock = products
@@ -133,12 +155,43 @@ export default function Dashboard() {
       <SmartSuggestions />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <KPICard title="Stock Value" value={formatMoney(totalStockValue, currency)} icon={<Package className="h-4 w-4" />} subtitle={`${products.length} products`} />
-        <KPICard title="Sales Revenue" value={formatMoney(monthlyRevenue, currency)} icon={<TrendingUp className="h-4 w-4" />} subtitle={`${sales.length} sales`} />
-        <KPICard title="Profit Margin" value={`${avgMargin.toFixed(1)}%`} icon={<DollarSign className="h-4 w-4" />} variant="success" />
-        <KPICard title="Credit Owed" value={formatMoney(outstandingPayments, currency)} icon={<CreditCard className="h-4 w-4" />} variant={outstandingPayments > 0 ? "warning" : "default"} />
-        <KPICard title="Low Stock" value={String(lowStockCount)} icon={<AlertTriangle className="h-4 w-4" />} variant={lowStockCount > 0 ? "critical" : "default"} />
-        <KPICard title="Price Changes" value={String(priceChangeCount)} icon={<TrendingDown className="h-4 w-4" />} variant={priceChangeCount > 0 ? "warning" : "default"} />
+        <KPICard
+          title="Stock Value (Cost)"
+          value={formatMoney(stockValueAtCost, currency)}
+          icon={<Package className="h-4 w-4" />}
+          subtitle={`${products.length} products`}
+        />
+        <KPICard
+          title="Retail Value"
+          value={formatMoney(stockValueAtRetail, currency)}
+          icon={<ShoppingBag className="h-4 w-4" />}
+          subtitle="Potential revenue"
+        />
+        <KPICard
+          title="Revenue (This Month)"
+          value={formatMoney(monthlyRevenue, currency)}
+          icon={<TrendingUp className="h-4 w-4" />}
+          subtitle={`${monthSales.length} sales`}
+        />
+        <KPICard
+          title="Profit Margin"
+          value={`${avgMargin.toFixed(1)}%`}
+          icon={<DollarSign className="h-4 w-4" />}
+          variant="success"
+          subtitle="Stock-weighted"
+        />
+        <KPICard
+          title="Credit Owed"
+          value={formatMoney(outstandingPayments, currency)}
+          icon={<CreditCard className="h-4 w-4" />}
+          variant={outstandingPayments > 0 ? "warning" : "default"}
+        />
+        <KPICard
+          title="Low Stock"
+          value={String(lowStockCount)}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          variant={lowStockCount > 0 ? "critical" : "default"}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
