@@ -65,7 +65,70 @@ export default function Cashier() {
   const currency = (company?.currency || "GBP") as Currency;
   const isRestaurant = company?.business_type === "restaurant";
 
-  const [activeCashier, setActiveCashier] = useState<{ id: string; name: string; role: string } | null>(null);
+  // PIN session: persist active cashier + last activity timestamp per company.
+  // Cashier stays signed in until 15 minutes of inactivity (no keydown/click/touch).
+  const PIN_IDLE_MS = 15 * 60 * 1000;
+  const sessionKey = profile?.company_id ? `stokivo_pos_session_${profile.company_id}` : null;
+
+  const [activeCashier, setActiveCashier] = useState<{ id: string; name: string; role: string } | null>(() => {
+    if (typeof window === "undefined" || !profile?.company_id) return null;
+    try {
+      const raw = localStorage.getItem(`stokivo_pos_session_${profile.company_id}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { cashier: { id: string; name: string; role: string }; lastActivity: number };
+      if (!parsed?.cashier || !parsed?.lastActivity) return null;
+      if (Date.now() - parsed.lastActivity > PIN_IDLE_MS) {
+        localStorage.removeItem(`stokivo_pos_session_${profile.company_id}`);
+        return null;
+      }
+      return parsed.cashier;
+    } catch {
+      return null;
+    }
+  });
+
+  // Wrap setter so we always persist + stamp activity, and clear on sign-out.
+  const persistCashier = useCallback((c: { id: string; name: string; role: string } | null) => {
+    setActiveCashier(c);
+    if (!sessionKey) return;
+    if (c) {
+      localStorage.setItem(sessionKey, JSON.stringify({ cashier: c, lastActivity: Date.now() }));
+    } else {
+      localStorage.removeItem(sessionKey);
+    }
+  }, [sessionKey]);
+
+  // Bump activity on user interaction; auto-lock after PIN_IDLE_MS of inactivity.
+  useEffect(() => {
+    if (!activeCashier || !sessionKey) return;
+
+    const bump = () => {
+      try {
+        localStorage.setItem(sessionKey, JSON.stringify({ cashier: activeCashier, lastActivity: Date.now() }));
+      } catch { /* quota / private mode — ignore */ }
+    };
+
+    const events: (keyof WindowEventMap)[] = ["keydown", "mousedown", "touchstart", "pointerdown"];
+    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
+
+    const tick = window.setInterval(() => {
+      try {
+        const raw = localStorage.getItem(sessionKey);
+        if (!raw) { setActiveCashier(null); return; }
+        const parsed = JSON.parse(raw) as { lastActivity: number };
+        if (Date.now() - (parsed?.lastActivity ?? 0) > PIN_IDLE_MS) {
+          localStorage.removeItem(sessionKey);
+          setActiveCashier(null);
+          toast.info("Locked due to inactivity. Please re-enter your PIN.");
+        }
+      } catch { /* noop */ }
+    }, 30 * 1000);
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, bump));
+      window.clearInterval(tick);
+    };
+  }, [activeCashier, sessionKey]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPayment, setShowPayment] = useState(false);
