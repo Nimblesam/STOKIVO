@@ -21,15 +21,15 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-      - run: npm ci
+          node-version: 22
+      - run: npm install
       - run: npm run build
       - name: Upload Web Dist
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+          retention-days: 1
 
   build-android:
     name: Build Android APK
@@ -44,9 +44,8 @@ jobs:
           path: dist
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-      - run: npm ci
+          node-version: 22
+      - run: npm install
       - name: Sync Capacitor Android
         run: npx cap sync android
       - name: Set up JDK 17
@@ -73,8 +72,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [macos-13, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Download Web Dist
@@ -84,13 +84,15 @@ jobs:
           path: dist
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-      - run: npm ci
+          node-version: 22
+      - run: npm install
       - name: Build Electron
         run: npx electron-builder --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: List Release Files
+        shell: bash
+        run: ls -R release/ || echo "Release directory not found"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -101,7 +103,7 @@ jobs:
     name: Create GitHub Release
     needs: [build-android, build-desktop, build-web]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && needs.build-web.result == 'success'
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -110,8 +112,11 @@ jobs:
       - name: Organize artifacts
         run: |
           mkdir -p final-assets
+          # Find any APK and rename it nicely
           find artifacts -name "*.apk" -exec cp {} final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk \;
-          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} final-assets/ \;
+          # Find desktop assets
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" -o -name "*.deb" \) -exec cp {} final-assets/ \;
+          ls -R final-assets/
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
