@@ -25,6 +25,8 @@ import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useTerminal } from "@/hooks/use-terminal";
 import { openCashDrawer } from "@/lib/printer-service";
+import { sunmiPrint, sunmiOpenDrawer, sunmiStatus } from "@/lib/sunmi-service";
+import { buildReceiptText } from "@/lib/sunmi-receipt";
 import {
   cacheProducts, getCachedProductByBarcode, getCachedProducts,
   queueOfflineSale, queueDrawerEvent,
@@ -244,10 +246,11 @@ export default function Cashier() {
   const clearCart = () => { setCart([]); setDiscountAmount(0); };
   const stockErrors = isRestaurant ? [] : cart.filter((i) => i.qty > i.stock_qty);
 
-  // Trigger cash drawer + log event
+  // Trigger cash drawer + log event (tries SUNMI native first, then ESC/POS)
   const triggerCashDrawer = async (triggerType: "cash_payment" | "manual", saleId?: string) => {
     if (!profile?.company_id || !user) return;
-    await openCashDrawer();
+    const sunmiOpened = await sunmiOpenDrawer();
+    if (!sunmiOpened) await openCashDrawer();
     const eventData = {
       company_id: profile.company_id, store_id: activeStoreId || null,
       user_id: user.id, user_name: activeCashier?.name || profile.full_name,
