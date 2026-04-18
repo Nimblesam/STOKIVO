@@ -103,11 +103,20 @@ export function PosLayout({ children }: PosLayoutProps) {
           {children}
         </main>
       </div>
+      {unknownBarcode && (
+        <AddProductFromScanDialog
+          barcode={unknownBarcode}
+          open={!!unknownBarcode}
+          onClose={clearUnknownBarcode}
+        />
+      )}
+      </>
     );
   }
 
   // Mobile: Bottom tab navigation
   return (
+    <>
     <div className="min-h-screen flex flex-col bg-background">
       {/* Mobile header */}
       <header className="h-12 border-b bg-card flex items-center px-3 shrink-0">
