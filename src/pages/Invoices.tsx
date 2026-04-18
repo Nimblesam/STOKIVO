@@ -124,6 +124,28 @@ export default function Invoices() {
     setSelectedInvoice(inv);
   };
 
+  const handleDeleteInvoice = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Delete child rows first (in case FKs aren't cascading)
+      await supabase.from("invoice_items").delete().eq("invoice_id", deleteTarget.id);
+      await supabase.from("payments").delete().eq("invoice_id", deleteTarget.id);
+      await supabase.from("reminder_logs").delete().eq("invoice_id", deleteTarget.id);
+      const { error } = await supabase.from("invoices").delete().eq("id", deleteTarget.id);
+      if (error) throw error;
+      // Recompute customer outstanding balance from ledger
+      try { await syncCustomerBalance(deleteTarget.customer_id); } catch {}
+      toast.success(`Invoice ${deleteTarget.invoice_number} deleted`);
+      setDeleteTarget(null);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete invoice");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const sendViaEmail = (inv: InvoiceRow) => {
     const cust = (inv as any).customers;
     if (!cust?.email) { toast.error("Customer has no email address"); return; }
