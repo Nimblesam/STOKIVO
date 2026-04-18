@@ -116,8 +116,11 @@ function PosProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, profile, company, mfaRequired, profileLoading, authResolved } = useAuth();
-  if (loading || profileLoading || !authResolved) return null;
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
+  if (loading || profileLoading || !authResolved || adminLoading) return null;
   if (mfaRequired) return <>{children}</>;
+  // Platform admins: allow them to stay on public pages without onboarding redirects
+  if (isAdmin) return <Navigate to="/admin" replace />;
   if (user && profile?.company_id) {
     return <Navigate to={company && company.status !== "active" ? "/pending-approval" : "/dashboard"} replace />;
   }
