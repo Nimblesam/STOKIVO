@@ -100,9 +100,9 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [build-android, build-web] # Only strictly need web and android to start
+    needs: [build-android, build-desktop, build-web]
     runs-on: ubuntu-latest
-    if: always() && needs.build-web.result == 'success'
+    if: always() && needs.build-web.result == 'success' && needs.build-android.result == 'success'
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
