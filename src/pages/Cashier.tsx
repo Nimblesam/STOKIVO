@@ -450,7 +450,7 @@ export default function Cashier() {
 
   // PIN GATE — require cashier authentication before using POS
   if (!activeCashier) {
-    return <CashierPinScreen onAuthenticated={setActiveCashier} />;
+    return <CashierPinScreen onAuthenticated={persistCashier} />;
   }
 
   // SUCCESS SCREEN
