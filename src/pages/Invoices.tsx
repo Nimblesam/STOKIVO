@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -202,6 +202,76 @@ export default function Invoices() {
       await new Promise((r) => setTimeout(r, 350));
       const blob = await renderNodeToPdfBlob(host.firstElementChild as HTMLElement);
       return await uploadInvoicePdf(blob, profile.company_id, inv.invoice_number);
+    } finally {
+      root.unmount();
+      host.remove();
+    }
+  };
+
+  /**
+   * Render the invoice template offscreen and trigger a browser download
+   * of the PDF (no Supabase upload). Saves directly to the merchant's computer.
+   */
+  const downloadInvoicePdf = async (inv: InvoiceRow) => {
+    const t = toast.loading("Preparing invoice PDF...");
+    // Load items if not already loaded for this invoice
+    let items = selectedInvoice?.id === inv.id ? selectedItems : [];
+    if (items.length === 0) {
+      const { data } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
+      items = data || [];
+    }
+
+    const host = document.createElement("div");
+    host.style.position = "fixed";
+    host.style.left = "-10000px";
+    host.style.top = "0";
+    host.style.width = "800px";
+    host.style.background = "#ffffff";
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    try {
+      const cust = (inv as any).customers;
+      root.render(
+        <InvoiceTemplate
+          company={getInvoiceCompany()}
+          invoice={{
+            invoiceNumber: inv.invoice_number,
+            createdAt: inv.created_at,
+            dueDate: inv.due_date,
+            status: inv.status as any,
+            subtotal: inv.subtotal,
+            total: inv.total,
+            amountPaid: inv.amount_paid,
+            customerName: cust?.name || "—",
+            customerAddress: cust?.address || undefined,
+            customerPhone: cust?.phone || undefined,
+            customerEmail: cust?.email || undefined,
+            items: items.map((i: any) => ({
+              productName: i.product_name,
+              qty: i.qty,
+              unitPrice: i.unit_price,
+              total: i.total,
+            })),
+          }}
+        />
+      );
+      await new Promise((r) => setTimeout(r, 350));
+      const blob = await renderNodeToPdfBlob(host.firstElementChild as HTMLElement);
+      const safeNumber = inv.invoice_number.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.dismiss(t);
+      toast.success(`Invoice ${inv.invoice_number} downloaded`);
+    } catch (err: any) {
+      toast.dismiss(t);
+      toast.error(err?.message || "Failed to download invoice");
     } finally {
       root.unmount();
       host.remove();
@@ -426,7 +496,8 @@ export default function Invoices() {
                       <TableCell className="text-right"><span className={`text-sm font-semibold ${balance > 0 ? "text-destructive" : "text-success"}`}>{formatMoney(balance, currency)}</span></TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="View Invoice" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Download PDF" onClick={() => downloadInvoicePdf(inv)}><Download className="h-3.5 w-3.5" /></Button>
                           {balance > 0 && (
                             <>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-warning" title="Send Payment Reminder" onClick={() => sendReminder(inv)}><Bell className="h-3.5 w-3.5" /></Button>
@@ -528,6 +599,7 @@ export default function Invoices() {
               <div className="flex gap-2 mb-4 print:hidden">
                 <Button variant="outline" size="sm" onClick={() => sendViaEmail(selectedInvoice)}><Mail className="h-3.5 w-3.5 mr-1" /> Email</Button>
                 <Button variant="outline" size="sm" onClick={() => sendViaWhatsApp(selectedInvoice)}><MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => downloadInvoicePdf(selectedInvoice)}><Download className="h-3.5 w-3.5 mr-1" /> Download PDF</Button>
                 <Button variant="outline" size="sm" onClick={handlePrintInvoice}><Printer className="h-3.5 w-3.5 mr-1" /> Print</Button>
               </div>
               <InvoiceTemplate
