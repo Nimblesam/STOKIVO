@@ -16,30 +16,20 @@ jobs:
       version: ${{ steps.get_version.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Get version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Remove outdated lock file
-        run: rm -f package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Web
-        run: npm run build
-
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
       - name: Upload Web Dist
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
-          retention-days: 1
 
   build-android:
     name: Build Android APK
@@ -47,54 +37,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
       - name: Download Web Dist
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - uses: actions/setup-java@v4
+          cache: 'npm'
+      - run: npm ci
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 34
-
-      - name: Remove outdated lock file
-        run: rm -f package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Sync Capacitor Android
-        run: npx cap sync android
-
-      - name: Grant execute permissions to gradlew
+      - name: Build Release APK
         working-directory: android
-        run: chmod +x ./gradlew
-
-      - name: Build Android APK
-        working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
-
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease
+        env:
+          APP_VERSION: ${{ needs.build-web.outputs.version }}
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: android/app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
-          retention-days: 1
 
   build-desktop:
     name: Build Desktop (${{ matrix.os }})
@@ -102,94 +73,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13, windows-latest, ubuntu-latest]
-        include:
-          - os: macos-13
-            artifact-name: dmg
-          - os: windows-latest
-            artifact-name: exe
-          - os: ubuntu-latest
-            artifact-name: AppImage
-
+        os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Download Web Dist
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Remove outdated lock file
-        run: rm -f package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Electron App
+          cache: 'npm'
+      - run: npm ci
+      - name: Build Electron
         run: npx electron-builder --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Debug Build Output
-        run: |
-          echo "Searching for build outputs..."
-          find . -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -ls
-
-      - name: Upload Desktop Artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}
-          path: |
-            release/**/*
-            dist/**/*
-            out/**/*
-            build/**/*
-          if-no-files-found: warn
-          retention-days: 1
+          path: release/*.*
 
   create-release:
     name: Create GitHub Release
-    needs: [build-web, build-android, build-desktop]
+    needs: [build-android, build-desktop, build-web]
     runs-on: ubuntu-latest
-
+    if: always()
     steps:
-      - uses: actions/checkout@v4
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Prepare release assets
+      - name: Organize artifacts
         run: |
           mkdir -p final-assets
-
-          echo "Copying APK..."
-          find artifacts -name "*.apk" -exec cp {} final-assets/ \;
-
-          echo "Copying Desktop files..."
-          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" -o -name "*.deb" \) -exec cp {} final-assets/ \;
-
-          echo "Final assets found:"
-          ls -lah final-assets/ || echo "No files found"
-
-      - name: Validate assets
-        run: |
-          if [ -z "$(ls -A final-assets 2>/dev/null)" ]; then
-            echo "⚠️  Warning: No release files found, but continuing..."
-          else
-            echo "✅ Found files:"
-            ls -lah final-assets/
-          fi
-
+          find artifacts -name "*.apk" -exec cp {} final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk \;
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} final-assets/ \;
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
