@@ -599,6 +599,7 @@ export default function Invoices() {
               <div className="flex gap-2 mb-4 print:hidden">
                 <Button variant="outline" size="sm" onClick={() => sendViaEmail(selectedInvoice)}><Mail className="h-3.5 w-3.5 mr-1" /> Email</Button>
                 <Button variant="outline" size="sm" onClick={() => sendViaWhatsApp(selectedInvoice)}><MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => downloadInvoicePdf(selectedInvoice)}><Download className="h-3.5 w-3.5 mr-1" /> Download PDF</Button>
                 <Button variant="outline" size="sm" onClick={handlePrintInvoice}><Printer className="h-3.5 w-3.5 mr-1" /> Print</Button>
               </div>
               <InvoiceTemplate
