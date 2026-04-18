@@ -608,7 +608,7 @@ export default function Cashier() {
           <div>
             <h2 className="font-display font-bold text-lg">Current Order</h2>
             <button
-              onClick={() => { setActiveCashier(null); clearCart(); }}
+              onClick={() => { persistCashier(null); clearCart(); }}
               className="text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               Cashier: <span className="font-medium text-foreground">{activeCashier.name}</span> · Switch
