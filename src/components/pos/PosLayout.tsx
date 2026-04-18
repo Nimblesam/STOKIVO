@@ -175,5 +175,13 @@ export function PosLayout({ children }: PosLayoutProps) {
         ))}
       </nav>
     </div>
+    {unknownBarcode && (
+      <AddProductFromScanDialog
+        barcode={unknownBarcode}
+        open={!!unknownBarcode}
+        onClose={clearUnknownBarcode}
+      />
+    )}
+    </>
   );
 }
