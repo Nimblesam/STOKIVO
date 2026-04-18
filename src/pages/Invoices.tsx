@@ -166,10 +166,10 @@ export default function Invoices() {
     const cust = (inv as any).customers;
     const num = cust?.whatsapp || cust?.phone;
     if (!num) { toast.error("Customer has no phone/WhatsApp number"); return; }
-    const msg = encodeURIComponent(
-      `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\nThank you!`
-    );
-    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${msg}`);
+    const text = `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\nThank you!`;
+    const url = buildWhatsAppUrl(num, company?.country, text);
+    if (!url) { toast.error("Invalid phone number format"); return; }
+    window.open(url, "_blank");
     if (inv.status === "draft") {
       supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
     }
