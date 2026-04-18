@@ -16,37 +16,33 @@ function detectMode(): AppMode {
 
   const ua = navigator.userAgent || "";
 
-  // Check URL param first (?mode=pos)
+  // Detect native shells (Electron desktop app, Capacitor/Cordova mobile, Android WebView, custom UA marker).
+  const isElectron = !!(window as any).electronAPI || / Electron\//i.test(ua);
+  const isCapacitor = !!(window as any).Capacitor || !!(window as any).cordova;
+  const isAndroidWebView = /Android/i.test(ua) && /\bwv\b/i.test(ua);
+  const hasStokivoUA = /Stokivo(POS)?\//i.test(ua);
+  const isNativeShell = isElectron || isCapacitor || isAndroidWebView || hasStokivoUA;
+
+  // URL param override (?mode=pos / ?mode=full) — works everywhere for manual testing.
   const params = new URLSearchParams(window.location.search);
   const urlMode = params.get("mode");
   if (urlMode === "pos") return "pos";
   if (urlMode === "full") return "full";
 
-  // Check localStorage override
-  const stored = localStorage.getItem("stokivo_app_mode");
-  if (stored === "pos") return "pos";
-  if (stored === "full") return "full";
+  // localStorage override — ONLY honored inside native shells. On regular web browsers
+  // (stokivo.com / *.lovable.app), we ignore any stale "pos" value left over from
+  // previous testing so the public marketing/landing site always loads.
+  if (isNativeShell) {
+    const stored = localStorage.getItem("stokivo_app_mode");
+    if (stored === "pos") return "pos";
+    if (stored === "full") return "full";
+    // Default for native shells = POS
+    return "pos";
+  }
 
-  // Check if running in Electron (desktop app)
-  if ((window as any).electronAPI || / Electron\//i.test(ua)) return "pos";
-
-  // Check if running inside Capacitor/Cordova (native mobile shell)
-  if ((window as any).Capacitor || (window as any).cordova) return "pos";
-
-  // Check if running inside an Android WebView (APK using WebView to load the site).
-  // Android WebView UA contains "; wv)" — distinct from Chrome on Android.
-  const isAndroidWebView = /Android/i.test(ua) && /\bwv\b/i.test(ua);
-  if (isAndroidWebView) return "pos";
-
-  // Custom UA marker we can inject from the APK shell for unambiguous detection
-  if (/Stokivo(POS)?\//i.test(ua)) return "pos";
-
-  // NOTE: We intentionally do NOT auto-switch to POS mode for standalone PWA on
-  // mobile. Mobile web visitors (including those who added stokivo.com to their
-  // home screen) should still see the marketing/landing site. POS mode is only
-  // for the native app shells (Electron/Capacitor/Android WebView/custom UA) or
-  // explicit ?mode=pos / localStorage override above.
-
+  // Regular web browser → always FULL mode (landing/marketing/business app).
+  // Do not auto-switch to POS for PWA / mobile / standalone — those visitors should
+  // still see the landing page.
   return "full";
 }
 
