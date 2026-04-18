@@ -29,6 +29,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   const { profile, signOut } = useAuth();
   const { setMode } = useAppMode();
   const isMobile = useIsMobile();
+  const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
 
   const isActive = (path: string) => location.pathname === path;
 
