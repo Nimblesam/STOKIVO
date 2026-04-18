@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
+import { buildWhatsAppUrl } from "@/lib/phone";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
@@ -147,7 +148,9 @@ export default function Suppliers() {
       msg = customOrderText;
     }
 
-    window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`);
+    const url = buildWhatsAppUrl(num, company?.country, msg);
+    if (!url) { toast.error("Invalid supplier phone number"); return; }
+    window.open(url, "_blank");
     toast.success("Reorder message opened in WhatsApp");
     setReorderSupplier(null);
   };
@@ -229,7 +232,9 @@ export default function Suppliers() {
                     disabled={!supplier.whatsapp && !supplier.phone}
                     onClick={() => {
                       const num = supplier.whatsapp || supplier.phone;
-                      if (num) window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}`);
+                      const url = buildWhatsAppUrl(num, company?.country);
+                      if (url) window.open(url, "_blank");
+                      else toast.error("Supplier has no valid phone number");
                     }}>
                     <MessageCircle className="h-3 w-3" /> WhatsApp
                   </Button>

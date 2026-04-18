@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoney } from "@/lib/currency";
+import { buildWhatsAppUrl } from "@/lib/phone";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
 import { Button } from "@/components/ui/button";
@@ -146,7 +147,9 @@ export default function Customers() {
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => {
                         const num = customer.whatsapp || customer.phone;
-                        if (num) window.open(`https://wa.me/${num.replace(/[^0-9]/g, "")}`);
+                        const url = buildWhatsAppUrl(num, company?.country);
+                        if (url) window.open(url, "_blank");
+                        else toast.error("Customer has no valid phone number");
                       }}>
                         <MessageCircle className="h-3.5 w-3.5" />
                       </Button>
