@@ -41,11 +41,11 @@ function detectMode(): AppMode {
   // Custom UA marker we can inject from the APK shell for unambiguous detection
   if (/Stokivo(POS)?\//i.test(ua)) return "pos";
 
-  // Check if standalone PWA on mobile
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-    || (navigator as any).standalone === true;
-  const isMobile = /Android|iPhone|iPad/i.test(ua);
-  if (isStandalone && isMobile) return "pos";
+  // NOTE: We intentionally do NOT auto-switch to POS mode for standalone PWA on
+  // mobile. Mobile web visitors (including those who added stokivo.com to their
+  // home screen) should still see the marketing/landing site. POS mode is only
+  // for the native app shells (Electron/Capacitor/Android WebView/custom UA) or
+  // explicit ?mode=pos / localStorage override above.
 
   return "full";
 }
