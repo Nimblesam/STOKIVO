@@ -920,6 +920,108 @@ export type Database = {
           },
         ]
       }
+      kitchen_order_items: {
+        Row: {
+          id: string
+          notes: string | null
+          order_id: string
+          product_id: string | null
+          product_name: string
+          qty: number
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          qty?: number
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "kitchen_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kitchen_orders: {
+        Row: {
+          cashier_name: string | null
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          order_number: string
+          ready_at: string | null
+          sale_id: string | null
+          served_at: string | null
+          status: string
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cashier_name?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_number: string
+          ready_at?: string | null
+          sale_id?: string | null
+          served_at?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cashier_name?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_number?: string
+          ready_at?: string | null
+          sale_id?: string | null
+          served_at?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kitchen_orders_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kitchen_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
