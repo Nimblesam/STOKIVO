@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, FileText, Eye, Printer, Loader2, Trash2, Send, Mail, MessageCircle, Bell, CheckCircle, DollarSign, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
