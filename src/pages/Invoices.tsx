@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { syncCustomerBalance } from "@/lib/sync-balance";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatMoney } from "@/lib/currency";
+import { buildWhatsAppUrl } from "@/lib/phone";
 import type { InvoiceStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
