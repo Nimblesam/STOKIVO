@@ -57,23 +57,25 @@ jobs:
       - name: Build Release APK
         working-directory: android
         run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease
         env:
           APP_VERSION: ${{ needs.build-web.outputs.version }}
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/*.apk
 
   build-desktop:
     name: Build Desktop (${{ matrix.os }})
     needs: [build-web]
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Download Web Dist
@@ -89,7 +91,7 @@ jobs:
       - name: Build Electron
         run: npx electron-builder --publish never
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false" # Disable code signing for generic builds
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -98,8 +100,9 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [build-android, build-desktop, build-web]
+    needs: [build-android, build-web] # Only strictly need web and android to start
     runs-on: ubuntu-latest
+    if: always() && needs.build-web.result == 'success'
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -108,8 +111,10 @@ jobs:
       - name: Organize artifacts
         run: |
           mkdir -p final-assets
-          cp artifacts/android-apk/*.apk final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk
-          find artifacts/desktop-* -maxdepth 1 -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} final-assets/ \;
+          # Find any APK and rename it nicely
+          find artifacts/android-apk -name "*.apk" -exec cp {} final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk \;
+          # Find desktop assets
+          find artifacts -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" -exec cp {} final-assets/ \;
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
