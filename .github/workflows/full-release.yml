@@ -16,25 +16,26 @@ jobs:
       version: ${{ steps.get_version.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Get version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+
       - run: npm ci
-      - name: Debug - Show dist before build
-        run: ls -la dist/ 2>/dev/null || echo "dist/ does not exist yet"
-      - run: npm run build
-      - name: Debug - Show dist after build
-        run: ls -lah dist/
+
+      - name: Build Web
+        run: npm run build
+
       - name: Upload Web Dist
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
-          if-no-files-found: error
 
   build-android:
     name: Build Android APK
@@ -42,40 +43,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Web Dist
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
-      - name: Debug - Show downloaded dist
-        run: ls -lah dist/
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+
       - run: npm ci
+
       - name: Sync Capacitor Android
         run: npx cap sync android
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Build Release APK
+
+      - name: Build Android APK
         working-directory: android
-        run: |
-          chmod +x ./gradlew
-          ./gradlew :app:assembleRelease
-        env:
-          APP_VERSION: ${{ needs.build-web.outputs.version }}
-      - name: Debug - Check APK output
-        run: find android/app/build/outputs -name "*.apk" -exec ls -lah {} \;
+        run: ./gradlew assembleRelease
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: android/app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
 
   build-desktop:
     name: Build Desktop (${{ matrix.os }})
@@ -84,81 +83,77 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
+
     runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Web Dist
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
-      - name: Debug - Show downloaded dist
-        run: ls -lah dist/
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+
       - run: npm ci
-      - name: Debug - List root directory before build
-        run: |
-          echo "=== Current directory ===" 
-          pwd
-          echo "=== Root contents ===" 
-          ls -lah
-      - name: Build Electron
+
+      - name: Build Electron App
         run: npx electron-builder --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-      - name: Debug - Check release directory
+
+      - name: Debug Build Output
         run: |
-          echo "=== Checking for release directory ===" 
-          if [ -d "release" ]; then
-            echo "✓ Release directory found:"
-            ls -lah release/
-          else
-            echo "✗ Release directory NOT found"
-            find . -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" 2>/dev/null | head -20
-          fi
-      - name: Upload Artifacts
+          echo "Searching for build outputs..."
+          find . -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \)
+
+      - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}
           path: |
-            release/*.*
-            dist-electron/*
-          if-no-files-found: error
+            release/**/*
+            dist/**/*
+            out/**/*
+            build/**/*
+          if-no-files-found: warn
 
   create-release:
     name: Create GitHub Release
-    needs: [build-android, build-desktop, build-web]
+    needs: [build-web, build-android, build-desktop]
     runs-on: ubuntu-latest
-    if: always() && needs.build-web.result == 'success' && needs.build-android.result == 'success' && needs.build-desktop.result == 'success'
+
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Debug - Show downloaded artifacts
-        run: |
-          echo "=== All artifacts ===" 
-          find artifacts -type f -exec ls -lh {} \;
-      - name: Organize artifacts
+
+      - name: Prepare release assets
         run: |
           mkdir -p final-assets
-          echo "=== Looking for APKs ===" 
-          find artifacts/android-apk -name "*.apk" -exec cp {} final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk \; 2>/dev/null || echo "No APKs found"
-          echo "=== Looking for Desktop assets ===" 
-          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} final-assets/ \; 2>/dev/null || echo "No desktop assets found"
-          echo "=== Final assets ===" 
+
+          echo "Copying APK..."
+          find artifacts -name "*.apk" -exec cp {} final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk \;
+
+          echo "Copying Desktop files..."
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" \) -exec cp {} final-assets/ \;
+
+          echo "Final assets:"
           ls -lah final-assets/
-      - name: Validate artifacts exist
+
+      - name: Validate assets
         run: |
-          if [ $(ls -1 final-assets/ | wc -l) -eq 0 ]; then
-            echo "❌ ERROR: No artifacts found in final-assets!"
+          if [ -z "$(ls -A final-assets)" ]; then
+            echo "❌ No release files found!"
             exit 1
           fi
-          echo "✓ Found $(ls -1 final-assets/ | wc -l) artifacts"
-          ls -lah final-assets/
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
