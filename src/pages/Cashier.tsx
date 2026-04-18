@@ -414,11 +414,39 @@ export default function Cashier() {
 
       if (hasCashPayment && posSettings.auto_open_drawer) await triggerCashDrawer("cash_payment", sale.id);
 
-      setCompletedSale({
+      const finalSale: SaleRecord = {
         id: sale.id, items: [...cart], subtotal, discount: discountAmount, tax, total: grandTotal,
         payments, change_given: changeGiven, cashier_name: activeCashier.name,
         created_at: new Date().toISOString(), company_name: company?.name || "", currency, company_logo: company?.logo_url,
-      });
+      };
+
+      // Auto-print receipt on SUNMI hardware (silent no-op elsewhere)
+      try {
+        const status = await sunmiStatus();
+        if (status.printerReady) {
+          await sunmiPrint(buildReceiptText(finalSale));
+        }
+      } catch { /* ignore print errors */ }
+
+      // KDS broadcast for restaurants
+      if (isRestaurant && !isPayLater) {
+        try {
+          const orderNumber = `KDS-${sale.id.slice(0, 6).toUpperCase()}`;
+          const { data: kds } = await supabase.from("kitchen_orders").insert({
+            company_id: profile.company_id, store_id: activeStoreId, sale_id: sale.id,
+            order_number: orderNumber, status: "pending", cashier_name: activeCashier.name,
+          }).select("id").single();
+          if (kds) {
+            await supabase.from("kitchen_order_items").insert(
+              cart.map((i) => ({
+                order_id: kds.id, product_id: i.product_id, product_name: i.name, qty: i.qty,
+              }))
+            );
+          }
+        } catch { /* KDS errors should never block a sale */ }
+      }
+
+      setCompletedSale(finalSale);
       setShowPayment(false); setCart([]); setDiscountAmount(0);
       toast.success(isPayLater ? "Sale recorded — added to credit ledger" : "Payment successful!");
     } catch (err: any) {
