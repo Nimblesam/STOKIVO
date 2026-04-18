@@ -356,6 +356,9 @@ export default function Invoices() {
                               <DropdownMenuItem onClick={() => sendViaWhatsApp(inv)}><MessageCircle className="h-3.5 w-3.5 mr-2" /> Send via WhatsApp</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Delete Invoice" onClick={() => setDeleteTarget(inv)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
