@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppMode } from "@/contexts/AppModeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useGlobalScanner } from "@/hooks/use-global-scanner";
+import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor } from "lucide-react";
