@@ -16,9 +16,14 @@ function detectMode(): AppMode {
 
   const ua = navigator.userAgent || "";
 
-  // Detect native shells (Electron desktop app, Capacitor/Cordova mobile, Android WebView, custom UA marker).
+  // Detect native shells (Electron desktop app, native Capacitor/Cordova mobile, Android WebView, custom UA marker).
   const isElectron = !!(window as any).electronAPI || / Electron\//i.test(ua);
-  const isCapacitor = !!(window as any).Capacitor || !!(window as any).cordova;
+  const capacitor = (window as any).Capacitor;
+  const capacitorPlatform = typeof capacitor?.getPlatform === "function" ? capacitor.getPlatform() : undefined;
+  const isCapacitorNative = typeof capacitor?.isNativePlatform === "function"
+    ? capacitor.isNativePlatform()
+    : !!capacitor && !!capacitorPlatform && capacitorPlatform !== "web";
+  const isCapacitor = isCapacitorNative || !!(window as any).cordova;
   const isAndroidWebView = /Android/i.test(ua) && /\bwv\b/i.test(ua);
   const hasStokivoUA = /Stokivo(POS)?\//i.test(ua);
   const isNativeShell = isElectron || isCapacitor || isAndroidWebView || hasStokivoUA;
