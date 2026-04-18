@@ -8,6 +8,8 @@ import type { InvoiceStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
+import { renderNodeToPdfBlob, uploadInvoicePdf } from "@/lib/invoice-pdf";
+import { createRoot } from "react-dom/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,18 +148,90 @@ export default function Invoices() {
     }
   };
 
-  const sendViaEmail = (inv: InvoiceRow) => {
+  /**
+   * Render the invoice template offscreen, snapshot to PDF, and upload to storage.
+   * Returns a public URL to the uploaded PDF.
+   */
+  const generateInvoicePdfUrl = async (inv: InvoiceRow): Promise<string> => {
+    if (!profile?.company_id) throw new Error("Missing company");
+
+    // Load items if not already loaded for this invoice
+    let items = selectedInvoice?.id === inv.id ? selectedItems : [];
+    if (items.length === 0) {
+      const { data } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
+      items = data || [];
+    }
+
+    // Render InvoiceTemplate offscreen
+    const host = document.createElement("div");
+    host.style.position = "fixed";
+    host.style.left = "-10000px";
+    host.style.top = "0";
+    host.style.width = "800px";
+    host.style.background = "#ffffff";
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    try {
+      const cust = (inv as any).customers;
+      root.render(
+        <InvoiceTemplate
+          company={getInvoiceCompany()}
+          invoice={{
+            invoiceNumber: inv.invoice_number,
+            createdAt: inv.created_at,
+            dueDate: inv.due_date,
+            status: inv.status as any,
+            subtotal: inv.subtotal,
+            total: inv.total,
+            amountPaid: inv.amount_paid,
+            customerName: cust?.name || "—",
+            customerAddress: cust?.address || undefined,
+            customerPhone: cust?.phone || undefined,
+            customerEmail: cust?.email || undefined,
+            items: items.map((i: any) => ({
+              productName: i.product_name,
+              qty: i.qty,
+              unitPrice: i.unit_price,
+              total: i.total,
+            })),
+          }}
+        />
+      );
+      // Wait for paint + any logo image load
+      await new Promise((r) => setTimeout(r, 350));
+      const blob = await renderNodeToPdfBlob(host.firstElementChild as HTMLElement);
+      return await uploadInvoicePdf(blob, profile.company_id, inv.invoice_number);
+    } finally {
+      root.unmount();
+      host.remove();
+    }
+  };
+
+  const sendViaEmail = async (inv: InvoiceRow) => {
     const cust = (inv as any).customers;
     if (!cust?.email) { toast.error("Customer has no email address"); return; }
-    const subject = encodeURIComponent(`Invoice ${inv.invoice_number} from ${company?.name || "Us"}`);
-    const body = encodeURIComponent(
-      `Hi ${cust.name},\n\nPlease find your invoice ${inv.invoice_number} for ${formatMoney(inv.total, currency)}.\nDue date: ${inv.due_date}\nBalance: ${formatMoney(inv.total - inv.amount_paid, currency)}\n\nThank you!`
-    );
-    window.open(`mailto:${cust.email}?subject=${subject}&body=${body}`);
-    if (inv.status === "draft") {
-      supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
+    const mailWindow = window.open("", "_blank");
+    const t = toast.loading("Generating invoice PDF...");
+    try {
+      const pdfUrl = await generateInvoicePdfUrl(inv);
+      const subject = encodeURIComponent(`Invoice ${inv.invoice_number} from ${company?.name || "Us"}`);
+      const body = encodeURIComponent(
+        `Hi ${cust.name},\n\nPlease find your invoice ${inv.invoice_number} for ${formatMoney(inv.total, currency)}.\nDue date: ${inv.due_date}\nBalance: ${formatMoney(inv.total - inv.amount_paid, currency)}\n\nDownload PDF: ${pdfUrl}\n\nThank you!`
+      );
+      const mailto = `mailto:${cust.email}?subject=${subject}&body=${body}`;
+      if (mailWindow) { mailWindow.location.href = mailto; } else { window.location.href = mailto; }
+      if (inv.status === "draft") {
+        await supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id);
+        fetchData();
+      }
+      toast.dismiss(t);
+      toast.success("Invoice PDF attached to email");
+    } catch (err: any) {
+      toast.dismiss(t);
+      mailWindow?.close();
+      toast.error(err?.message || "Failed to attach PDF");
     }
-    toast.success("Email client opened");
   };
 
   const sendReminder = async (inv: InvoiceRow) => {
@@ -187,16 +261,29 @@ export default function Invoices() {
     fetchData();
   };
 
-  const sendViaWhatsApp = (inv: InvoiceRow) => {
+  const sendViaWhatsApp = async (inv: InvoiceRow) => {
     const cust = (inv as any).customers;
     const num = cust?.whatsapp || cust?.phone;
     if (!num) { toast.error("Customer has no phone/WhatsApp number"); return; }
-    const text = `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\nThank you!`;
-    const url = buildWhatsAppUrl(num, company?.country, text);
-    if (!url) { toast.error("Invalid phone number format"); return; }
-    window.open(url, "_blank");
-    if (inv.status === "draft") {
-      supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id).then(() => fetchData());
+    // Open a placeholder tab first to avoid popup blocker after the await
+    const waWindow = window.open("about:blank", "_blank");
+    const t = toast.loading("Generating invoice PDF...");
+    try {
+      const pdfUrl = await generateInvoicePdfUrl(inv);
+      const text = `Hi ${cust.name}, here's your invoice ${inv.invoice_number}.\n\nTotal: ${formatMoney(inv.total, currency)}\nBalance due: ${formatMoney(inv.total - inv.amount_paid, currency)}\nDue date: ${inv.due_date}\n\n📎 Download PDF: ${pdfUrl}\n\nThank you!`;
+      const url = buildWhatsAppUrl(num, company?.country, text);
+      if (!url) { waWindow?.close(); toast.dismiss(t); toast.error("Invalid phone number format"); return; }
+      if (waWindow) { waWindow.location.href = url; } else { window.open(url, "_blank"); }
+      if (inv.status === "draft") {
+        await supabase.from("invoices").update({ status: "sent" as any }).eq("id", inv.id);
+        fetchData();
+      }
+      toast.dismiss(t);
+      toast.success("Invoice PDF attached to WhatsApp message");
+    } catch (err: any) {
+      toast.dismiss(t);
+      waWindow?.close();
+      toast.error(err?.message || "Failed to attach PDF");
     }
   };
 
