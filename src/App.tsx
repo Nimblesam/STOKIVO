@@ -220,7 +220,7 @@ function ModeRouter() {
   // Full mode: standard web app routing
   return (
     <Routes>
-      <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+      <Route path="/" element={<Landing />} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/onboarding" element={<Onboarding />} />
