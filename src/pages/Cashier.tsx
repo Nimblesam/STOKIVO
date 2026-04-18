@@ -367,15 +367,16 @@ export default function Cashier() {
     searchRef.current?.focus();
   };
 
-  // Categories + filtering — deduplicate case-insensitively
+  // Categories + filtering — deduplicate case-insensitively & collapse whitespace
   const categoryMap = new Map<string, string>();
   allProducts.forEach(p => {
     if (p.category && p.category.trim()) {
-      const key = p.category.trim().toLowerCase();
-      if (!categoryMap.has(key)) categoryMap.set(key, p.category.trim());
+      const display = p.category.trim().replace(/\s+/g, " ");
+      const key = display.toLowerCase();
+      if (!categoryMap.has(key)) categoryMap.set(key, display);
     }
   });
-  const categories = Array.from(categoryMap.values());
+  const categories = Array.from(categoryMap.values()).sort((a, b) => a.localeCompare(b));
 
   const filteredProducts = allProducts.filter(p => {
     const matchesCategory = !categoryFilter || (p.category && p.category.toLowerCase().trim() === categoryFilter.toLowerCase().trim());

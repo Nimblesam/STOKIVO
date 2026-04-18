@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppMode } from "@/contexts/AppModeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useGlobalScanner } from "@/hooks/use-global-scanner";
+import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor } from "lucide-react";
@@ -27,6 +29,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   const { profile, signOut } = useAuth();
   const { setMode } = useAppMode();
   const isMobile = useIsMobile();
+  const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -39,6 +42,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   // Desktop: Top bar navigation
   if (!isMobile) {
     return (
+      <>
       <div className="min-h-screen flex flex-col bg-background">
         {/* Top Bar */}
         <header className="h-14 border-b bg-card flex items-center px-4 gap-4 shrink-0">
@@ -99,11 +103,20 @@ export function PosLayout({ children }: PosLayoutProps) {
           {children}
         </main>
       </div>
+      {unknownBarcode && (
+        <AddProductFromScanDialog
+          barcode={unknownBarcode}
+          open={!!unknownBarcode}
+          onClose={clearUnknownBarcode}
+        />
+      )}
+      </>
     );
   }
 
   // Mobile: Bottom tab navigation
   return (
+    <>
     <div className="min-h-screen flex flex-col bg-background">
       {/* Mobile header */}
       <header className="h-12 border-b bg-card flex items-center px-3 shrink-0">
@@ -162,5 +175,13 @@ export function PosLayout({ children }: PosLayoutProps) {
         ))}
       </nav>
     </div>
+    {unknownBarcode && (
+      <AddProductFromScanDialog
+        barcode={unknownBarcode}
+        open={!!unknownBarcode}
+        onClose={clearUnknownBarcode}
+      />
+    )}
+    </>
   );
 }
