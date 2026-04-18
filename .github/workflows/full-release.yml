@@ -117,8 +117,8 @@ jobs:
       - name: Organize artifacts
         run: |
           mkdir -p final-assets
-          find artifacts -name "*.apk" -exec cp {} final-assets/Stokivo-${{ needs.build-web.outputs.version }}.apk \;
-          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip" -o -name "*.deb" \) -exec cp {} final-assets/ \;
+          find artifacts -name "*.apk" -exec cp {} final-assets/Stokivo.apk \;
+          find artifacts -type f \( -name "Stokivo.dmg" -o -name "Stokivo.exe" -o -name "Stokivo.AppImage" -o -name "Stokivo.zip" -o -name "Stokivo.deb" \) -exec cp {} final-assets/ \;
           ls -R final-assets/
       - name: Create Release
         uses: softprops/action-gh-release@v2
