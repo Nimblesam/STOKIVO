@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StoreProvider } from "@/contexts/StoreContext";
@@ -289,12 +289,15 @@ function ModeRouter() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
+  const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+  const Router = isElectron ? HashRouter : BrowserRouter;
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <Router>
           <ScrollToTop />
           <AuthProvider>
             <StoreProvider>
@@ -305,7 +308,7 @@ function App() {
               </AdminAuthProvider>
             </StoreProvider>
           </AuthProvider>
-        </BrowserRouter>
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );

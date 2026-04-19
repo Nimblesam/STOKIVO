@@ -14,10 +14,13 @@ function createWindow() {
   const isDev = !app.isPackaged;
 
   if (isDev) {
-    // 🔥 USE THIS (your known working state)
-    win.loadURL("http://localhost:5173");
+    win.loadURL("http://localhost:8080"); // Match Vite port
   } else {
-    win.loadFile(path.join(__dirname, "../dist/index.html"));
+    // Ensure the index.html path is correct relative to the packaged app
+    const indexPath = path.join(__dirname, "../dist/index.html");
+    win.loadFile(indexPath).catch(err => {
+      console.error("Failed to load index.html:", err);
+    });
   }
 }
 
