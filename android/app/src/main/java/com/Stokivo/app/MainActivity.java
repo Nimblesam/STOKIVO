@@ -3,9 +3,6 @@ package com.Stokivo.app;
 import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.util.Log;
-import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
 import com.Stokivo.app.sunmi.SunmiPlugin;
 
@@ -18,6 +15,7 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         // Explicitly enable WebView features for Sunmi V2 Pro (Android 7.1.2)
+        // We DO NOT set a custom WebViewClient here, as it breaks the Capacitor Bridge
         WebView webView = getBridge().getWebView();
         if (webView != null) {
             WebSettings settings = webView.getSettings();
@@ -37,29 +35,7 @@ public class MainActivity extends BridgeActivity {
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
             
-            // Debugging Bridge
-            webView.setWebViewClient(new WebViewClient() {
-                @Override
-                public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
-                    super.onPageStarted(view, url, favicon);
-                    Log.d("STOKIVO", "START LOADING: " + url);
-                }
-
-                @Override
-                public void onPageFinished(WebView view, String url) {
-                    super.onPageFinished(view, url);
-                    Log.d("STOKIVO", "SUCCESS: Page loaded -> " + url);
-                }
-
-                @Override
-                public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                    String msg = "WebView Error [" + errorCode + "]: " + description + " (URL: " + failingUrl + ")";
-                    Log.e("STOKIVO", msg);
-                    Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
-                }
-            });
-
-            // Disable edge-to-edge if it causes rendering issues on Sunmi
+            // Ensure the WebView occupies the full screen correctly
             webView.setFitsSystemWindows(true);
         }
     }
