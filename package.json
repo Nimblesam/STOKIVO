@@ -1,7 +1,7 @@
 {
   "name": "stokivo",
   "private": true,
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Stokivo - Wholesale Hub",
   "author": {
     "name": "Stokivo",
@@ -34,11 +34,16 @@
     "files": ["dist/**/*", "electron/**/*", "package.json"],
     "mac": {
       "target": ["dmg", "zip"],
-      "identity": null
+      "identity": null,
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "entitlements": null,
+      "entitlementsInherit": null
     },
     "win": {
       "target": ["nsis", "portable"],
-      "certificateFile": null
+      "certificateFile": null,
+      "verifyUpdateCodeSignature": false
     },
     "linux": {
       "target": ["AppImage", "deb"]

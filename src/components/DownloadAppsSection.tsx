@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Smartphone, Apple, Download, Terminal, Loader2 } from "lucide-react";
+import { Monitor, Smartphone, Apple, Download, Terminal, Loader2, AlertCircle, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DownloadAppsSectionProps {
   variant?: "landing" | "post-onboarding";
@@ -113,8 +120,26 @@ export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSection
         {apps.map((app) => (
           <Card key={app.platform} className="overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center relative">
                 <app.icon className="h-7 w-7 text-primary" />
+                {(app.platform === "macOS" || app.platform === "Windows") && (
+                  <div className="absolute -top-1 -right-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="h-5 w-5 rounded-full bg-background border shadow-sm flex items-center justify-center hover:bg-muted transition-colors">
+                            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[200px] text-xs">
+                          {app.platform === "macOS"
+                            ? "If you see 'File Corrupt', Right-Click the app and select 'Open', or go to System Settings > Privacy & Security to allow it."
+                            : "Windows may show a SmartScreen warning. Click 'More info' then 'Run anyway' to install."}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
               </div>
               <div>
                 <h3 className="font-display font-bold text-foreground text-base">{app.platform}</h3>
@@ -142,9 +167,18 @@ export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSection
       </div>
 
       {!isPostOnboarding && (
-        <p className="text-xs text-muted-foreground text-center mt-4">
-          Desktop and mobile apps are POS-only terminals. All business management is done via the web app.
-        </p>
+        <div className="mt-8 max-w-2xl mx-auto">
+          <Alert variant="secondary" className="bg-muted/50 border-none">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle className="text-xs font-bold uppercase tracking-wider">Installation Note</AlertTitle>
+            <AlertDescription className="text-[11px] leading-relaxed">
+              Stokivo is currently in early access. On <strong>macOS</strong>, if the app is flagged as "damaged", right-click and select <strong>Open</strong> to bypass Gatekeeper. On <strong>Windows</strong>, click <strong>"More info"</strong> and then <strong>"Run anyway"</strong> on the SmartScreen prompt.
+            </AlertDescription>
+          </Alert>
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            Desktop and mobile apps are POS-only terminals. All business management is done via the web app.
+          </p>
+        </div>
       )}
     </div>
   );
