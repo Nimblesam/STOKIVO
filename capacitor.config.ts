@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Stokivo',
   webDir: 'dist',
   server: {
-    androidScheme: 'http'
+    androidScheme: 'http',
+    hostname: 'localhost',
+    cleartext: true
   },
   plugins: {
     Sunmi: {
