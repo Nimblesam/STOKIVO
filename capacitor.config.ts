@@ -5,9 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Stokivo',
   webDir: 'dist',
   server: {
-    androidScheme: 'http',
-    hostname: 'localhost',
-    cleartext: true
+    androidScheme: 'https', // Reverting to https for bridge stability
+    allowNavigation: ['*']
   },
   plugins: {
     Sunmi: {
