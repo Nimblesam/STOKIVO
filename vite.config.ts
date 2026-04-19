@@ -6,22 +6,28 @@ import legacy from "@vitejs/plugin-legacy";
 
 export default defineConfig(({ mode }) => ({
   build: {
-    target: "es2015", // Polyfill for modern JS
+    target: "es2015",
     outDir: "dist",
     assetsDir: "assets",
     cssCodeSplit: false,
     rollupOptions: {
       output: {
-        manualChunks: undefined, // Simpler bundling for old devices
+        manualChunks: undefined,
       },
     },
   },
   base: "./",
-
+  server: {
+    host: "::",
+    port: 8080,
+    hmr: {
+      overlay: false,
+    },
+  },
   plugins: [
     react(),
     legacy({
-      targets: ["chrome >= 52", "android >= 7"], // Specifically target Sunmi V2 Pro / Android 7.1
+      targets: ["chrome >= 52", "android >= 7"],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
       renderLegacyChunks: true,
       polyfills: [
@@ -35,27 +41,6 @@ export default defineConfig(({ mode }) => ({
     }),
     mode === "development" && componentTagger()
   ].filter(Boolean),
-
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-}));
-
-  server: {
-    host: "::",
-    port: 8080,
-    hmr: {
-      overlay: false,
-    },
-  },
-
-  plugins: [
-    react(),
-    mode === "development" && componentTagger()
-  ].filter(Boolean),
-
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
