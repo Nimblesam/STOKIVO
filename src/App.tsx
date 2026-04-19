@@ -290,7 +290,8 @@ function ModeRouter() {
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
   const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-  const Router = isElectron ? HashRouter : BrowserRouter;
+  const isCapacitor = window.hasOwnProperty('Capacitor');
+  const Router = (isElectron || isCapacitor) ? HashRouter : BrowserRouter;
 
   return (
     <QueryClientProvider client={queryClient}>

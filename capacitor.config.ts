@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.Stokivo.app',
   appName: 'Stokivo',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https'
+  },
   plugins: {
     Sunmi: {
       // Enables custom SunmiPlugin registered in MainActivity.java
