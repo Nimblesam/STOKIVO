@@ -1,7 +1,7 @@
 {
   "name": "stokivo",
   "private": true,
-  "version": "1.1.6",
+  "version": "1.1.8",
   "description": "Stokivo - Wholesale Hub",
   "author": {
     "name": "Stokivo",
@@ -41,9 +41,24 @@
       "entitlementsInherit": null
     },
     "win": {
-      "target": ["nsis", "portable"],
-      "certificateFile": null,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Stokivo",
+      "artifactName": "Stokivo.${ext}"
     },
     "linux": {
       "target": ["AppImage", "deb"]
