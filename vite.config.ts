@@ -6,7 +6,7 @@ import legacy from "@vitejs/plugin-legacy";
 
 export default defineConfig(({ mode }) => ({
   build: {
-    target: "es2015",
+    target: "chrome49", // Even lower target for Sunmi V2 Pro stability
     outDir: "dist",
     assetsDir: "assets",
     cssCodeSplit: false,
@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     legacy({
-      targets: ["chrome >= 52", "android >= 7"],
+      targets: ["chrome >= 49", "android >= 7"], // Target even older WebViews
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
       renderLegacyChunks: true,
       polyfills: [
