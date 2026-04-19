@@ -40,6 +40,12 @@ public class MainActivity extends BridgeActivity {
             // Debugging Bridge
             webView.setWebViewClient(new WebViewClient() {
                 @Override
+                public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                    super.onPageStarted(view, url, favicon);
+                    Log.d("STOKIVO", "START LOADING: " + url);
+                }
+
+                @Override
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
                     Log.d("STOKIVO", "SUCCESS: Page loaded -> " + url);

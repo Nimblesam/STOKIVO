@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Stokivo',
   webDir: 'dist',
   server: {
-    androidScheme: 'capacitor', // The most compatible scheme for old Android 7 devices
+    androidScheme: 'https',
+    hostname: 'localhost', // Force correct spelling to override any hidden 'locahost' typo
     allowNavigation: ['*']
   },
   plugins: {
