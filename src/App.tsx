@@ -227,6 +227,8 @@ function ModeRouter() {
       <Route path="/product" element={<Landing />} />
       <Route path="/contact" element={<Landing />} />
       <Route path="/about" element={<Landing />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/onboarding" element={<Onboarding />} />
