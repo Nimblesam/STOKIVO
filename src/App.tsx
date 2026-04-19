@@ -289,15 +289,14 @@ function ModeRouter() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
-  // Robust detection for non-browser environments (Electron, Capacitor, or local file serving)
-  // Force HashRouter for any local development or native apps (Android/Electron)
+  // Use HashRouter for Native Apps (Electron/Capacitor) where file:// or custom schemes are used.
+  // Standard web browsers (including localhost dev) should use BrowserRouter.
   const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-  const isCapacitor = !!(window as any).Capacitor || (window as any).webkit?.messageHandlers?.bridge;
-  const isLocal = window.location.protocol === 'file:' ||
-                 window.location.hostname === 'localhost' ||
-                 window.location.hostname === '127.0.0.1';
+  const isCapacitor = !!(window as any).Capacitor ||
+                     (window as any).webkit?.messageHandlers?.bridge ||
+                     window.location.protocol === 'capacitor:';
 
-  const Router = (isElectron || isCapacitor || isLocal) ? HashRouter : BrowserRouter;
+  const Router = (isElectron || isCapacitor) ? HashRouter : BrowserRouter;
 
   return (
     <QueryClientProvider client={queryClient}>
