@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Stokivo',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
-    hostname: 'localhost', // Force correct spelling to override any hidden 'locahost' typo
+    androidScheme: 'http',
+    hostname: 'app', // Using 'app' instead of 'localhost' to bypass loopback restrictions
     allowNavigation: ['*']
   },
   plugins: {
