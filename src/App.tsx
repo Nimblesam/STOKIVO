@@ -302,8 +302,12 @@ function App() {
   const isWebDomain = window.location.hostname.includes('stokivo.com') ||
                       window.location.hostname.includes('lovable.app');
 
+  // Robust detection for native environments.
+  // If the hostname is localhost or we're not on the web domain, force HashRouter.
   const isNative = window.navigator.userAgent.toLowerCase().includes('electron') ||
                    !!(window as any).Capacitor ||
+                   window.location.hostname === 'localhost' ||
+                   window.location.hostname === '127.0.0.1' ||
                    window.location.protocol === 'file:' ||
                    window.location.protocol === 'capacitor:';
 

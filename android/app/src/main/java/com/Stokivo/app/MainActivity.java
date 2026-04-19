@@ -18,6 +18,9 @@ public class MainActivity extends BridgeActivity {
         // We DO NOT set a custom WebViewClient here, as it breaks the Capacitor Bridge
         WebView webView = getBridge().getWebView();
         if (webView != null) {
+            // Enable WebView debugging (for Chrome Remote Inspect)
+            WebView.setWebContentsDebuggingEnabled(true);
+
             WebSettings settings = webView.getSettings();
             
             // Essential Settings
