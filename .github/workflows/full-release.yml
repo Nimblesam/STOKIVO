@@ -91,12 +91,8 @@ jobs:
         run: npx electron-builder --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          APPLE_ID: ""
-          APPLE_ID_PASSWORD: ""
           # Force unsigned builds for Mac/Win to avoid corrupt flags
           CSC_SKIP_SIGNING: "true"
-          WIN_CSC_LINK: ""
-          WIN_CSC_KEY_PASSWORD: ""
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
