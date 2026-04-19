@@ -615,7 +615,7 @@ export default function Cashier() {
         </div>
 
         {/* Product Grid */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           {filteredProducts.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
@@ -649,7 +649,7 @@ export default function Cashier() {
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* RIGHT: Current Order Panel */}
@@ -696,7 +696,7 @@ export default function Cashier() {
         )}
 
         {/* Cart Items */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-40" />
@@ -739,7 +739,7 @@ export default function Cashier() {
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         {/* Totals + Actions */}
         <div className="border-t border-border p-4 space-y-3">

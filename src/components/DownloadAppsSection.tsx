@@ -1,54 +1,98 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Monitor, Smartphone, Apple, Download, Terminal } from "lucide-react";
+import { Monitor, Smartphone, Apple, Download, Terminal, Loader2 } from "lucide-react";
 
 interface DownloadAppsSectionProps {
   variant?: "landing" | "post-onboarding";
 }
 
-const RELEASE_BASE = "https://github.com/Nimblesam/wholesale-hub/releases/latest/download";
+interface GithubAsset {
+  name: string;
+  browser_download_url: string;
+}
 
-const apps = [
-  {
-    platform: "macOS",
-    cta: "Download for Mac",
-    icon: Apple,
-    description: "Desktop POS for Mac (Intel & Apple Silicon)",
-    fileType: "DMG",
-    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/untagged-35029bc6db3c6f367bbe/Stokivo-0.0.4-mac-arm64.dmg",
-    available: true,
-  },
-  {
-    platform: "Windows",
-    cta: "Download for Windows",
-    icon: Monitor,
-    description: "Desktop POS for Windows 10/11",
-    fileType: "EXE",
-    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/untagged-35029bc6db3c6f367bbe/Stokivo-0.0.4-win-x64.exe",
-    available: true,
-  },
-  {
-    platform: "Linux",
-    cta: "Download for Linux",
-    icon: Terminal,
-    description: "Desktop POS as portable AppImage",
-    fileType: "AppImage",
-    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/untagged-35029bc6db3c6f367bbe/Stokivo-0.0.4-linux-x86_64.AppImage",
-    available: true,
-  },
-  {
-    platform: "Android",
-    cta: "Download for Android",
-    icon: Smartphone,
-    description: "Mobile POS for Android phones & tablets",
-    fileType: "APK",
-    downloadUrl: "https://github.com/Nimblesam/wholesale-hub/releases/download/v0.0.1/app-debug.apk",
-    available: true,
-  },
-];
+interface GithubRelease {
+  assets: GithubAsset[];
+}
+
+const FALLBACK_RELEASE_URL = "https://github.com/Nimblesam/STOKIVO/releases";
 
 export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSectionProps) {
   const isPostOnboarding = variant === "post-onboarding";
+  const [loading, setLoading] = useState(true);
+  const [links, setLinks] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    async function fetchLatestRelease() {
+      try {
+        const response = await fetch(`https://api.github.com/repos/Nimblesam/STOKIVO/releases/latest?t=${Date.now()}`);
+        if (!response.ok) throw new Error("Failed to fetch release");
+        const data: GithubRelease = await response.json();
+
+        const newLinks: { [key: string]: string } = {};
+
+        // Priority: Exact match for standardized names, then fallback to extension match
+        data.assets.forEach(asset => {
+          if (asset.name === "Stokivo.dmg") newLinks.macOS = asset.browser_download_url;
+          if (asset.name === "Stokivo.exe") newLinks.Windows = asset.browser_download_url;
+          if (asset.name === "Stokivo.AppImage") newLinks.Linux = asset.browser_download_url;
+          if (asset.name === "Stokivo.apk") newLinks.Android = asset.browser_download_url;
+        });
+
+        // Second pass: extensions (only if not already set by exact match)
+        data.assets.forEach(asset => {
+          if (!newLinks.macOS && asset.name.endsWith(".dmg")) newLinks.macOS = asset.browser_download_url;
+          if (!newLinks.Windows && asset.name.endsWith(".exe")) newLinks.Windows = asset.browser_download_url;
+          if (!newLinks.Linux && asset.name.endsWith(".AppImage")) newLinks.Linux = asset.browser_download_url;
+          if (!newLinks.Android && asset.name.endsWith(".apk")) newLinks.Android = asset.browser_download_url;
+        });
+
+        setLinks(newLinks);
+      } catch (error) {
+        console.error("Error fetching latest release:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLatestRelease();
+  }, []);
+
+  const apps = [
+    {
+      platform: "macOS",
+      cta: "Download for Mac",
+      icon: Apple,
+      description: "Desktop POS for Mac (Intel & Apple Silicon)",
+      fileType: "DMG",
+      downloadUrl: links.macOS || FALLBACK_RELEASE_URL,
+    },
+    {
+      platform: "Windows",
+      cta: "Download for Windows",
+      icon: Monitor,
+      description: "Desktop POS for Windows 10/11",
+      fileType: "EXE",
+      downloadUrl: links.Windows || FALLBACK_RELEASE_URL,
+    },
+    {
+      platform: "Linux",
+      cta: "Download for Linux",
+      icon: Terminal,
+      description: "Desktop POS as portable AppImage",
+      fileType: "AppImage",
+      downloadUrl: links.Linux || FALLBACK_RELEASE_URL,
+    },
+    {
+      platform: "Android",
+      cta: "Download for Android",
+      icon: Smartphone,
+      description: "Mobile POS for Android phones & tablets",
+      fileType: "APK",
+      downloadUrl: links.Android || FALLBACK_RELEASE_URL,
+    },
+  ];
 
   return (
     <div className={isPostOnboarding ? "space-y-6" : ""}>
@@ -76,10 +120,19 @@ export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSection
                 <h3 className="font-display font-bold text-foreground text-base">{app.platform}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{app.description}</p>
               </div>
-              <Button asChild className="w-full gap-2 rounded-full mt-auto">
-                <a href={app.downloadUrl} download rel="noopener noreferrer">
-                  <Download className="h-4 w-4" />
-                  {app.cta}
+              <Button asChild className="w-full gap-2 rounded-full mt-auto" disabled={loading}>
+                <a href={app.downloadUrl} rel="noopener noreferrer">
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      {app.cta}
+                    </>
+                  )}
                 </a>
               </Button>
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{app.fileType}</span>
