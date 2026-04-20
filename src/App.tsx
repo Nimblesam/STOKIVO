@@ -297,22 +297,12 @@ function ModeRouter() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
-  // Use HashRouter for Native Apps (Electron/Capacitor) where file:// or custom schemes are used.
-  // Standard web browsers on the live domain should use BrowserRouter.
-  const isWebDomain = window.location.hostname.includes('stokivo.com') ||
-                      window.location.hostname.includes('lovable.app');
+  // Check if we are on the live production domain
+  const isProductionWeb = window.location.hostname === 'stokivo.com' ||
+                          window.location.hostname === 'www.stokivo.com';
 
-  // Robust detection for native environments.
-  // If the hostname is localhost or we're not on the web domain, force HashRouter.
-  const isNative = window.navigator.userAgent.toLowerCase().includes('electron') ||
-                   !!(window as any).Capacitor ||
-                   window.location.hostname === 'localhost' ||
-                   window.location.hostname === '127.0.0.1' ||
-                   window.location.protocol === 'file:' ||
-                   window.location.protocol === 'capacitor:';
-
-  // If we're not on the official web domains, default to HashRouter for safety on devices/desktop
-  const Router = (!isWebDomain || isNative) ? HashRouter : BrowserRouter;
+  // Use BrowserRouter for the live website, HashRouter for everything else (Native/Desktop/Dev)
+  const Router = isProductionWeb ? BrowserRouter : HashRouter;
 
   return (
     <QueryClientProvider client={queryClient}>
