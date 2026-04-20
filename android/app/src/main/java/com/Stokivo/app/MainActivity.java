@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "STOKIVO_WEBVIEW";
-    private static final String APP_URL = "https://stokivo.com";
+    private static final String APP_URL = "https://stokivo.com/login";
     private WebView webView;
 
     @Override
