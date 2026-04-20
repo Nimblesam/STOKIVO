@@ -168,7 +168,7 @@ export function DownloadAppsSection({ variant = "landing" }: DownloadAppsSection
 
       {!isPostOnboarding && (
         <div className="mt-8 max-w-2xl mx-auto">
-          <Alert variant="secondary" className="bg-muted/50 border-none">
+          <Alert className="bg-muted/50 border-none">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle className="text-xs font-bold uppercase tracking-wider">Installation Note</AlertTitle>
             <AlertDescription className="text-[11px] leading-relaxed">
