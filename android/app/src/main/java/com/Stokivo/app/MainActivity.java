@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebChromeClient;
+import android.webkit.ConsoleMessage;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -54,14 +56,31 @@ public class MainActivity extends AppCompatActivity {
 
         // Stability & Rendering
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        
+        // Critical for API 21+ compatibility
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
+
+        // Add WebChromeClient to log JS errors (The reason for Blank Page)
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                Log.d(TAG, "JS Console: " + consoleMessage.message() + " -- From line "
+                        + consoleMessage.lineNumber() + " of "
+                        + consoleMessage.sourceId());
+                return true;
+            }
+        });
 
         // High compatibility WebViewClient
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                // Keep navigation inside the app
-                view.loadUrl(url);
+                // Return false to let WebView handle redirects/navigation internally
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    return false;
+                }
                 return true;
             }
 
@@ -72,20 +91,10 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 showErrorPage(view, errorMsg);
             }
-
-            // For newer WebViews (still good to have)
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    onReceivedError(view, error.getErrorCode(), error.getDescription().toString(), request.getUrl().toString());
-                }
-            }
         });
 
-        // Debugging support
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(true);
-        }
+        // Enable debugging via Chrome on PC
+        WebView.setWebContentsDebuggingEnabled(true);
     }
 
     private void showErrorPage(WebView view, String error) {
