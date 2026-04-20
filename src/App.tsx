@@ -297,12 +297,14 @@ function ModeRouter() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
-  // Check if we are on the live production domain
-  const isProductionWeb = window.location.hostname === 'stokivo.com' ||
-                          window.location.hostname === 'www.stokivo.com';
+  // Detect if we are running in a native/desktop environment
+  const isNativeApp = window.navigator.userAgent.toLowerCase().includes('electron') ||
+                      !!(window as any).Capacitor ||
+                      window.location.protocol === 'file:' ||
+                      window.location.protocol.includes('capacitor');
 
-  // Use BrowserRouter for the live website, HashRouter for everything else (Native/Desktop/Dev)
-  const Router = isProductionWeb ? BrowserRouter : HashRouter;
+  // Use BrowserRouter for ALL web browsers, and HashRouter ONLY for native containers
+  const Router = isNativeApp ? HashRouter : BrowserRouter;
 
   return (
     <QueryClientProvider client={queryClient}>
