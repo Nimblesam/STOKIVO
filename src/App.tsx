@@ -297,21 +297,12 @@ function ModeRouter() {
 
 // eslint-disable-next-line react-refresh/only-export-components
 function App() {
-  // Detect if we are running in a native/desktop environment
-  const isNativeApp = window.navigator.userAgent.toLowerCase().includes('electron') ||
-                      !!(window as any).Capacitor ||
-                      window.location.protocol === 'file:' ||
-                      window.location.protocol.includes('capacitor');
-
-  // Use BrowserRouter for ALL web browsers, and HashRouter ONLY for native containers
-  const Router = isNativeApp ? HashRouter : BrowserRouter;
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <Router>
+        <BrowserRouter>
           <ScrollToTop />
           <AuthProvider>
             <StoreProvider>
@@ -322,7 +313,7 @@ function App() {
               </AdminAuthProvider>
             </StoreProvider>
           </AuthProvider>
-        </Router>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
