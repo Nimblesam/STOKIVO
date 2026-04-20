@@ -16,6 +16,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   android: {
     allowMixedContent: true,
+    useLegacyBridge: true,
   },
   plugins: {
     Sunmi: {
