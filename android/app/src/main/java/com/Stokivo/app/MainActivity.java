@@ -2,10 +2,8 @@ package com.Stokivo.app;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebChromeClient;
 import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -14,96 +12,73 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "STOKIVO_WEBVIEW";
-    private static final String APP_URL = "https://stokivo.com/login";
+    private static final String TAG = "STOKIVO_APP";
+    private static final String START_URL = "https://stokivo.com/login";
     private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Use a rock-solid system theme to prevent "keeps stopping" crashes
+        setTheme(android.R.style.Theme_NoTitleBar_Fullscreen);
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        webView = findViewById(R.id.webview);
-        setupWebView();
-        
+        // Create WebView programmatically to bypass layout issues
+        webView = new WebView(this);
+        setContentView(webView);
+
+        configureWebView();
+
         if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL);
+            Log.d(TAG, "Loading Start URL: " + START_URL);
+            webView.loadUrl(START_URL);
         }
     }
 
-    private void setupWebView() {
-        WebSettings settings = webView.getSettings();
-
-        // Core Requirements
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-
-        // File & Content Access
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
+    private void configureWebView() {
+        WebSettings s = webView.getSettings();
         
-        // Legacy Support flags
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
-
-        // Viewport & Scale
-        settings.setUseWideViewPort(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setSupportZoom(true);
-        settings.setBuiltInZoomControls(true);
-        settings.setDisplayZoomControls(false);
-
-        // Stability & Rendering
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // Essential JS & Storage
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setDatabaseEnabled(true);
+        s.setSaveFormData(true);
         
-        // Critical for API 21+ compatibility
+        // Compatibility Flags for Sunmi V2 Pro (Android 7)
+        s.setAllowFileAccess(true);
+        s.setAllowContentAccess(true);
+        s.setLoadWithOverviewMode(true);
+        s.setUseWideViewPort(true);
+        s.setJavaScriptCanOpenWindowsAutomatically(true);
+        
+        // Mixed Content (Allows loading images/scripts from mixed sources)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         }
 
-        // Add WebChromeClient to log JS errors (The reason for Blank Page)
+        // Enable Remote Debugging (chrome://inspect)
+        WebView.setWebContentsDebuggingEnabled(true);
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                Log.e(TAG, "Error: " + description + " at " + failingUrl);
+                Toast.makeText(MainActivity.this, "Connection Error: " + description, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                // Allow the WebView to handle its own navigation/redirects
+                return false; 
+            }
+        });
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                Log.d(TAG, "JS Console: " + consoleMessage.message() + " -- From line "
-                        + consoleMessage.lineNumber() + " of "
-                        + consoleMessage.sourceId());
+                Log.d(TAG, "JS: " + consoleMessage.message());
                 return true;
             }
         });
-
-        // High compatibility WebViewClient
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                // Return false to let WebView handle redirects/navigation internally
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                String errorMsg = "Load Error [" + errorCode + "]: " + description;
-                Log.e(TAG, errorMsg + " URL: " + failingUrl);
-                Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_LONG).show();
-                showErrorPage(view, errorMsg);
-            }
-        });
-
-        // Enable debugging via Chrome on PC
-        WebView.setWebContentsDebuggingEnabled(true);
-    }
-
-    private void showErrorPage(WebView view, String error) {
-        String htmlData = "<html><body style='text-align:center; padding-top:20%; font-family:sans-serif;'>" +
-                "<h1>Connection Error</h1>" +
-                "<p>" + error + "</p>" +
-                "<button onclick='location.reload()' style='padding:10px 20px;'>Retry</button>" +
-                "</body></html>";
-        view.loadDataWithBaseURL(null, htmlData, "text/html", "UTF-8", null);
     }
 
     @Override
