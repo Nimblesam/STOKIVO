@@ -150,11 +150,15 @@ export function PosLayout({ children }: PosLayoutProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
-              <Monitor className="h-4 w-4" />
-              Full Mode
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {!isNativeShell && (
+              <>
+                <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
+                  <Monitor className="h-4 w-4" />
+                  Full Mode
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={signOut} className="gap-2 text-destructive">
               <LogOut className="h-4 w-4" />
               Logout
