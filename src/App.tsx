@@ -278,6 +278,8 @@ function ModeRouter() {
           <AppLayout>
             <Routes>
               <Route index element={<Cashier />} />
+              <Route path="products" element={<Products />} />
+              <Route path="invoices" element={<Invoices />} />
               <Route path="refunds" element={<PosRefunds />} />
               <Route path="receipts" element={<PosReceipts />} />
               <Route path="more" element={<PosMore />} />
