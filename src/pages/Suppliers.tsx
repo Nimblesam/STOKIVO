@@ -45,7 +45,7 @@ export default function Suppliers() {
     if (!profile?.company_id) return;
     setLoading(true);
     const [{ data: s }, { data: p }, { data: si }] = await Promise.all([
-      supabase.from("suppliers").select("*").eq("company_id", profile.company_id).order("created_at", { ascending: false }),
+      supabase.from("suppliers").select("*").eq("company_id", profile.company_id).order("name", { ascending: true }),
       supabase.from("products").select("*").eq("company_id", profile.company_id),
       supabase.from("sale_items").select("product_id, qty"),
     ]);
