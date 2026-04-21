@@ -271,9 +271,13 @@ export default function Settings() {
           <div className="stokivo-card p-6 space-y-6">
             <div className="flex items-center gap-4 mb-6">
               {companyForm.logo_url ? (
-                <img src={companyForm.logo_url} alt={companyForm.name} className="h-16 w-16 rounded-xl object-contain border" />
+                <img
+                  src={companyForm.logo_url}
+                  alt={companyForm.name}
+                  className="h-20 w-auto max-w-[180px] rounded-xl object-contain border bg-white p-1"
+                />
               ) : (
-                <div className="h-16 w-16 rounded-xl flex items-center justify-center" style={{ backgroundColor: companyForm.brand_color + "20" }}>
+                <div className="h-20 w-20 rounded-xl flex items-center justify-center" style={{ backgroundColor: companyForm.brand_color + "20" }}>
                   <Building2 className="h-8 w-8" style={{ color: companyForm.brand_color }} />
                 </div>
               )}
