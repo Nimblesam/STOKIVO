@@ -154,6 +154,9 @@ export default function Integrations() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [syncing, setSyncing] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  // Controls the upgrade splash modal for starter users. Allow dismiss so the
+  // page is not frozen behind the modal.
+  const [showUpgrade, setShowUpgrade] = useState(true);
 
   // WhatsApp config state
   const [waEnabled, setWaEnabled] = useState(false);
