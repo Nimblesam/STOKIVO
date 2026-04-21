@@ -59,6 +59,7 @@ import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminFeatureFlags from "./pages/admin/AdminFeatureFlags";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminSecurity from "./pages/admin/AdminSecurity";
 import KitchenDisplay from "./pages/KitchenDisplay";
 
 const queryClient = new QueryClient();
@@ -266,6 +267,7 @@ function ModeRouter() {
               <Route path="feature-flags" element={<AdminFeatureFlags />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="support" element={<AdminSupport />} />
+              <Route path="security" element={<AdminSecurity />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AdminLayout>

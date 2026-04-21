@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Building2, Users, CreditCard, ArrowLeftRight,
-  Plug, AlertTriangle, ClipboardList, Flag, Headphones, LogOut, Shield, BarChart3,
+  Plug, AlertTriangle, ClipboardList, Flag, Headphones, LogOut, Shield, BarChart3, ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
@@ -26,6 +26,7 @@ const items = [
   { title: "Audit Logs", url: "/admin/audit-logs", icon: ClipboardList },
   { title: "Feature Flags", url: "/admin/feature-flags", icon: Flag },
   { title: "Support", url: "/admin/support", icon: Headphones },
+  { title: "Security (2FA)", url: "/admin/security", icon: ShieldCheck },
 ];
 
 export function AdminSidebar() {
