@@ -171,15 +171,16 @@ export function PosLayout({ children }: PosLayoutProps) {
       <nav className="fixed bottom-0 left-0 right-0 h-14 border-t bg-card flex items-center justify-around z-50">
         {[
           { title: "Sell", url: "/pos", icon: ShoppingCart },
+          { title: "Products", url: "/pos/products", icon: Package },
+          { title: "Invoices", url: "/pos/invoices", icon: FileText },
           { title: "Orders", url: "/pos/receipts", icon: Receipt },
-          { title: "Refunds", url: "/pos/refunds", icon: RotateCcw },
           { title: "More", url: "/pos/more", icon: Settings },
         ].map((item) => (
           <button
             key={item.url}
             onClick={() => navigate(item.url)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors",
+              "flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors",
               isActive(item.url)
                 ? "text-primary"
                 : "text-muted-foreground"
