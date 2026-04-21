@@ -7,6 +7,14 @@ export function PosReceipt({ sale }: { sale: SaleRecord }) {
     <div className="max-w-[300px] mx-auto bg-white text-black p-6 font-mono text-xs print:shadow-none" id="pos-receipt">
       {/* Header */}
       <div className="text-center mb-4">
+        {sale.company_logo ? (
+          <img
+            src={sale.company_logo}
+            alt={sale.company_name || "Logo"}
+            crossOrigin="anonymous"
+            className="h-14 w-auto max-w-[200px] object-contain mx-auto mb-2"
+          />
+        ) : null}
         <h2 className="font-bold text-sm">{sale.company_name || "Stokivo POS"}</h2>
         <p className="text-[10px] text-gray-500 mt-1">
           {format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}
