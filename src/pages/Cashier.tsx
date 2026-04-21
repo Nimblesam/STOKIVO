@@ -623,7 +623,7 @@ export default function Cashier() {
               <p className="text-sm mt-1">Try a different search or category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-3">
+            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-3">
               {filteredProducts.map((p) => (
                 <button
                   key={p.id}
