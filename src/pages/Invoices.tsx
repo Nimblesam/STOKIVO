@@ -503,7 +503,7 @@ export default function Invoices() {
         title="Invoices"
         subtitle={`${invoices.length} invoices`}
         actions={
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => setShowCreate(true)}>
+          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={openCreate}>
             <Plus className="h-4 w-4" /> New Invoice
           </Button>
         }
