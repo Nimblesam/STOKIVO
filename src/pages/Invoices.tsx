@@ -60,13 +60,15 @@ export default function Invoices() {
   const [deleteTarget, setDeleteTarget] = useState<InvoiceRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // editingId !== null when editing an existing draft.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newInv, setNewInv] = useState({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
 
   const fetchData = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     let invsQ = supabase.from("invoices").select("*, customers(name, address, phone, email, whatsapp)").eq("company_id", profile.company_id).order("created_at", { ascending: false });
-    let prodsQ = supabase.from("products").select("id, name, selling_price").eq("company_id", profile.company_id);
+    let prodsQ = supabase.from("products").select("id, name, selling_price, sku").eq("company_id", profile.company_id);
     let custsQ = supabase.from("customers").select("id, name").eq("company_id", profile.company_id);
     if (activeStoreId) {
       invsQ = invsQ.eq("store_id", activeStoreId);
@@ -89,36 +91,96 @@ export default function Invoices() {
   // Reset page when filter changes
   useEffect(() => { setCurrentPage(1); }, [filter]);
 
-  const handleCreate = async () => {
+  const resetForm = () => {
+    setEditingId(null);
+    setNewInv({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setShowCreate(true);
+  };
+
+  const openEditDraft = async (inv: InvoiceRow) => {
+    if (inv.status !== "draft") {
+      toast.error("Only draft invoices can be edited");
+      return;
+    }
+    const { data: items } = await supabase.from("invoice_items").select("product_id, qty").eq("invoice_id", inv.id);
+    setEditingId(inv.id);
+    setNewInv({
+      customer_id: inv.customer_id,
+      due_date: inv.due_date,
+      items: (items && items.length > 0)
+        ? items.map((i: any) => ({ product_id: i.product_id || "", qty: String(i.qty ?? 1) }))
+        : [{ product_id: "", qty: "1" }],
+    });
+    setShowCreate(true);
+  };
+
+  /**
+   * Persist the invoice. Used for both initial draft creation and edits.
+   * Status is "draft" when saveAsDraft, otherwise preserves the existing status (or "draft" for new).
+   */
+  const persistInvoice = async (saveAsDraft: boolean) => {
     if (!newInv.customer_id || !newInv.due_date) { toast.error("Customer and due date are required"); return; }
     if (!profile?.company_id) return;
     setSaving(true);
     const validItems = newInv.items.filter(i => i.product_id);
+    // Pull live name + price from products list at save time so line items always
+    // reflect the current product catalogue.
     const itemDetails = validItems.map(i => {
       const prod = products.find(p => p.id === i.product_id);
       const qty = parseInt(i.qty) || 1;
-      return { product_id: i.product_id, product_name: prod?.name || "", qty, unit_price: prod?.selling_price || 0, total: qty * (prod?.selling_price || 0) };
+      return {
+        product_id: i.product_id,
+        product_name: prod?.name || "",
+        qty,
+        unit_price: prod?.selling_price || 0,
+        total: qty * (prod?.selling_price || 0),
+      };
     });
     const subtotal = itemDetails.reduce((s, i) => s + i.total, 0);
-    const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
 
-    const { data: inv, error } = await supabase.from("invoices").insert({
-      company_id: profile.company_id, customer_id: newInv.customer_id,
-      invoice_number: invNum, due_date: newInv.due_date,
-      subtotal, total: subtotal, status: "draft" as any,
-      store_id: activeStoreId,
-    }).select("id").single();
-
-    if (error || !inv) { toast.error(error?.message || "Failed"); setSaving(false); return; }
-    if (itemDetails.length > 0) {
-      await supabase.from("invoice_items").insert(itemDetails.map(i => ({ ...i, invoice_id: inv.id })));
+    if (editingId) {
+      // Update existing draft
+      const { error: updErr } = await supabase.from("invoices").update({
+        customer_id: newInv.customer_id,
+        due_date: newInv.due_date,
+        subtotal,
+        total: subtotal,
+        status: "draft" as any,
+      }).eq("id", editingId);
+      if (updErr) { toast.error(updErr.message); setSaving(false); return; }
+      // Replace items
+      await supabase.from("invoice_items").delete().eq("invoice_id", editingId);
+      if (itemDetails.length > 0) {
+        await supabase.from("invoice_items").insert(itemDetails.map(i => ({ ...i, invoice_id: editingId })));
+      }
+      toast.success("Draft updated");
+    } else {
+      const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
+      const { data: inv, error } = await supabase.from("invoices").insert({
+        company_id: profile.company_id, customer_id: newInv.customer_id,
+        invoice_number: invNum, due_date: newInv.due_date,
+        subtotal, total: subtotal, status: "draft" as any,
+        store_id: activeStoreId,
+      }).select("id").single();
+      if (error || !inv) { toast.error(error?.message || "Failed"); setSaving(false); return; }
+      if (itemDetails.length > 0) {
+        await supabase.from("invoice_items").insert(itemDetails.map(i => ({ ...i, invoice_id: inv.id })));
+      }
+      toast.success(saveAsDraft ? `Draft ${invNum} saved` : `Invoice ${invNum} created!`);
     }
-    toast.success(`Invoice ${invNum} created!`);
+
     setShowCreate(false);
-    setNewInv({ customer_id: "", due_date: "", items: [{ product_id: "", qty: "1" }] });
+    resetForm();
     fetchData();
     setSaving(false);
   };
+
+  const handleCreate = () => persistInvoice(false);
+  const handleSaveDraft = () => persistInvoice(true);
 
   const viewInvoice = async (inv: InvoiceRow) => {
     setSelectedItems([]);
