@@ -303,9 +303,11 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           custom_domain: string | null
           email: string | null
+          enable_offline_payments: boolean
           id: string
           logo_url: string | null
           name: string
+          payment_instructions: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
           status: string
@@ -323,9 +325,11 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           custom_domain?: string | null
           email?: string | null
+          enable_offline_payments?: boolean
           id?: string
           logo_url?: string | null
           name: string
+          payment_instructions?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           status?: string
@@ -343,9 +347,11 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           custom_domain?: string | null
           email?: string | null
+          enable_offline_payments?: boolean
           id?: string
           logo_url?: string | null
           name?: string
+          payment_instructions?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           status?: string

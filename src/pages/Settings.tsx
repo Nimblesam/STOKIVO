@@ -56,6 +56,7 @@ export default function Settings() {
     name: "", address: "", country: "", currency: "GBP", brand_color: "#0d9488",
     business_type: "wholesale", company_number: "", phone: "", email: "",
     custom_domain: "", subdomain: "", logo_url: "",
+    enable_offline_payments: false, payment_instructions: "",
   });
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
@@ -76,6 +77,8 @@ export default function Settings() {
             company_number: (data as any).company_number || "", phone: (data as any).phone || "",
             email: (data as any).email || "", custom_domain: (data as any).custom_domain || "",
             subdomain: (data as any).subdomain || "", logo_url: data.logo_url || "",
+            enable_offline_payments: !!(data as any).enable_offline_payments,
+            payment_instructions: (data as any).payment_instructions || "",
           });
         }
       });
@@ -144,6 +147,10 @@ export default function Settings() {
       business_type: companyForm.business_type as any,
       company_number: companyForm.company_number || null,
       phone: companyForm.phone || null, email: companyForm.email || null,
+      enable_offline_payments: companyForm.enable_offline_payments,
+      payment_instructions: companyForm.enable_offline_payments
+        ? (companyForm.payment_instructions || null)
+        : null,
     } as any).eq("id", company.id);
     setSaving(false);
     if (error) toast.error(error.message);
@@ -342,6 +349,49 @@ export default function Settings() {
                 </div>
               </div>
             </div>
+
+            {/* Offline Payment Instructions */}
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Label htmlFor="enable-offline-payments" className="text-base font-semibold">
+                    Enable offline payments
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Show custom payment instructions on every invoice you send.
+                  </p>
+                </div>
+                <Switch
+                  id="enable-offline-payments"
+                  checked={companyForm.enable_offline_payments}
+                  onCheckedChange={(checked) =>
+                    setCompanyForm({ ...companyForm, enable_offline_payments: checked })
+                  }
+                />
+              </div>
+              {companyForm.enable_offline_payments && (
+                <div>
+                  <Label htmlFor="payment-instructions">
+                    Payment Instructions <span className="text-muted-foreground font-normal">(shown on invoices)</span>
+                  </Label>
+                  <Textarea
+                    id="payment-instructions"
+                    value={companyForm.payment_instructions}
+                    onChange={(e) =>
+                      setCompanyForm({ ...companyForm, payment_instructions: e.target.value })
+                    }
+                    placeholder="Add payment instructions for your customers (e.g. bank transfer details or how to request them)"
+                    rows={5}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Only include information you're comfortable sharing with customers.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <Button onClick={handleSaveCompany} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save Changes
             </Button>
