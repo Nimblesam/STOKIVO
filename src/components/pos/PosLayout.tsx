@@ -9,7 +9,7 @@ import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog"
 import { LowStockNotification } from "@/components/LowStockNotification";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor } from "lucide-react";
+import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor, Package, FileText } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -21,6 +21,8 @@ interface PosLayoutProps {
 
 const posNavItems = [
   { title: "Cashier", url: "/pos", icon: ShoppingCart },
+  { title: "Products", url: "/pos/products", icon: Package },
+  { title: "Invoices", url: "/pos/invoices", icon: FileText },
   { title: "Refunds", url: "/pos/refunds", icon: RotateCcw },
   { title: "Receipts", url: "/pos/receipts", icon: Receipt },
 ];
