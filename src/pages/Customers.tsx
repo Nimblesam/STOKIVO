@@ -35,7 +35,7 @@ export default function Customers() {
   const fetchCustomers = async () => {
     if (!profile?.company_id) return;
     setLoading(true);
-    let q = supabase.from("customers").select("*").eq("company_id", profile.company_id).order("created_at", { ascending: false });
+    let q = supabase.from("customers").select("*").eq("company_id", profile.company_id).order("name", { ascending: true });
     if (activeStoreId) q = q.eq("store_id", activeStoreId);
     const { data } = await q;
     setCustomers(data || []);

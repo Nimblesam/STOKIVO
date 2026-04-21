@@ -61,7 +61,7 @@ export default function Products() {
       .from("products")
       .select("*")
       .eq("company_id", profile.company_id)
-      .order("created_at", { ascending: false });
+      .order("name", { ascending: true });
     if (activeStoreId) q = q.eq("store_id", activeStoreId);
     const { data } = await q;
     setProducts(data || []);
