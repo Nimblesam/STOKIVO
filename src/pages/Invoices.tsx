@@ -8,7 +8,7 @@ import type { InvoiceStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
-import { renderNodeToPdfBlob, uploadInvoicePdf } from "@/lib/invoice-pdf";
+import { renderNodeToPdfBlob } from "@/lib/invoice-pdf";
 import { createRoot } from "react-dom/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -458,6 +458,8 @@ export default function Invoices() {
     logo_url: fullCompany?.logo_url || null,
     currency: (fullCompany?.currency || company?.currency || "GBP") as any,
     brand_color: fullCompany?.brand_color || company?.brand_color || "#0d9488",
+    enable_offline_payments: !!fullCompany?.enable_offline_payments,
+    payment_instructions: fullCompany?.payment_instructions || null,
   });
 
   const handlePrintInvoice = () => {
