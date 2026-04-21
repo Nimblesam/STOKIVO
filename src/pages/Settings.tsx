@@ -6,6 +6,8 @@ import { formatMoney } from "@/lib/currency";
 import { PLANS, STRIPE_PRICES } from "@/lib/demo-data";
 import { validateEmail, validateAddress } from "@/lib/validation";
 import { FieldError } from "@/components/FieldError";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { countryToIso } from "@/lib/country-iso";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
