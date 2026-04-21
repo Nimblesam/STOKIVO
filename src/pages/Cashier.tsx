@@ -566,9 +566,9 @@ export default function Cashier() {
 
   // MAIN POS LAYOUT
   return (
-    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-3.5rem)] -m-6">
+    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100dvh-6.5rem)] lg:h-[calc(100dvh-3.5rem)]">
       {/* LEFT: Product Grid */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+      <div className="flex-1 flex flex-col min-w-0 border-b lg:border-b-0 lg:border-r border-border min-h-[40vh] lg:min-h-0">
         {/* Search + Status Bar */}
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
