@@ -7,7 +7,7 @@ import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
 
 export default function PosMore() {
   const { profile, signOut } = useAuth();
-  const { setMode } = useAppMode();
+  const { setMode, isNativeShell } = useAppMode();
 
   return (
     <div className="p-6 max-w-md mx-auto space-y-4">
@@ -24,14 +24,16 @@ export default function PosMore() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="py-4">
-            <Button variant="outline" className="w-full gap-2" onClick={() => setMode("full")}>
-              <Monitor className="h-4 w-4" />
-              Switch to Full Mode
-            </Button>
-          </CardContent>
-        </Card>
+        {!isNativeShell && (
+          <Card>
+            <CardContent className="py-4">
+              <Button variant="outline" className="w-full gap-2" onClick={() => setMode("full")}>
+                <Monitor className="h-4 w-4" />
+                Switch to Full Mode
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="py-4">

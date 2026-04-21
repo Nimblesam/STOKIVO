@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type AppMode = "full" | "pos";
 
@@ -7,16 +7,14 @@ interface AppModeContextValue {
   setMode: (mode: AppMode) => void;
   isFullMode: boolean;
   isPosMode: boolean;
+  isNativeShell: boolean;
 }
 
 const AppModeContext = createContext<AppModeContextValue | undefined>(undefined);
 
-function detectMode(): AppMode {
-  if (typeof window === "undefined") return "full";
-
+function detectNativeShell(): boolean {
+  if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
-
-  // Detect native shells (Electron desktop app, native Capacitor/Cordova mobile, Android WebView, custom UA marker).
   const isElectron = !!(window as any).electronAPI || / Electron\//i.test(ua);
   const capacitor = (window as any).Capacitor;
   const capacitorPlatform = typeof capacitor?.getPlatform === "function" ? capacitor.getPlatform() : undefined;
@@ -26,7 +24,13 @@ function detectMode(): AppMode {
   const isCapacitor = isCapacitorNative || !!(window as any).cordova;
   const isAndroidWebView = /Android/i.test(ua) && /\bwv\b/i.test(ua);
   const hasStokivoUA = /Stokivo(POS)?\//i.test(ua);
-  const isNativeShell = isElectron || isCapacitor || isAndroidWebView || hasStokivoUA;
+  return isElectron || isCapacitor || isAndroidWebView || hasStokivoUA;
+}
+
+function detectMode(): AppMode {
+  if (typeof window === "undefined") return "full";
+
+  const isNativeShell = detectNativeShell();
 
   // URL param override (?mode=pos / ?mode=full) — works everywhere for manual testing.
   const params = new URLSearchParams(window.location.search);
@@ -34,27 +38,20 @@ function detectMode(): AppMode {
   if (urlMode === "pos") return "pos";
   if (urlMode === "full") return "full";
 
-  // localStorage override — ONLY honored inside native shells. On regular web browsers
-  // (stokivo.com / *.lovable.app), we ignore any stale "pos" value left over from
-  // previous testing so the public marketing/landing site always loads.
-  if (isNativeShell) {
-    const stored = localStorage.getItem("stokivo_app_mode");
-    if (stored === "pos") return "pos";
-    if (stored === "full") return "full";
-    // Default for native shells = POS
-    return "pos";
-  }
+  // Native shells (Android/Desktop) are LOCKED to POS mode — no Full Mode switching.
+  if (isNativeShell) return "pos";
 
   // Regular web browser → always FULL mode (landing/marketing/business app).
-  // Do not auto-switch to POS for PWA / mobile / standalone — those visitors should
-  // still see the landing page.
   return "full";
 }
 
 export function AppModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<AppMode>(detectMode);
+  const [isNativeShell] = useState<boolean>(detectNativeShell);
 
   const setMode = (newMode: AppMode) => {
+    // Native shells (Android/Desktop) cannot leave POS mode.
+    if (isNativeShell && newMode === "full") return;
     localStorage.setItem("stokivo_app_mode", newMode);
     setModeState(newMode);
   };
@@ -64,6 +61,7 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
     setMode,
     isFullMode: mode === "full",
     isPosMode: mode === "pos",
+    isNativeShell,
   };
 
   return (

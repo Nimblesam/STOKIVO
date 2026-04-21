@@ -31,7 +31,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
-  const { setMode } = useAppMode();
+  const { setMode, isNativeShell } = useAppMode();
   const isMobile = useIsMobile();
   const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
 
@@ -94,11 +94,15 @@ export function PosLayout({ children }: PosLayoutProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
-                  <Monitor className="h-4 w-4" />
-                  Switch to Full Mode
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {!isNativeShell && (
+                  <>
+                    <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
+                      <Monitor className="h-4 w-4" />
+                      Switch to Full Mode
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={signOut} className="gap-2 text-destructive">
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -146,11 +150,15 @@ export function PosLayout({ children }: PosLayoutProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
-              <Monitor className="h-4 w-4" />
-              Full Mode
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {!isNativeShell && (
+              <>
+                <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
+                  <Monitor className="h-4 w-4" />
+                  Full Mode
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={signOut} className="gap-2 text-destructive">
               <LogOut className="h-4 w-4" />
               Logout
