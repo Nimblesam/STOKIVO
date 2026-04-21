@@ -68,7 +68,18 @@ export function InvoiceTemplate({ company, invoice, compact = false }: InvoiceTe
       <div className={`flex justify-between items-start ${headerMb}`}>
         <div>
           {company.logo_url ? (
-            <img src={company.logo_url} alt={company.name} className={`${compact ? "h-10" : "h-12"} mb-2 object-contain`} />
+            <div className="mb-2">
+              <img
+                src={company.logo_url}
+                alt={company.name}
+                crossOrigin="anonymous"
+                loading="eager"
+                decoding="sync"
+                className={`${compact ? "h-16" : "h-20"} w-auto max-w-[260px] object-contain`}
+                style={{ imageRendering: "auto" }}
+              />
+              <h2 className="sr-only">{company.name}</h2>
+            </div>
           ) : (
             <h2 className="text-2xl font-display font-bold" style={{ color: brandColor }}>{company.name}</h2>
           )}

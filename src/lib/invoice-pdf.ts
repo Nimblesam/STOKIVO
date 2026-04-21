@@ -12,13 +12,30 @@ import { supabase } from "@/integrations/supabase/client";
  * height ratio) do we fall back to multi-page rendering to preserve legibility.
  */
 export async function renderNodeToPdfBlob(node: HTMLElement): Promise<Blob> {
+  // Wait for all images (e.g., merchant logo) inside the node to fully load
+  // before snapshotting. Without this, html2canvas may rasterize a half-loaded
+  // logo and produce a blurry/empty image in the PDF.
+  const imgs = Array.from(node.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) return resolve();
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        }),
+    ),
+  );
+
   const canvas = await html2canvas(node, {
-    scale: 2,
+    scale: 3, // higher scale = crisper logo and text in the rasterised PDF
     useCORS: true,
+    allowTaint: false,
     backgroundColor: "#ffffff",
     logging: false,
+    imageTimeout: 15000,
   });
-  const imgData = canvas.toDataURL("image/jpeg", 0.92);
+  const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const pageWidth = pdf.internal.pageSize.getWidth();
