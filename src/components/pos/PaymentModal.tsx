@@ -249,21 +249,21 @@ export function PaymentModal({
   // Manual card confirmation modal
   if (showManualCard) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-            <h3 className="font-display font-bold text-lg">Manual Card Payment</h3>
-            <Button variant="ghost" size="icon" onClick={() => setShowManualCard(false)} className="h-8 w-8">
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
+        <Card className="w-full max-w-md overflow-hidden max-h-[95vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-4 border-b bg-muted/30 sticky top-0 bg-card z-10">
+            <h3 className="font-display font-bold text-base sm:text-lg">Manual Card Payment</h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowManualCard(false)} className="h-8 w-8 shrink-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <div className="p-6 space-y-5 text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-accent/10 flex items-center justify-center">
-              <Hand className="h-8 w-8 text-accent" />
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 text-center">
+            <div className="mx-auto h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-accent/10 flex items-center justify-center">
+              <Hand className="h-7 w-7 sm:h-8 sm:w-8 text-accent" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Please enter on your card machine</p>
-              <p className="text-4xl font-bold tabular-nums">{formatMoney(pendingCardAmount, currency)}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Please enter on your card machine</p>
+              <p className="text-2xl sm:text-4xl font-bold tabular-nums break-words">{formatMoney(pendingCardAmount, currency)}</p>
             </div>
             <div className="bg-muted/40 rounded-lg p-3 text-left text-xs text-muted-foreground space-y-1">
               <p>1. Enter the amount above on your external card machine</p>
@@ -271,12 +271,13 @@ export function PaymentModal({
               <p>3. Wait for the machine to confirm approval</p>
               <p>4. Tap <span className="font-semibold text-foreground">Confirm Payment</span> below</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowManualCard(false)}>
-                Cancel
+            <div className="flex flex-col gap-2 pt-2">
+              <Button onClick={confirmManual} className="font-semibold h-12 text-base w-full">
+                <CheckCircle2 className="h-4 w-4 mr-2 shrink-0" />
+                <span className="truncate">Confirm Payment</span>
               </Button>
-              <Button onClick={confirmManual} className="font-semibold">
-                <CheckCircle2 className="h-4 w-4 mr-2" /> Confirm Payment
+              <Button variant="outline" onClick={() => setShowManualCard(false)} className="h-10 w-full">
+                Cancel
               </Button>
             </div>
           </div>

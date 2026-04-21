@@ -566,9 +566,9 @@ export default function Cashier() {
 
   // MAIN POS LAYOUT
   return (
-    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100vh-3.5rem)] -m-6">
+    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100dvh-6.5rem)] lg:h-[calc(100dvh-3.5rem)]">
       {/* LEFT: Product Grid */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+      <div className="flex-1 flex flex-col min-w-0 border-b lg:border-b-0 lg:border-r border-border min-h-[40vh] lg:min-h-0">
         {/* Search + Status Bar */}
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
@@ -623,7 +623,7 @@ export default function Cashier() {
               <p className="text-sm mt-1">Try a different search or category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-3">
+            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-3">
               {filteredProducts.map((p) => (
                 <button
                   key={p.id}
@@ -653,7 +653,7 @@ export default function Cashier() {
       </div>
 
       {/* RIGHT: Current Order Panel */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card">
+      <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card max-h-[60vh] lg:max-h-none">
         {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
