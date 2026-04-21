@@ -17,6 +17,8 @@ import { Plus, Phone, MessageCircle, Truck, Loader2, MoreVertical, Pencil, Trash
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { countryToIso } from "@/lib/country-iso";
 
 const emptyForm = { name: "", phone: "", whatsapp: "", email: "", address: "" };
 
@@ -333,7 +335,15 @@ export default function Suppliers() {
             </div>
             <div>
               <Label>Address</Label>
-              <Input value={form.address} onChange={(e) => { setForm({ ...form, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} placeholder="Address" className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+              <div className="mt-1">
+                <AddressAutocomplete
+                  value={form.address}
+                  onChange={(v) => { setForm({ ...form, address: v }); setFieldErrors(f => ({ ...f, address: null })); }}
+                  placeholder="Start typing an address..."
+                  country={countryToIso(company?.country)}
+                  className={fieldErrors.address ? "border-destructive" : ""}
+                />
+              </div>
               <FieldError message={fieldErrors.address} />
             </div>
             <Button onClick={handleSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
