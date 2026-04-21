@@ -560,6 +560,9 @@ export default function Invoices() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="View Invoice" onClick={() => viewInvoice(inv)}><Eye className="h-3.5 w-3.5" /></Button>
+                          {inv.status === "draft" && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" title="Edit Draft" onClick={() => openEditDraft(inv)}><Pencil className="h-3.5 w-3.5" /></Button>
+                          )}
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="Download PDF" onClick={() => downloadInvoicePdf(inv)}><Download className="h-3.5 w-3.5" /></Button>
                           {balance > 0 && (
                             <>
