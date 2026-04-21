@@ -306,7 +306,15 @@ export default function Settings() {
               </div>
               <div className="sm:col-span-2">
                 <Label>Address</Label>
-                <Input value={companyForm.address} onChange={(e) => { setCompanyForm({ ...companyForm, address: e.target.value }); setFieldErrors(f => ({ ...f, address: null })); }} className={`mt-1 ${fieldErrors.address ? "border-destructive" : ""}`} maxLength={500} />
+                <div className="mt-1">
+                  <AddressAutocomplete
+                    value={companyForm.address}
+                    onChange={(v) => { setCompanyForm({ ...companyForm, address: v }); setFieldErrors(f => ({ ...f, address: null })); }}
+                    placeholder="Start typing your business address..."
+                    country={countryToIso(companyForm.country)}
+                    className={fieldErrors.address ? "border-destructive" : ""}
+                  />
+                </div>
                 <FieldError message={fieldErrors.address} />
               </div>
               <div>
