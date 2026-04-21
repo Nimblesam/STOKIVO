@@ -653,7 +653,7 @@ export default function Cashier() {
       </div>
 
       {/* RIGHT: Current Order Panel */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card">
+      <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card max-h-[60vh] lg:max-h-none">
         {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
