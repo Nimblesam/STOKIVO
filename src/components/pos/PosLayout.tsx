@@ -31,7 +31,7 @@ export function PosLayout({ children }: PosLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
-  const { setMode } = useAppMode();
+  const { setMode, isNativeShell } = useAppMode();
   const isMobile = useIsMobile();
   const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
 
