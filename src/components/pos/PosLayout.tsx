@@ -9,7 +9,7 @@ import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog"
 import { LowStockNotification } from "@/components/LowStockNotification";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor } from "lucide-react";
+import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor, Package, FileText } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -21,6 +21,8 @@ interface PosLayoutProps {
 
 const posNavItems = [
   { title: "Cashier", url: "/pos", icon: ShoppingCart },
+  { title: "Products", url: "/pos/products", icon: Package },
+  { title: "Invoices", url: "/pos/invoices", icon: FileText },
   { title: "Refunds", url: "/pos/refunds", icon: RotateCcw },
   { title: "Receipts", url: "/pos/receipts", icon: Receipt },
 ];
@@ -169,15 +171,16 @@ export function PosLayout({ children }: PosLayoutProps) {
       <nav className="fixed bottom-0 left-0 right-0 h-14 border-t bg-card flex items-center justify-around z-50">
         {[
           { title: "Sell", url: "/pos", icon: ShoppingCart },
+          { title: "Products", url: "/pos/products", icon: Package },
+          { title: "Invoices", url: "/pos/invoices", icon: FileText },
           { title: "Orders", url: "/pos/receipts", icon: Receipt },
-          { title: "Refunds", url: "/pos/refunds", icon: RotateCcw },
           { title: "More", url: "/pos/more", icon: Settings },
         ].map((item) => (
           <button
             key={item.url}
             onClick={() => navigate(item.url)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors",
+              "flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors",
               isActive(item.url)
                 ? "text-primary"
                 : "text-muted-foreground"

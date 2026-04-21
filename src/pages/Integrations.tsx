@@ -154,6 +154,9 @@ export default function Integrations() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [syncing, setSyncing] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  // Controls the upgrade splash modal for starter users. Allow dismiss so the
+  // page is not frozen behind the modal.
+  const [showUpgrade, setShowUpgrade] = useState(true);
 
   // WhatsApp config state
   const [waEnabled, setWaEnabled] = useState(false);
@@ -289,14 +292,19 @@ export default function Integrations() {
       <div className="max-w-5xl mx-auto">
         <PageHeader title="Integrations" subtitle="Connect your sales channels — inventory syncs automatically across all platforms" />
         <UpgradeModal
-          open={true}
-          onOpenChange={() => {}}
+          open={showUpgrade}
+          onOpenChange={setShowUpgrade}
           requiredPlan="growth"
           featureLabel="Integrations"
           currentPlan={currentPlan}
         />
-        <div className="text-center py-16">
+        <div className="text-center py-16 space-y-4">
           <p className="text-muted-foreground">Integrations are available on the Growth plan and above.</p>
+          {!showUpgrade && (
+            <Button variant="outline" onClick={() => setShowUpgrade(true)}>
+              View Upgrade Options
+            </Button>
+          )}
         </div>
       </div>
     );

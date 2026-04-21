@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
+  const [ledger, setLedger] = useState<any[]>([]);
 
   useEffect(() => {
     if (!profile?.company_id) return;
@@ -46,6 +47,8 @@ export default function Dashboard() {
     let invoicesQ = supabase.from("invoices").select("*, customers(name)").eq("company_id", cid).order("created_at", { ascending: false });
     let alertsQ = supabase.from("alerts").select("*").eq("company_id", cid).eq("read", false).order("created_at", { ascending: false }).limit(10);
     let salesQ = supabase.from("sales").select("total, created_at").eq("company_id", cid);
+    // Pull all ledger entries so Credit Owed reflects ledger + unpaid invoices.
+    const ledgerQ = supabase.from("customer_ledger").select("customer_id, type, amount, reference_id").eq("company_id", cid);
 
     if (activeStoreId) {
       productsQ = productsQ.eq("store_id", activeStoreId);
@@ -54,24 +57,25 @@ export default function Dashboard() {
       salesQ = salesQ.eq("store_id", activeStoreId);
     }
 
-    Promise.all([productsQ, customersQ, invoicesQ, alertsQ, salesQ]).then(([p, c, i, a, s]) => {
+    Promise.all([productsQ, customersQ, invoicesQ, alertsQ, salesQ, ledgerQ]).then(([p, c, i, a, s, l]) => {
       setProducts(p.data || []);
       setCustomers(c.data || []);
       setInvoices(i.data || []);
       setAlerts(a.data || []);
       setSales(s.data || []);
+      setLedger(l.data || []);
       setLoading(false);
     });
   }, [profile?.company_id, activeStoreId]);
 
-  // Stock value at COST (what was paid) — minor units
+  // Stock value at COST (what was paid) — minor units. Guard against negative stock.
   const stockValueAtCost = products.reduce(
-    (s, p) => s + (Number(p.cost_price) || 0) * (Number(p.stock_qty) || 0),
+    (s, p) => s + (Number(p.cost_price) || 0) * Math.max(0, Number(p.stock_qty) || 0),
     0,
   );
   // Stock value at RETAIL (potential revenue) — minor units
   const stockValueAtRetail = products.reduce(
-    (s, p) => s + (Number(p.selling_price) || 0) * (Number(p.stock_qty) || 0),
+    (s, p) => s + (Number(p.selling_price) || 0) * Math.max(0, Number(p.stock_qty) || 0),
     0,
   );
 
@@ -81,14 +85,37 @@ export default function Dashboard() {
   const monthSales = sales.filter((sale) => new Date(sale.created_at).getTime() >= monthStart);
   const monthlyRevenue = monthSales.reduce((s, sale) => s + (Number(sale.total) || 0), 0);
 
-  // Use customer outstanding_balance (synced from ledger) as single source of truth
-  const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && i.total > i.amount_paid);
-  const outstandingPayments = customers.reduce(
-    (s, c) => s + Math.max(0, Number(c.outstanding_balance) || 0),
-    0,
-  );
+  // Credit Owed = ledger balance per customer + balance of every unpaid invoice
+  // that doesn't already have a matching CHARGE ledger entry.
+  // This is computed live so the KPI is always accurate even if
+  // customers.outstanding_balance is stale.
+  const debtByCustomer = new Map<string, number>();
+  const ledgerInvoiceRefs = new Set<string>();
+  for (const e of ledger) {
+    const prev = debtByCustomer.get(e.customer_id) || 0;
+    if (e.type === "CHARGE") {
+      debtByCustomer.set(e.customer_id, prev + (Number(e.amount) || 0));
+      if (e.reference_id) ledgerInvoiceRefs.add(e.reference_id);
+    } else {
+      debtByCustomer.set(e.customer_id, prev - (Number(e.amount) || 0));
+    }
+  }
+  // Include unpaid invoices not already in ledger
+  const unpaidInvoices = invoices.filter((i) => i.status !== "paid" && (Number(i.total) || 0) > (Number(i.amount_paid) || 0));
+  for (const inv of unpaidInvoices) {
+    if (ledgerInvoiceRefs.has(inv.id)) continue;
+    const outstanding = Math.max(0, (Number(inv.total) || 0) - (Number(inv.amount_paid) || 0));
+    const prev = debtByCustomer.get(inv.customer_id) || 0;
+    debtByCustomer.set(inv.customer_id, prev + outstanding);
+  }
+  // Aggregate positive balances only (ignore credits)
+  let outstandingPayments = 0;
+  for (const [, bal] of debtByCustomer) {
+    if (bal > 0) outstandingPayments += bal;
+  }
+
   const lowStockCount = products.filter(
-    (p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0,
+    (p) => Number(p.min_stock_level) > 0 && Number(p.stock_qty) <= Number(p.min_stock_level),
   ).length;
   const priceChangeCount = alerts.filter((a) => a.type === "SUPPLIER_PRICE_CHANGE").length;
 
@@ -99,13 +126,13 @@ export default function Dashboard() {
     : 0;
 
   const criticalStock = products
-    .filter((p) => p.stock_qty <= p.min_stock_level && p.min_stock_level > 0)
+    .filter((p) => Number(p.min_stock_level) > 0 && Number(p.stock_qty) <= Number(p.min_stock_level))
     .sort((a, b) => (a.stock_qty / a.min_stock_level) - (b.stock_qty / b.min_stock_level))
     .slice(0, 5);
 
   const topDebtors = customers
-    .filter((c) => c.outstanding_balance > 0)
-    .map((c) => ({ ...c, total_debt: c.outstanding_balance }))
+    .map((c) => ({ ...c, total_debt: debtByCustomer.get(c.id) || 0 }))
+    .filter((c) => c.total_debt > 0)
     .sort((a, b) => b.total_debt - a.total_debt)
     .slice(0, 4);
 
