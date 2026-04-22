@@ -2,9 +2,15 @@ const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
 function createWindow() {
+  const iconPath = process.platform === "win32"
+    ? path.join(__dirname, "icon.ico")
+    : path.join(__dirname, "icon.png");
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: iconPath,
+    title: "Stokivo",
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
