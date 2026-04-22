@@ -526,7 +526,6 @@ export function PaymentModal({
                   onClick={openCardFlow}
                 >
                   <CreditCard className="h-4 w-4" /> Card
-                  {!isTerminalOnline && <WifiOff className="h-3 w-3 text-muted-foreground" />}
                 </Button>
               </div>
               <Button variant="secondary" className="w-full h-10" onClick={() => setShowPayLater(true)}>
