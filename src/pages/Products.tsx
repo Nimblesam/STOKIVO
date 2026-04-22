@@ -417,7 +417,7 @@ export default function Products() {
                     />
                     {form.image_url && (
                       <div className="flex items-center gap-3">
-                        <img src={form.image_url} alt="Preview" className="h-16 w-16 rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
+                        <img src={form.image_url} alt="Preview" className="h-12 w-12 rounded-md object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
                         <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => setForm({ ...form, image_url: "" })}>
                           Remove
                         </Button>
@@ -463,7 +463,7 @@ export default function Products() {
                     />
                     {form.image_url && (
                       <div className="flex items-center gap-3">
-                        <img src={form.image_url} alt="Preview" className="h-16 w-16 rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
+                        <img src={form.image_url} alt="Preview" className="h-12 w-12 rounded-md object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} />
                         <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => setForm({ ...form, image_url: "" })}>
                           Remove
                         </Button>
