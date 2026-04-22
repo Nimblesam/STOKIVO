@@ -44,7 +44,6 @@ import TrialExpired from "./pages/TrialExpired";
 import { useTrialStatus } from "@/hooks/use-trial-status";
 import PosRefunds from "./pages/pos/PosRefunds";
 import PosReceipts from "./pages/pos/PosReceipts";
-import PosMore from "./pages/pos/PosMore";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminSetup from "./pages/admin/AdminSetup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -181,7 +180,7 @@ function PosRoutes() {
         <Route path="invoices" element={<Invoices />} />
         <Route path="refunds" element={<PosRefunds />} />
         <Route path="receipts" element={<PosReceipts />} />
-        <Route path="more" element={<PosMore />} />
+        <Route path="more" element={<Navigate to="/pos" replace />} />
         <Route path="*" element={<Navigate to="/pos" replace />} />
       </Routes>
     </PosLayout>
@@ -284,7 +283,7 @@ function ModeRouter() {
               <Route path="invoices" element={<Invoices />} />
               <Route path="refunds" element={<PosRefunds />} />
               <Route path="receipts" element={<PosReceipts />} />
-              <Route path="more" element={<PosMore />} />
+              <Route path="more" element={<Navigate to="/pos" replace />} />
               <Route path="*" element={<Navigate to="/pos" replace />} />
             </Routes>
           </AppLayout>
