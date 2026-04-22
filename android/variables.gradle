@@ -1,16 +1,24 @@
 ext {
-    minSdkVersion = 22
+    // Stripe Terminal SDK requires minSdk 26.
+    minSdkVersion = 26
     compileSdkVersion = 34
     targetSdkVersion = 34
     androidxActivityVersion = '1.4.0'
-    androidxAppCompatVersion = '1.3.1'
-    androidxCoordinatorLayoutVersion = '1.1.0'
-    androidxCoreVersion = '1.6.0'
-    androidxFragmentVersion = '1.4.0'
-    coreSplashScreenVersion = '1.0.0'
-    androidxWebkitVersion = '1.4.0'
+    androidxAppCompatVersion = '1.6.1'
+    androidxCoordinatorLayoutVersion = '1.2.0'
+    androidxCoreVersion = '1.10.1'
+    androidxFragmentVersion = '1.6.0'
+    coreSplashScreenVersion = '1.0.1'
+    androidxWebkitVersion = '1.7.0'
     junitVersion = '4.13.2'
-    androidxJunitVersion = '1.1.3'
-    androidxEspressoCoreVersion = '3.4.0'
+    androidxJunitVersion = '1.1.5'
+    androidxEspressoCoreVersion = '3.5.1'
     cordovaAndroidVersion = '10.1.1'
+
+    // Stripe Terminal Android SDK (core + localmobile / Tap to Pay) — keep in lock-step.
+    stripeTerminalVersion = '3.8.0'
+
+    // Required by Stripe Terminal SDK at runtime.
+    kotlinVersion = '1.9.22'
+    kotlinxCoroutinesVersion = '1.7.3'
 }

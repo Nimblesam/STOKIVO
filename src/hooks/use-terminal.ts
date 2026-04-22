@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isNativeTerminalAvailable,
+  getNativeAvailability,
+  ensureNativeInitialized,
+  discoverTapToPayReaders,
+  connectTapToPayReader,
+  collectAndProcessNative,
+  cancelNativeCollect,
+} from "@/lib/native-stripe-terminal";
 
 export type TerminalStatus = "connected" | "connecting" | "offline" | "not_configured";
 
@@ -38,18 +47,14 @@ interface UseTerminalReturn {
   rediscoverReaders: () => Promise<TerminalReader[]>;
   disconnect: () => void;
   collectPayment: (amountMinor: number, currency: string) => Promise<CollectResult>;
+  collectTapToPay: (amountMinor: number, currency: string) => Promise<CollectResult>;
   retryLastPayment: () => Promise<CollectResult>;
   cancelCollect: () => void;
   isCollecting: boolean;
 }
 
 const LAST_READER_KEY = "stokivo_last_reader_id";
-
-function detectTapToPay(): boolean {
-  if (typeof window === "undefined") return false;
-  const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
-  return isCapacitor;
-}
+const LAST_LOCATION_KEY = "stokivo_terminal_location_id";
 
 function classifyError(err: any): TerminalErrorKind {
   const msg = String(err?.message || err?.code || err || "").toLowerCase();
@@ -67,13 +72,49 @@ function classifyError(err: any): TerminalErrorKind {
   return "unknown";
 }
 
+/**
+ * Resolve a Stripe Terminal `location` (tml_xxx) for Tap to Pay on this
+ * merchant's connected account. Tap to Pay REQUIRES a location. We cache the
+ * first one we find in localStorage. If none exists, the merchant must create
+ * one in Settings → Locations (powered by the `terminal-locations` function).
+ */
+async function resolveTerminalLocationId(): Promise<string | null> {
+  try {
+    const cached = localStorage.getItem(LAST_LOCATION_KEY);
+    if (cached) return cached;
+  } catch { /* ignore */ }
+  try {
+    const { data, error } = await supabase.functions.invoke("terminal-locations");
+    if (error || !data?.locations?.length) return null;
+    const id = data.locations[0].id as string;
+    try { localStorage.setItem(LAST_LOCATION_KEY, id); } catch { /* ignore */ }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
 export function useTerminal(): UseTerminalReturn {
   const [status, setStatus] = useState<TerminalStatus>("offline");
   const [reader, setReader] = useState<TerminalReader | null>(null);
   const [availableReaders, setAvailableReaders] = useState<TerminalReader[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isCollecting, setIsCollecting] = useState(false);
-  const [tapToPaySupported] = useState<boolean>(detectTapToPay());
+  const [tapToPaySupported, setTapToPaySupported] = useState<boolean>(false);
+
+  // Ask the native plugin whether Tap to Pay is actually supported on this device.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!isNativeTerminalAvailable()) {
+        if (!cancelled) setTapToPaySupported(false);
+        return;
+      }
+      const a = await getNativeAvailability();
+      if (!cancelled) setTapToPaySupported(!!a.tapToPaySupported);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const terminalRef = useRef<any>(null);
   const readerRef = useRef<any>(null);
@@ -337,10 +378,76 @@ export function useTerminal(): UseTerminalReturn {
   }, [runIntent]);
 
   const cancelCollect = useCallback(() => {
+    if (isNativeTerminalAvailable()) {
+      cancelNativeCollect().catch(() => {});
+    }
     if (terminalRef.current) {
       terminalRef.current.cancelCollectPaymentMethod().catch(() => {});
     }
     setIsCollecting(false);
+  }, []);
+
+  /**
+   * Tap to Pay on Android — routed through the native Capacitor plugin.
+   * The web has no Tap to Pay support, so this short-circuits with a clear error.
+   */
+  const collectTapToPay = useCallback(async (amountMinor: number, currency: string): Promise<CollectResult> => {
+    if (!isNativeTerminalAvailable()) {
+      return {
+        success: false,
+        error: "Tap to Pay is only available in the Stokivo Android app.",
+        errorKind: "unknown",
+        recoverable: false,
+      };
+    }
+    setIsCollecting(true);
+    try {
+      const ok = await ensureNativeInitialized();
+      if (!ok) {
+        return { success: false, error: "Failed to initialize Tap to Pay.", errorKind: "unknown", recoverable: false };
+      }
+      const locationId = await resolveTerminalLocationId();
+      if (!locationId) {
+        return {
+          success: false,
+          error: "No Stripe Terminal location set up. Add one in Settings → Payments.",
+          errorKind: "unknown",
+          recoverable: false,
+        };
+      }
+      const readers = await discoverTapToPayReaders();
+      if (readers.length === 0) {
+        return { success: false, error: "Tap to Pay not available on this device.", errorKind: "reader_disconnected", recoverable: false };
+      }
+      try {
+        await connectTapToPayReader({ locationId, readerSerial: readers[0].serialNumber });
+      } catch (e: any) {
+        return { success: false, error: e?.message || "Failed to start Tap to Pay.", errorKind: "reader_disconnected", recoverable: true };
+      }
+      // Create PI on connected account (server-side handles routing).
+      const { data: piData, error: piError } = await supabase.functions.invoke("create-terminal-payment", {
+        body: { amount: amountMinor, currency: currency.toLowerCase() },
+      });
+      if (piError || !piData?.client_secret) {
+        return { success: false, error: piData?.error || "Failed to create payment intent", errorKind: "network", recoverable: false };
+      }
+      lastPaymentRef.current = {
+        clientSecret: piData.client_secret,
+        piId: piData.payment_intent_id || "",
+        amountMinor,
+        currency,
+      };
+      try {
+        const result = await collectAndProcessNative(piData.client_secret);
+        lastPaymentRef.current = null;
+        return { success: true, paymentIntentId: result.paymentIntentId };
+      } catch (e: any) {
+        const kind = classifyError(e);
+        return { success: false, error: e?.message || "Tap to Pay failed", errorKind: kind, recoverable: kind === "reader_disconnected" || kind === "network" };
+      }
+    } finally {
+      setIsCollecting(false);
+    }
   }, []);
 
   // Auto-discover once on mount
@@ -373,6 +480,7 @@ export function useTerminal(): UseTerminalReturn {
     rediscoverReaders,
     disconnect,
     collectPayment,
+    collectTapToPay,
     retryLastPayment,
     cancelCollect,
     isCollecting,

@@ -45,6 +45,23 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <!-- Stripe Terminal (Tap to Pay on Android + reader discovery) -->
+    <!-- NFC: required for Tap to Pay -->
+    <uses-permission android:name="android.permission.NFC" />
+    <!-- Bluetooth: required to connect external readers (BBPOS WisePad 3, etc.) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Location: Stripe Terminal SDK requires this for reader discovery + Tap to Pay anti-fraud -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Foreground service: keeps Tap to Pay session alive while the screen is on -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- NFC is required for Tap to Pay but optional overall (so the app still installs on Sunmi units without NFC) -->
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
 </manifest>

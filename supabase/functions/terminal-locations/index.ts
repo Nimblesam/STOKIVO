@@ -33,13 +33,42 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("Not authenticated");
+    const user = userData.user;
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe not configured");
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
+    // Resolve merchant's connected Stripe account so locations belong to them.
+    let connectedAccountId: string | null = null;
+    try {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (profile?.company_id) {
+        const { data: company } = await supabaseAdmin
+          .from("companies")
+          .select("stripe_account_id")
+          .eq("id", profile.company_id)
+          .maybeSingle();
+        if (company?.stripe_account_id) connectedAccountId = company.stripe_account_id;
+      }
+    } catch (lookupErr) {
+      console.warn("[terminal-locations] Connect lookup failed:", lookupErr);
+    }
+
+    const reqOpts: Stripe.RequestOptions = connectedAccountId
+      ? { stripeAccount: connectedAccountId }
+      : {};
+
     if (req.method === "GET") {
-      const locations = await stripe.terminal.locations.list({ limit: 100 });
+      const locations = await stripe.terminal.locations.list({ limit: 100 }, reqOpts);
       return new Response(
         JSON.stringify({
           locations: locations.data.map((l) => ({
@@ -47,6 +76,7 @@ serve(async (req) => {
             display_name: l.display_name,
             address: l.address,
           })),
+          connected_account: connectedAccountId,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
@@ -72,13 +102,14 @@ serve(async (req) => {
           postal_code: address.postal_code ?? undefined,
           country: address.country,
         },
-      });
+      }, reqOpts);
 
       return new Response(
         JSON.stringify({
           id: location.id,
           display_name: location.display_name,
           address: location.address,
+          connected_account: connectedAccountId,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );

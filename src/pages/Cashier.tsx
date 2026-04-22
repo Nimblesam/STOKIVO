@@ -860,6 +860,7 @@ export default function Cashier() {
           availableReaders={terminal.availableReaders}
           connectedReader={terminal.reader}
           onTerminalPayment={(amount) => terminal.collectPayment(amount, currency.toLowerCase())}
+          onTapToPayPayment={(amount) => terminal.collectTapToPay(amount, currency.toLowerCase())}
           onRetryTerminalPayment={terminal.retryLastPayment}
           onRediscoverReaders={terminal.rediscoverReaders}
           onConnectToReader={terminal.connectToReader}

@@ -13,15 +13,26 @@ const corsHeaders = {
  * POST /terminal/connection_token
  *
  * Returns a short-lived Stripe Terminal connection token used by the
- * Stripe Terminal SDK (Tap to Pay on Android, BBPOS, Verifone, etc.)
- * to authenticate with Stripe.
+ * Stripe Terminal SDK (Tap to Pay on Android via the native plugin, BBPOS,
+ * Verifone, etc.) to authenticate with Stripe.
+ *
+ * Stripe Connect routing:
+ *   For Tap to Pay on Android we MUST mint the connection token on the same
+ *   connected account that the PaymentIntent will be created on. We look up
+ *   the caller's company.stripe_account_id and pass it via the Stripe-Account
+ *   header. If no connected account is found we fall back to the platform
+ *   account so existing test flows keep working.
  *
  * Security:
  *  - Stripe secret key never leaves the server.
  *  - Caller must be authenticated (Supabase JWT verified here).
  *  - Token is short-lived and single-use; the SDK requests new ones as needed.
  *
- * Response: { "secret": "pst_..." } (Stripe returns a token starting with `pst_`)
+ * Body (all optional):
+ *   { location?: "tml_xxx" }   // scope token to a specific reader location
+ *
+ * Response:
+ *   { secret: "pst_...", connected_account: "acct_..." | null }
  */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -47,13 +58,39 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("Not authenticated");
+    const user = userData.user;
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe not configured");
-
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Optional: scope token to a specific reader location (recommended for Tap to Pay).
+    // ---- Look up the merchant's connected account (if any) ----------------
+    let connectedAccountId: string | null = null;
+    try {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (profile?.company_id) {
+        const { data: company } = await supabaseAdmin
+          .from("companies")
+          .select("stripe_account_id")
+          .eq("id", profile.company_id)
+          .maybeSingle();
+        if (company?.stripe_account_id) {
+          connectedAccountId = company.stripe_account_id;
+        }
+      }
+    } catch (lookupErr) {
+      console.warn("[create-terminal-token] Connect lookup failed:", lookupErr);
+    }
+
+    // ---- Optional: scope token to a reader location -----------------------
     let location: string | undefined;
     try {
       const body = await req.json().catch(() => ({}));
@@ -64,14 +101,23 @@ serve(async (req) => {
       // no body — fine
     }
 
-    const connectionToken = await stripe.terminal.connectionTokens.create(
-      location ? { location } : undefined
-    );
+    const params = location ? { location } : undefined;
+    const options: Stripe.RequestOptions = connectedAccountId
+      ? { stripeAccount: connectedAccountId }
+      : {};
 
-    return new Response(JSON.stringify({ secret: connectionToken.secret }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    const connectionToken = await stripe.terminal.connectionTokens.create(params as any, options);
+
+    return new Response(
+      JSON.stringify({
+        secret: connectionToken.secret,
+        connected_account: connectedAccountId,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Terminal token error:", message);
