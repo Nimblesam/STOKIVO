@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Banknote, CreditCard, Delete, X, Loader2, Clock,
-  AlertTriangle, RotateCcw, CheckCircle2, Smartphone, Hand,
+  AlertTriangle, RotateCcw, CheckCircle2, Smartphone, Hand, Search, Wifi,
 } from "lucide-react";
 import type { Currency } from "@/lib/types";
-import type { TerminalStatus } from "@/hooks/use-terminal";
+import type { TerminalStatus, TerminalReader, CollectResult } from "@/hooks/use-terminal";
 
 export type CardMode = "manual" | "integrated" | "tap_to_pay";
 
@@ -29,7 +29,12 @@ interface Props {
   processing: boolean;
   terminalStatus: TerminalStatus;
   tapToPaySupported?: boolean;
-  onTerminalPayment: (amount: number) => Promise<{ success: boolean; error?: string; paymentIntentId?: string }>;
+  availableReaders?: TerminalReader[];
+  connectedReader?: TerminalReader | null;
+  onTerminalPayment: (amount: number) => Promise<CollectResult>;
+  onRetryTerminalPayment?: () => Promise<CollectResult>;
+  onRediscoverReaders?: () => Promise<TerminalReader[]>;
+  onConnectToReader?: (readerId: string) => Promise<void>;
   isTerminalCollecting: boolean;
   onCancelTerminalCollect: () => void;
   onRetryTerminal: () => void;
