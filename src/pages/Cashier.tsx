@@ -146,6 +146,7 @@ export default function Cashier() {
   const [discountInput, setDiscountInput] = useState("");
   const [discountType, setDiscountType] = useState<"fixed" | "percent">("fixed");
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [customerForm, setCustomerForm] = useState({ name: "", email: "", phone: "" });
   const [savingCustomer, setSavingCustomer] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
