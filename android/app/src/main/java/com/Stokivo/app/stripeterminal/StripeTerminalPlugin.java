@@ -27,6 +27,7 @@ import com.stripe.stripeterminal.external.callable.PaymentIntentCallback;
 import com.stripe.stripeterminal.external.callable.ReaderCallback;
 import com.stripe.stripeterminal.external.callable.ReaderListener;
 import com.stripe.stripeterminal.external.callable.TerminalListener;
+import com.stripe.stripeterminal.external.models.CollectConfiguration;
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration;
 import com.stripe.stripeterminal.external.models.ConnectionStatus;
 import com.stripe.stripeterminal.external.models.ConnectionTokenException;
@@ -211,7 +212,7 @@ public class StripeTerminalPlugin extends Plugin {
 
         DiscoveryListener listener = new DiscoveryListener() {
             @Override
-            public void onUpdateDiscoveredReaders(List<? extends Reader> readers) {
+            public void onUpdateDiscoveredReaders(List<Reader> readers) {
                 synchronized (lastDiscovered) {
                     lastDiscovered.clear();
                     lastDiscovered.addAll(readers);
@@ -352,10 +353,11 @@ public class StripeTerminalPlugin extends Plugin {
         Terminal.getInstance().retrievePaymentIntent(clientSecret, new PaymentIntentCallback() {
             @Override
             public void onSuccess(PaymentIntent intent) {
+                CollectConfiguration collectConfig = new CollectConfiguration.Builder().build();
                 collectCancelable = Terminal.getInstance().collectPaymentMethod(intent, new PaymentIntentCallback() {
                     @Override
                     public void onSuccess(PaymentIntent collected) {
-                        Terminal.getInstance().processPayment(collected, new PaymentIntentCallback() {
+                        Terminal.getInstance().confirmPaymentIntent(collected, new PaymentIntentCallback() {
                             @Override
                             public void onSuccess(PaymentIntent processed) {
                                 JSObject ret = new JSObject();
@@ -365,7 +367,7 @@ public class StripeTerminalPlugin extends Plugin {
                             }
                             @Override
                             public void onFailure(TerminalException e) {
-                                Log.e(TAG, "processPayment failed", e);
+                                Log.e(TAG, "confirmPaymentIntent failed", e);
                                 call.reject(e.getErrorMessage(), e.getErrorCode().toString());
                             }
                         });
@@ -375,7 +377,7 @@ public class StripeTerminalPlugin extends Plugin {
                         Log.e(TAG, "collectPaymentMethod failed", e);
                         call.reject(e.getErrorMessage(), e.getErrorCode().toString());
                     }
-                });
+                }, collectConfig);
             }
 
             @Override
