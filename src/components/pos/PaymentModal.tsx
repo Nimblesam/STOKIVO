@@ -105,25 +105,60 @@ export function PaymentModal({
     setShowCardChoice(true);
   };
 
+  // Handle the result of a Terminal collect (initial or retry).
+  const handleTerminalResult = (result: CollectResult, mode: CardMode) => {
+    if (result.success) {
+      setCardSuccess(true);
+      setRetryAttempts(0);
+      setShowRecovery(false);
+      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: mode }]);
+      setInputValue("0");
+      setTimeout(() => setCardSuccess(false), 2000);
+      return;
+    }
+
+    // Hard fallback after 2 failed attempts on reader-related errors.
+    if (retryAttempts >= 2) {
+      setShowRecovery(false);
+      setCardError(`${result.error || "Card payment failed."} Switched to Manual Card.`);
+      setShowManualCard(true);
+      setRetryAttempts(0);
+      return;
+    }
+
+    // Reader-related → show recovery flow with retry options.
+    if (result.recoverable && (result.errorKind === "reader_disconnected" || result.errorKind === "network")) {
+      setShowRecovery(true);
+      setCardError(result.error || "Reader issue detected.");
+      return;
+    }
+
+    // Cancelled → no error, just close back to keypad
+    if (result.errorKind === "cancelled") return;
+
+    // Card declined / unknown → surface error and offer manual fallback.
+    setCardError(result.error || "Card payment failed. Use Manual Card instead.");
+    setShowManualCard(true);
+  };
+
   const runIntegrated = async () => {
     if (!isTerminalOnline) {
-      // Soft fallback to Manual instead of leaving user stuck.
+      // Multiple readers available but none connected → open picker.
+      if (availableReaders.length > 0 && onConnectToReader) {
+        setShowCardChoice(false);
+        setPendingCardMode("integrated");
+        setShowReaderPicker(true);
+        return;
+      }
       setShowCardChoice(false);
       setShowManualCard(true);
       return;
     }
     setShowCardChoice(false);
+    setPendingCardMode("integrated");
+    setRetryAttempts(0);
     const result = await onTerminalPayment(pendingCardAmount);
-    if (result.success) {
-      setCardSuccess(true);
-      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: "integrated" }]);
-      setInputValue("0");
-      setTimeout(() => setCardSuccess(false), 2000);
-    } else {
-      // Terminal failed mid-flow — keep user moving with Manual.
-      setCardError(result.error || "Card payment failed. You can use Manual Card instead.");
-      setShowManualCard(true);
-    }
+    handleTerminalResult(result, "integrated");
   };
 
   const runTapToPay = async () => {
@@ -132,15 +167,57 @@ export function PaymentModal({
       setShowManualCard(true);
       return;
     }
+    setPendingCardMode("tap_to_pay");
+    setRetryAttempts(0);
     const result = await onTerminalPayment(pendingCardAmount);
-    if (result.success) {
-      setCardSuccess(true);
-      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: "tap_to_pay" }]);
-      setInputValue("0");
-      setTimeout(() => setCardSuccess(false), 2000);
-    } else {
-      setCardError(result.error || "Tap to Pay failed. Use Manual Card instead.");
-      setShowManualCard(true);
+    handleTerminalResult(result, "tap_to_pay");
+  };
+
+  // Smart auto-retry: rediscover → reconnect → retry SAME PaymentIntent.
+  const runAutoRetry = async () => {
+    if (!onRetryTerminalPayment || !onRediscoverReaders) return;
+    setRecoveryBusy(true);
+    setRetryAttempts((n) => n + 1);
+    try {
+      const readers = await onRediscoverReaders();
+      if (readers.length === 0) {
+        setShowRecovery(false);
+        setCardError("No readers found. Switched to Manual Card.");
+        setShowManualCard(true);
+        return;
+      }
+      if (terminalStatus !== "connected" && onConnectToReader) {
+        await onConnectToReader(readers[0].id);
+      }
+      const result = await onRetryTerminalPayment();
+      handleTerminalResult(result, pendingCardMode);
+    } finally {
+      setRecoveryBusy(false);
+    }
+  };
+
+  const switchToReaderPicker = () => {
+    setShowRecovery(false);
+    setShowReaderPicker(true);
+  };
+
+  const switchToManualFromRecovery = () => {
+    setShowRecovery(false);
+    setRetryAttempts(0);
+    setShowManualCard(true);
+  };
+
+  const pickReader = async (readerId: string) => {
+    if (!onConnectToReader) return;
+    setRecoveryBusy(true);
+    try {
+      await onConnectToReader(readerId);
+      setShowReaderPicker(false);
+      const fn = onRetryTerminalPayment ?? (() => onTerminalPayment(pendingCardAmount));
+      const result = await fn();
+      handleTerminalResult(result, pendingCardMode);
+    } finally {
+      setRecoveryBusy(false);
     }
   };
 
@@ -156,6 +233,7 @@ export function PaymentModal({
     setCardSuccess(true);
     setTimeout(() => setCardSuccess(false), 2000);
   };
+
 
 
   const handleComplete = () => {
