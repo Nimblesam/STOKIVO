@@ -1077,6 +1077,46 @@ export default function Settings() {
 
       </Tabs>
 
+      {/* Disconnect Stripe Confirmation */}
+      <Dialog open={confirmDisconnectStripe} onOpenChange={setConfirmDisconnectStripe}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Disconnect Stripe?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Your Stokivo account will stop accepting card payments and online checkouts until you connect a payment provider again.
+            </p>
+            <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
+              <p className="flex items-start gap-2">
+                <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                <span>Your Stripe account at <strong>dashboard.stripe.com</strong> is unaffected.</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <Check className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                <span>Past payouts and transactions remain in Stripe.</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <span>Active subscriptions or pending charges must be managed in Stripe directly.</span>
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setConfirmDisconnectStripe(false)} disabled={disconnectingStripe}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDisconnectStripe} disabled={disconnectingStripe} className="gap-2">
+                {disconnectingStripe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Disconnect
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Invite User Dialog */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
         <DialogContent className="max-w-sm">
