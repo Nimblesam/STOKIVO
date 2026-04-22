@@ -856,6 +856,7 @@ export default function Cashier() {
           onComplete={handlePaymentComplete}
           processing={processing}
           terminalStatus={terminal.status}
+          tapToPaySupported={terminal.tapToPaySupported}
           onTerminalPayment={(amount) => terminal.collectPayment(amount, currency.toLowerCase())}
           isTerminalCollecting={terminal.isCollecting}
           onCancelTerminalCollect={terminal.cancelCollect}

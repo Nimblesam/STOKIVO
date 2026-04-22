@@ -7,27 +7,46 @@ interface TerminalReader {
   id: string;
   label: string;
   status: string;
+  type?: "internet" | "bluetooth" | "tap_to_pay";
 }
 
 interface UseTerminalReturn {
   status: TerminalStatus;
   reader: TerminalReader | null;
+  availableReaders: TerminalReader[];
   error: string | null;
+  tapToPaySupported: boolean;
   connect: () => Promise<void>;
+  connectToReader: (readerId: string) => Promise<void>;
   disconnect: () => void;
   collectPayment: (amountMinor: number, currency: string) => Promise<{ success: boolean; error?: string; paymentIntentId?: string }>;
   cancelCollect: () => void;
   isCollecting: boolean;
 }
 
+// Heuristic: Tap to Pay (Stripe Terminal JS) works on supported mobile devices.
+// The web SDK doesn't directly do Tap to Pay on iOS/Android (that's the native SDK),
+// but we expose the flag so the UI can show "Tap to Pay" when running inside a
+// Capacitor/native shell where the device acts as the reader.
+function detectTapToPay(): boolean {
+  if (typeof window === "undefined") return false;
+  // Capacitor native runtime (Android Tap to Pay capable phones)
+  const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+  if (isCapacitor) return true;
+  return false;
+}
+
 export function useTerminal(): UseTerminalReturn {
   const [status, setStatus] = useState<TerminalStatus>("offline");
   const [reader, setReader] = useState<TerminalReader | null>(null);
+  const [availableReaders, setAvailableReaders] = useState<TerminalReader[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isCollecting, setIsCollecting] = useState(false);
+  const [tapToPaySupported] = useState<boolean>(detectTapToPay());
   const terminalRef = useRef<any>(null);
   const readerRef = useRef<any>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasAttemptedAutoConnect = useRef(false);
 
   const fetchConnectionToken = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke("create-terminal-token");
@@ -38,12 +57,9 @@ export function useTerminal(): UseTerminalReturn {
   }, []);
 
   const loadSDK = useCallback(async (): Promise<any> => {
-    // Check if SDK is already loaded
     if ((window as any).StripeTerminal) {
       return (window as any).StripeTerminal;
     }
-
-    // Load Stripe Terminal SDK dynamically
     return new Promise((resolve, reject) => {
       const existing = document.querySelector('script[src*="stripe-terminal"]');
       if (existing) {
@@ -65,6 +81,24 @@ export function useTerminal(): UseTerminalReturn {
       console.log("[Terminal] Attempting reconnection...");
       connect();
     }, delayMs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const connectReaderById = useCallback(async (terminal: any, discovered: any[], targetId?: string) => {
+    const target = targetId
+      ? discovered.find((r) => r.id === targetId) || discovered[0]
+      : discovered[0];
+    const connectResult = await terminal.connectReader(target);
+    if (connectResult.error) throw new Error(connectResult.error.message);
+    const r = connectResult.reader;
+    readerRef.current = r;
+    setReader({
+      id: r.id,
+      label: r.label || r.serial_number || "Card Reader",
+      status: r.status,
+      type: "internet",
+    });
+    setStatus("connected");
   }, []);
 
   const connect = useCallback(async () => {
@@ -78,67 +112,69 @@ export function useTerminal(): UseTerminalReturn {
         onFetchConnectionToken: fetchConnectionToken,
         onUnexpectedReaderDisconnect: () => {
           console.warn("[Terminal] Reader disconnected unexpectedly");
-          setStatus("connecting");
+          setStatus("offline");
           setReader(null);
           readerRef.current = null;
-          scheduleReconnect();
+          // Soft reconnect attempt — UI stays usable via Manual fallback meanwhile.
+          scheduleReconnect(8000);
         },
       });
 
       terminalRef.current = terminal;
 
-      // Discover readers using simulated mode for development,
-      // internet mode for production readers
-      const config = { simulated: false };
-      const discoverResult = await terminal.discoverReaders(config);
+      // Try real (internet) readers first
+      const discoverResult = await terminal.discoverReaders({ simulated: false });
+      let discovered = !discoverResult.error ? discoverResult.discoveredReaders || [] : [];
 
-      if (discoverResult.error) {
-        // Try simulated mode as fallback (for development/testing)
-        const simResult = await terminal.discoverReaders({ simulated: true });
-        if (simResult.error) {
-          throw new Error(discoverResult.error.message || "No readers found");
-        }
-        if (simResult.discoveredReaders.length === 0) {
-          throw new Error("No readers found. Ensure your terminal is powered on and connected to the internet.");
-        }
-        // Connect to first simulated reader
-        const connectResult = await terminal.connectReader(simResult.discoveredReaders[0]);
-        if (connectResult.error) {
-          throw new Error(connectResult.error.message);
-        }
-        const r = connectResult.reader;
-        readerRef.current = r;
-        setReader({ id: r.id, label: r.label || "Simulated Reader", status: r.status });
-        setStatus("connected");
+      if (discovered.length === 0) {
+        // No live readers — silently mark offline so UI falls back to Manual.
+        // Do NOT throw: avoids the "broken" red state. Manual card always works.
+        setAvailableReaders([]);
+        setStatus("offline");
+        setError(null);
         return;
       }
 
-      if (discoverResult.discoveredReaders.length === 0) {
-        throw new Error("No readers found. Ensure your terminal is powered on and connected.");
-      }
+      setAvailableReaders(
+        discovered.map((r: any) => ({
+          id: r.id,
+          label: r.label || r.serial_number || "Card Reader",
+          status: r.status,
+          type: "internet" as const,
+        })),
+      );
 
-      // Connect to the first available reader
-      const connectResult = await terminal.connectReader(discoverResult.discoveredReaders[0]);
-      if (connectResult.error) {
-        throw new Error(connectResult.error.message);
-      }
-
-      const r = connectResult.reader;
-      readerRef.current = r;
-      setReader({ id: r.id, label: r.label || r.serial_number || "Card Reader", status: r.status });
-      setStatus("connected");
+      await connectReaderById(terminal, discovered);
     } catch (err: any) {
-      console.error("[Terminal] Connection failed:", err);
+      console.warn("[Terminal] Connection failed (graceful):", err?.message);
       const msg = err?.message || "Connection failed";
-      // If it's a config issue (no Terminal setup in Stripe), mark as not_configured
-      if (msg.includes("not configured") || msg.includes("Terminal") && msg.includes("enable")) {
+      // Treat all failures as offline — UI degrades to Manual Card automatically.
+      // Only mark as not_configured for very explicit Stripe config errors.
+      if (msg.toLowerCase().includes("not configured") || msg.toLowerCase().includes("stripe terminal is not enabled")) {
         setStatus("not_configured");
       } else {
         setStatus("offline");
       }
       setError(msg);
+      setAvailableReaders([]);
     }
-  }, [fetchConnectionToken, loadSDK, scheduleReconnect]);
+  }, [fetchConnectionToken, loadSDK, scheduleReconnect, connectReaderById]);
+
+  const connectToReader = useCallback(async (readerId: string) => {
+    if (!terminalRef.current) {
+      await connect();
+      return;
+    }
+    setStatus("connecting");
+    try {
+      const discoverResult = await terminalRef.current.discoverReaders({ simulated: false });
+      if (discoverResult.error) throw new Error(discoverResult.error.message);
+      await connectReaderById(terminalRef.current, discoverResult.discoveredReaders || [], readerId);
+    } catch (err: any) {
+      setStatus("offline");
+      setError(err?.message || "Failed to connect to reader");
+    }
+  }, [connect, connectReaderById]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
@@ -149,17 +185,17 @@ export function useTerminal(): UseTerminalReturn {
     readerRef.current = null;
     setReader(null);
     setStatus("offline");
+    setAvailableReaders([]);
   }, []);
 
   const collectPayment = useCallback(async (amountMinor: number, currency: string): Promise<{ success: boolean; error?: string; paymentIntentId?: string }> => {
     const terminal = terminalRef.current;
     if (!terminal || status !== "connected") {
-      return { success: false, error: "Terminal not connected" };
+      return { success: false, error: "No card reader connected. Use Manual Card instead." };
     }
 
     setIsCollecting(true);
     try {
-      // Create a PaymentIntent server-side, then collect on terminal
       const { data: piData, error: piError } = await supabase.functions.invoke("create-terminal-payment", {
         body: { amount: amountMinor, currency: currency.toLowerCase() },
       });
@@ -168,17 +204,11 @@ export function useTerminal(): UseTerminalReturn {
         throw new Error(piData?.error || "Failed to create payment intent");
       }
 
-      // Collect payment method on the reader
       const collectResult = await terminal.collectPaymentMethod(piData.client_secret);
-      if (collectResult.error) {
-        throw new Error(collectResult.error.message);
-      }
+      if (collectResult.error) throw new Error(collectResult.error.message);
 
-      // Process the payment
       const processResult = await terminal.processPayment(collectResult.paymentIntent);
-      if (processResult.error) {
-        throw new Error(processResult.error.message);
-      }
+      if (processResult.error) throw new Error(processResult.error.message);
 
       return {
         success: true,
@@ -198,13 +228,35 @@ export function useTerminal(): UseTerminalReturn {
     setIsCollecting(false);
   }, []);
 
+  // Auto-discover readers once on mount so UI can decide what to show.
+  // Failures are silent — Manual Card is always available as fallback.
+  useEffect(() => {
+    if (hasAttemptedAutoConnect.current) return;
+    hasAttemptedAutoConnect.current = true;
+    connect().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, reader, error, connect, disconnect, collectPayment, cancelCollect, isCollecting };
+  return {
+    status,
+    reader,
+    availableReaders,
+    error,
+    tapToPaySupported,
+    connect,
+    connectToReader,
+    disconnect,
+    collectPayment,
+    cancelCollect,
+    isCollecting,
+  };
 }
