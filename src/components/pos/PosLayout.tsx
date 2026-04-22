@@ -180,9 +180,9 @@ export function PosLayout({ children }: PosLayoutProps) {
         {children}
       </main>
 
-      {/* Bottom tabs (4 items, no More) */}
+      {/* Bottom tabs (4 items, no More) — hidden when virtual keyboard is open */}
       <nav
-        className="fixed bottom-0 left-0 right-0 border-t bg-card flex items-center justify-around z-50"
+        className={`fixed bottom-0 left-0 right-0 border-t bg-card flex items-center justify-around z-50 transition-transform duration-150 ${keyboardOpen ? "translate-y-full pointer-events-none" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "calc(4rem + env(safe-area-inset-bottom))" }}
       >
         {[
