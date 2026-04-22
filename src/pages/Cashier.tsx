@@ -528,7 +528,7 @@ export default function Cashier() {
               </div>
             ))}
             {completedSale.payments.length === 0 && (
-              <div className="flex justify-between text-amber-600 font-semibold">
+              <div className="flex justify-between text-warning font-semibold">
                 <span>Status</span><span>Pay Later — Added to Credit Ledger</span>
               </div>
             )}
