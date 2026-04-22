@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, Package } from "lucide-react";
+import { Search, Package, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/currency";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Currency } from "@/lib/types";
 
 interface ProductOption {
@@ -23,7 +24,8 @@ interface ProductLineItemPickerProps {
 
 /**
  * Searchable, scrollable combobox for picking a product into an invoice line.
- * Shows live data sourced from the products list passed by the parent.
+ * Uses Radix Popover so the dropdown is portaled to <body> and never clipped
+ * by parent overflow containers (sticky footers / scrollable dialog body).
  */
 export function ProductLineItemPicker({
   products,
@@ -35,19 +37,8 @@ export function ProductLineItemPicker({
 }: ProductLineItemPickerProps) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const selected = products.find((p) => p.id === value);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const filtered = search.trim()
     ? products.filter((p) => {
@@ -57,73 +48,79 @@ export function ProductLineItemPicker({
     : products;
 
   return (
-    <div ref={wrapperRef} className="relative flex-1 min-w-0">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-left",
-          "focus:outline-none focus:ring-2 focus:ring-ring",
-          disabled && "opacity-50 cursor-not-allowed",
-        )}
-      >
-        <span className="truncate">
-          {selected ? (
-            <>
-              <span className="font-medium">{selected.name}</span>
-              <span className="text-muted-foreground ml-2">— {formatMoney(selected.selling_price, currency)}</span>
-            </>
-          ) : (
-            <span className="text-muted-foreground">Select product</span>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearch(""); }}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          className={cn(
+            "flex h-10 w-full flex-1 min-w-0 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-left",
+            "focus:outline-none focus:ring-2 focus:ring-ring",
+            disabled && "opacity-50 cursor-not-allowed",
           )}
-        </span>
-        <Search className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
-      </button>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
-          <div className="p-2 border-b border-border">
+        >
+          <span className="truncate">
+            {selected ? (
+              <>
+                <span className="font-medium">{selected.name}</span>
+                <span className="text-muted-foreground ml-2">— {formatMoney(selected.selling_price, currency)}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">Select product</span>
+            )}
+          </span>
+          <ChevronsUpDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className="p-0 w-[--radix-popover-trigger-width] max-w-[calc(100vw-1.5rem)]"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="p-2 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={placeholder}
-              className="h-9"
+              className="h-9 pl-8"
             />
           </div>
-          <div className="max-h-64 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                <Package className="h-5 w-5 mx-auto mb-1 opacity-40" />
-                No products match
-              </div>
-            ) : (
-              filtered.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    onChange(p.id);
-                    setSearch("");
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between gap-2",
-                    p.id === value && "bg-accent/40",
-                  )}
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{p.name}</p>
-                    {p.sku && <p className="text-xs text-muted-foreground truncate">SKU: {p.sku}</p>}
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{formatMoney(p.selling_price, currency)}</span>
-                </button>
-              ))
-            )}
-          </div>
         </div>
-      )}
-    </div>
+        <div className="max-h-64 overflow-y-auto overscroll-contain">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <Package className="h-5 w-5 mx-auto mb-1 opacity-40" />
+              No products match
+            </div>
+          ) : (
+            filtered.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  onChange(p.id);
+                  setSearch("");
+                  setOpen(false);
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between gap-2",
+                  p.id === value && "bg-accent/40",
+                )}
+              >
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{p.name}</p>
+                  {p.sku && <p className="text-xs text-muted-foreground truncate">SKU: {p.sku}</p>}
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">{formatMoney(p.selling_price, currency)}</span>
+              </button>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
