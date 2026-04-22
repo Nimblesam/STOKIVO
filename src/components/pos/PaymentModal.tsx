@@ -285,12 +285,108 @@ export function PaymentModal({
     );
   }
 
+  // Reader picker modal — when multiple readers are available
+  if (showReaderPicker) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+            <h3 className="font-display font-bold text-lg">Choose Card Reader</h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowReaderPicker(false)} className="h-8 w-8" disabled={recoveryBusy}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 space-y-2">
+            <p className="text-xs text-muted-foreground text-center mb-2">
+              {availableReaders.length} reader{availableReaders.length === 1 ? "" : "s"} found
+            </p>
+            {availableReaders.map((r) => {
+              const isConnected = connectedReader?.id === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => pickReader(r.id)}
+                  disabled={recoveryBusy}
+                  className="w-full text-left p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Wifi className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold truncate">{r.label}</p>
+                        {isConnected && <Badge variant="default" className="text-[10px] px-1.5 py-0">Connected</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground capitalize">{r.status}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+            <Button variant="outline" className="w-full mt-2" onClick={switchToManualFromRecovery} disabled={recoveryBusy}>
+              <Hand className="h-4 w-4 mr-2" /> Use Manual Card Instead
+            </Button>
+            {recoveryBusy && (
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">Connecting…</span>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Recovery modal — reader-related failure with retry options
+  if (showRecovery) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+            <h3 className="font-display font-bold text-lg">Reader Issue</h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowRecovery(false)} className="h-8 w-8" disabled={recoveryBusy}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive flex-1">{cardError}</p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Attempt {retryAttempts + 1} of 3. We'll switch to Manual Card if this keeps failing.
+            </p>
+            <div className="space-y-2">
+              <Button onClick={runAutoRetry} disabled={recoveryBusy} className="w-full h-12 font-semibold">
+                {recoveryBusy ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Retrying…</>
+                ) : (
+                  <><RotateCcw className="h-4 w-4 mr-2" /> Retry automatically</>
+                )}
+              </Button>
+              {availableReaders.length > 0 && onConnectToReader && (
+                <Button variant="outline" onClick={switchToReaderPicker} disabled={recoveryBusy} className="w-full h-11">
+                  <Search className="h-4 w-4 mr-2" /> Find another reader
+                </Button>
+              )}
+              <Button variant="secondary" onClick={switchToManualFromRecovery} disabled={recoveryBusy} className="w-full h-11">
+                <Hand className="h-4 w-4 mr-2" /> Switch to Manual Card
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // Card method choice modal
   if (showCardChoice) {
-    // Recommendation order: Tap to Pay (if device supports) > Card Machine (if connected) > Manual.
-    // Manual is ALWAYS available as fallback.
+    // "Send to Card Machine" is offered if currently connected OR readers were discovered.
+    const canUseMachine = isTerminalOnline || availableReaders.length > 0;
     const recommendedKey: "tap" | "machine" | "manual" =
-      tapToPaySupported ? "tap" : isTerminalOnline ? "machine" : "manual";
+      isTerminalOnline ? "machine" : tapToPaySupported ? "tap" : canUseMachine ? "machine" : "manual";
 
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
