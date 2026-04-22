@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Banknote, CreditCard, Delete, X, Loader2, Clock, WifiOff,
+  Banknote, CreditCard, Delete, X, Loader2, Clock,
   AlertTriangle, RotateCcw, CheckCircle2, Smartphone, Hand,
 } from "lucide-react";
 import type { Currency } from "@/lib/types";
