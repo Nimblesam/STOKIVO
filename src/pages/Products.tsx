@@ -14,8 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle, Mic } from "lucide-react";
-import { ProductImport } from "@/components/ProductImport";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, ScanBarcode, CalendarClock, Tag, AlertTriangle, Mic } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -47,7 +46,7 @@ export default function Products() {
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showImport, setShowImport] = useState(false);
+  
   const [showVoice, setShowVoice] = useState(false);
 
   // Batch print
@@ -661,16 +660,6 @@ export default function Products() {
         requiredPlan="growth"
         featureLabel={`More than ${limits.maxProducts} products`}
         currentPlan={currentPlan}
-      />
-
-      <ProductImport
-        open={showImport}
-        onOpenChange={setShowImport}
-        companyId={profile?.company_id || ""}
-        storeId={activeStoreId}
-        onComplete={fetchProducts}
-        existingCount={products.length}
-        maxProducts={limits.maxProducts}
       />
 
       <VoiceProductEntry
