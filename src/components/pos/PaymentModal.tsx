@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Banknote, CreditCard, Delete, X, Loader2, Clock,
-  AlertTriangle, RotateCcw, CheckCircle2, Smartphone, Hand,
+  AlertTriangle, RotateCcw, CheckCircle2, Smartphone, Hand, Search, Wifi,
 } from "lucide-react";
 import type { Currency } from "@/lib/types";
-import type { TerminalStatus } from "@/hooks/use-terminal";
+import type { TerminalStatus, TerminalReader, CollectResult } from "@/hooks/use-terminal";
 
 export type CardMode = "manual" | "integrated" | "tap_to_pay";
 
@@ -29,7 +29,12 @@ interface Props {
   processing: boolean;
   terminalStatus: TerminalStatus;
   tapToPaySupported?: boolean;
-  onTerminalPayment: (amount: number) => Promise<{ success: boolean; error?: string; paymentIntentId?: string }>;
+  availableReaders?: TerminalReader[];
+  connectedReader?: TerminalReader | null;
+  onTerminalPayment: (amount: number) => Promise<CollectResult>;
+  onRetryTerminalPayment?: () => Promise<CollectResult>;
+  onRediscoverReaders?: () => Promise<TerminalReader[]>;
+  onConnectToReader?: (readerId: string) => Promise<void>;
   isTerminalCollecting: boolean;
   onCancelTerminalCollect: () => void;
   onRetryTerminal: () => void;
@@ -37,7 +42,10 @@ interface Props {
 
 export function PaymentModal({
   total, currency, onClose, onComplete, processing,
-  terminalStatus, tapToPaySupported = false, onTerminalPayment, isTerminalCollecting,
+  terminalStatus, tapToPaySupported = false,
+  availableReaders = [], connectedReader = null,
+  onTerminalPayment, onRetryTerminalPayment, onRediscoverReaders, onConnectToReader,
+  isTerminalCollecting,
   onCancelTerminalCollect, onRetryTerminal,
 }: Props) {
   const [inputValue, setInputValue] = useState("0");
@@ -48,7 +56,12 @@ export function PaymentModal({
   const [cardSuccess, setCardSuccess] = useState(false);
   const [showCardChoice, setShowCardChoice] = useState(false);
   const [showManualCard, setShowManualCard] = useState(false);
+  const [showReaderPicker, setShowReaderPicker] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   const [pendingCardAmount, setPendingCardAmount] = useState(0);
+  const [pendingCardMode, setPendingCardMode] = useState<CardMode>("integrated");
 
   const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, total - totalPaid);
@@ -56,6 +69,7 @@ export function PaymentModal({
   const isComplete = remaining === 0;
 
   const isTerminalOnline = terminalStatus === "connected";
+  const hasMultipleReaders = availableReaders.length > 1;
 
   const handleKey = useCallback((key: string) => {
     setInputValue((prev) => {
@@ -91,25 +105,60 @@ export function PaymentModal({
     setShowCardChoice(true);
   };
 
+  // Handle the result of a Terminal collect (initial or retry).
+  const handleTerminalResult = (result: CollectResult, mode: CardMode) => {
+    if (result.success) {
+      setCardSuccess(true);
+      setRetryAttempts(0);
+      setShowRecovery(false);
+      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: mode }]);
+      setInputValue("0");
+      setTimeout(() => setCardSuccess(false), 2000);
+      return;
+    }
+
+    // Hard fallback after 2 failed attempts on reader-related errors.
+    if (retryAttempts >= 2) {
+      setShowRecovery(false);
+      setCardError(`${result.error || "Card payment failed."} Switched to Manual Card.`);
+      setShowManualCard(true);
+      setRetryAttempts(0);
+      return;
+    }
+
+    // Reader-related → show recovery flow with retry options.
+    if (result.recoverable && (result.errorKind === "reader_disconnected" || result.errorKind === "network")) {
+      setShowRecovery(true);
+      setCardError(result.error || "Reader issue detected.");
+      return;
+    }
+
+    // Cancelled → no error, just close back to keypad
+    if (result.errorKind === "cancelled") return;
+
+    // Card declined / unknown → surface error and offer manual fallback.
+    setCardError(result.error || "Card payment failed. Use Manual Card instead.");
+    setShowManualCard(true);
+  };
+
   const runIntegrated = async () => {
     if (!isTerminalOnline) {
-      // Soft fallback to Manual instead of leaving user stuck.
+      // Multiple readers available but none connected → open picker.
+      if (availableReaders.length > 0 && onConnectToReader) {
+        setShowCardChoice(false);
+        setPendingCardMode("integrated");
+        setShowReaderPicker(true);
+        return;
+      }
       setShowCardChoice(false);
       setShowManualCard(true);
       return;
     }
     setShowCardChoice(false);
+    setPendingCardMode("integrated");
+    setRetryAttempts(0);
     const result = await onTerminalPayment(pendingCardAmount);
-    if (result.success) {
-      setCardSuccess(true);
-      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: "integrated" }]);
-      setInputValue("0");
-      setTimeout(() => setCardSuccess(false), 2000);
-    } else {
-      // Terminal failed mid-flow — keep user moving with Manual.
-      setCardError(result.error || "Card payment failed. You can use Manual Card instead.");
-      setShowManualCard(true);
-    }
+    handleTerminalResult(result, "integrated");
   };
 
   const runTapToPay = async () => {
@@ -118,15 +167,57 @@ export function PaymentModal({
       setShowManualCard(true);
       return;
     }
+    setPendingCardMode("tap_to_pay");
+    setRetryAttempts(0);
     const result = await onTerminalPayment(pendingCardAmount);
-    if (result.success) {
-      setCardSuccess(true);
-      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: "tap_to_pay" }]);
-      setInputValue("0");
-      setTimeout(() => setCardSuccess(false), 2000);
-    } else {
-      setCardError(result.error || "Tap to Pay failed. Use Manual Card instead.");
-      setShowManualCard(true);
+    handleTerminalResult(result, "tap_to_pay");
+  };
+
+  // Smart auto-retry: rediscover → reconnect → retry SAME PaymentIntent.
+  const runAutoRetry = async () => {
+    if (!onRetryTerminalPayment || !onRediscoverReaders) return;
+    setRecoveryBusy(true);
+    setRetryAttempts((n) => n + 1);
+    try {
+      const readers = await onRediscoverReaders();
+      if (readers.length === 0) {
+        setShowRecovery(false);
+        setCardError("No readers found. Switched to Manual Card.");
+        setShowManualCard(true);
+        return;
+      }
+      if (terminalStatus !== "connected" && onConnectToReader) {
+        await onConnectToReader(readers[0].id);
+      }
+      const result = await onRetryTerminalPayment();
+      handleTerminalResult(result, pendingCardMode);
+    } finally {
+      setRecoveryBusy(false);
+    }
+  };
+
+  const switchToReaderPicker = () => {
+    setShowRecovery(false);
+    setShowReaderPicker(true);
+  };
+
+  const switchToManualFromRecovery = () => {
+    setShowRecovery(false);
+    setRetryAttempts(0);
+    setShowManualCard(true);
+  };
+
+  const pickReader = async (readerId: string) => {
+    if (!onConnectToReader) return;
+    setRecoveryBusy(true);
+    try {
+      await onConnectToReader(readerId);
+      setShowReaderPicker(false);
+      const fn = onRetryTerminalPayment ?? (() => onTerminalPayment(pendingCardAmount));
+      const result = await fn();
+      handleTerminalResult(result, pendingCardMode);
+    } finally {
+      setRecoveryBusy(false);
     }
   };
 
@@ -142,6 +233,7 @@ export function PaymentModal({
     setCardSuccess(true);
     setTimeout(() => setCardSuccess(false), 2000);
   };
+
 
 
   const handleComplete = () => {
@@ -193,12 +285,108 @@ export function PaymentModal({
     );
   }
 
+  // Reader picker modal — when multiple readers are available
+  if (showReaderPicker) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+            <h3 className="font-display font-bold text-lg">Choose Card Reader</h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowReaderPicker(false)} className="h-8 w-8" disabled={recoveryBusy}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 space-y-2">
+            <p className="text-xs text-muted-foreground text-center mb-2">
+              {availableReaders.length} reader{availableReaders.length === 1 ? "" : "s"} found
+            </p>
+            {availableReaders.map((r) => {
+              const isConnected = connectedReader?.id === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => pickReader(r.id)}
+                  disabled={recoveryBusy}
+                  className="w-full text-left p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Wifi className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold truncate">{r.label}</p>
+                        {isConnected && <Badge variant="default" className="text-[10px] px-1.5 py-0">Connected</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground capitalize">{r.status}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+            <Button variant="outline" className="w-full mt-2" onClick={switchToManualFromRecovery} disabled={recoveryBusy}>
+              <Hand className="h-4 w-4 mr-2" /> Use Manual Card Instead
+            </Button>
+            {recoveryBusy && (
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">Connecting…</span>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Recovery modal — reader-related failure with retry options
+  if (showRecovery) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+            <h3 className="font-display font-bold text-lg">Reader Issue</h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowRecovery(false)} className="h-8 w-8" disabled={recoveryBusy}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive flex-1">{cardError}</p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Attempt {retryAttempts + 1} of 3. We'll switch to Manual Card if this keeps failing.
+            </p>
+            <div className="space-y-2">
+              <Button onClick={runAutoRetry} disabled={recoveryBusy} className="w-full h-12 font-semibold">
+                {recoveryBusy ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Retrying…</>
+                ) : (
+                  <><RotateCcw className="h-4 w-4 mr-2" /> Retry automatically</>
+                )}
+              </Button>
+              {availableReaders.length > 0 && onConnectToReader && (
+                <Button variant="outline" onClick={switchToReaderPicker} disabled={recoveryBusy} className="w-full h-11">
+                  <Search className="h-4 w-4 mr-2" /> Find another reader
+                </Button>
+              )}
+              <Button variant="secondary" onClick={switchToManualFromRecovery} disabled={recoveryBusy} className="w-full h-11">
+                <Hand className="h-4 w-4 mr-2" /> Switch to Manual Card
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // Card method choice modal
   if (showCardChoice) {
-    // Recommendation order: Tap to Pay (if device supports) > Card Machine (if connected) > Manual.
-    // Manual is ALWAYS available as fallback.
+    // "Send to Card Machine" is offered if currently connected OR readers were discovered.
+    const canUseMachine = isTerminalOnline || availableReaders.length > 0;
     const recommendedKey: "tap" | "machine" | "manual" =
-      tapToPaySupported ? "tap" : isTerminalOnline ? "machine" : "manual";
+      isTerminalOnline ? "machine" : tapToPaySupported ? "tap" : canUseMachine ? "machine" : "manual";
 
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
@@ -244,8 +432,8 @@ export function PaymentModal({
               </button>
             )}
 
-            {/* Send to Card Machine — only if a reader is actually connected */}
-            {isTerminalOnline && (
+            {/* Send to Card Machine — visible if connected OR readers were discovered */}
+            {canUseMachine && (
               <button
                 onClick={runIntegrated}
                 className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
@@ -264,9 +452,14 @@ export function PaymentModal({
                       {recommendedKey === "machine" && (
                         <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>
                       )}
+                      {hasMultipleReaders && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{availableReaders.length} readers</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Amount sent automatically to your connected card reader.
+                      {isTerminalOnline
+                        ? `Connected: ${connectedReader?.label || "Card reader"}`
+                        : "Tap to connect and send the amount to a reader."}
                     </p>
                   </div>
                 </div>
@@ -300,7 +493,7 @@ export function PaymentModal({
               </div>
             </button>
 
-            {!isTerminalOnline && !tapToPaySupported && (
+            {!canUseMachine && !tapToPaySupported && (
               <p className="text-[11px] text-muted-foreground text-center pt-1">
                 No card reader detected. Manual Card always works as a fallback.
               </p>
