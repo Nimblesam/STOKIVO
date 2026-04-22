@@ -383,14 +383,16 @@ export default function Cashier() {
       }
 
       for (const item of cart) {
-        const { data: currentProduct } = await supabase.from("products").select("stock_qty").eq("id", item.product_id).single();
+        const { data: currentProduct } = await supabase.from("products").select("stock_qty").eq("id", item.product_id).maybeSingle();
         const currentStock = currentProduct?.stock_qty ?? item.stock_qty;
-        await supabase.from("products").update({ stock_qty: Math.max(0, currentStock - item.qty) }).eq("id", item.product_id);
-        await supabase.from("inventory_movements").insert({
+        const { error: stockErr } = await supabase.from("products").update({ stock_qty: Math.max(0, currentStock - item.qty) }).eq("id", item.product_id);
+        if (stockErr) console.error("[POS] stock update failed", stockErr);
+        const { error: movErr } = await supabase.from("inventory_movements").insert({
           company_id: profile.company_id, product_id: item.product_id, product_name: item.name,
           type: "SALE" as const, qty: -item.qty, user_id: user.id, user_name: activeCashier?.name || profile.full_name,
           note: `POS Sale #${sale.id.slice(0, 8)}${isPayLater ? " (Pay Later)" : ""}`, store_id: activeStoreId,
         });
+        if (movErr) console.error("[POS] movement insert failed", movErr);
       }
 
       if (isPayLater && customerName) {
@@ -471,7 +473,8 @@ export default function Cashier() {
       setShowPayment(false); setCart([]); setDiscountAmount(0);
       toast.success(isPayLater ? "Sale recorded — added to credit ledger" : "Payment successful!");
     } catch (err: any) {
-      toast.error("Payment failed", { description: err?.message });
+      console.error("[POS] payment failed", err);
+      toast.error("Payment failed", { description: err?.message || err?.error_description || "Unknown error — check console" });
     } finally {
       setProcessing(false);
     }
