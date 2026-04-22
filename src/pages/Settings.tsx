@@ -111,14 +111,42 @@ export default function Settings() {
     }
   }, [company]);
 
-  useEffect(() => {
+  const refreshStripeStatus = () => {
     if (!company) return;
     setLoadingStripeStatus(true);
     supabase.functions.invoke("stripe-connect-status").then(({ data, error }) => {
       if (error) { setStripeStatus(null); } else if (data) { setStripeStatus(data); }
       setLoadingStripeStatus(false);
     });
+  };
+
+  useEffect(() => {
+    refreshStripeStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [company]);
+
+  const [disconnectingStripe, setDisconnectingStripe] = useState(false);
+  const [confirmDisconnectStripe, setConfirmDisconnectStripe] = useState(false);
+
+  const handleDisconnectStripe = async () => {
+    setDisconnectingStripe(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-disconnect");
+      if (error) throw new Error(error.message || "Failed to disconnect");
+      if (data?.error) throw new Error(data.error);
+      toast.success("Stripe disconnected", {
+        description: "Your Stripe account is unlinked. Your data on Stripe is unaffected.",
+      });
+      setConfirmDisconnectStripe(false);
+      // Refresh local state so the UI immediately reflects the disconnection.
+      await refreshProfile?.();
+      refreshStripeStatus();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to disconnect Stripe");
+    } finally {
+      setDisconnectingStripe(false);
+    }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -662,15 +690,28 @@ export default function Settings() {
                   </ul>
 
                   {stripeStatus?.connected && stripeStatus?.details_submitted ? (
-                    <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Charges</span>
-                        <span className="font-medium">{stripeStatus.charges_enabled ? "Enabled" : "Pending"}</span>
+                    <div className="space-y-3 mt-auto">
+                      <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Charges</span>
+                          <span className="font-medium">{stripeStatus.charges_enabled ? "Enabled" : "Pending"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Payouts</span>
+                          <span className="font-medium">{stripeStatus.payouts_enabled ? "Enabled" : "Pending"}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Payouts</span>
-                        <span className="font-medium">{stripeStatus.payouts_enabled ? "Enabled" : "Pending"}</span>
-                      </div>
+                      {isOwner && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/20"
+                          onClick={() => setConfirmDisconnectStripe(true)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Disconnect Stripe
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <Button
