@@ -378,10 +378,76 @@ export function useTerminal(): UseTerminalReturn {
   }, [runIntent]);
 
   const cancelCollect = useCallback(() => {
+    if (isNativeTerminalAvailable()) {
+      cancelNativeCollect().catch(() => {});
+    }
     if (terminalRef.current) {
       terminalRef.current.cancelCollectPaymentMethod().catch(() => {});
     }
     setIsCollecting(false);
+  }, []);
+
+  /**
+   * Tap to Pay on Android — routed through the native Capacitor plugin.
+   * The web has no Tap to Pay support, so this short-circuits with a clear error.
+   */
+  const collectTapToPay = useCallback(async (amountMinor: number, currency: string): Promise<CollectResult> => {
+    if (!isNativeTerminalAvailable()) {
+      return {
+        success: false,
+        error: "Tap to Pay is only available in the Stokivo Android app.",
+        errorKind: "unknown",
+        recoverable: false,
+      };
+    }
+    setIsCollecting(true);
+    try {
+      const ok = await ensureNativeInitialized();
+      if (!ok) {
+        return { success: false, error: "Failed to initialize Tap to Pay.", errorKind: "unknown", recoverable: false };
+      }
+      const locationId = await resolveTerminalLocationId();
+      if (!locationId) {
+        return {
+          success: false,
+          error: "No Stripe Terminal location set up. Add one in Settings → Payments.",
+          errorKind: "unknown",
+          recoverable: false,
+        };
+      }
+      const readers = await discoverTapToPayReaders();
+      if (readers.length === 0) {
+        return { success: false, error: "Tap to Pay not available on this device.", errorKind: "reader_disconnected", recoverable: false };
+      }
+      try {
+        await connectTapToPayReader({ locationId, readerSerial: readers[0].serialNumber });
+      } catch (e: any) {
+        return { success: false, error: e?.message || "Failed to start Tap to Pay.", errorKind: "reader_disconnected", recoverable: true };
+      }
+      // Create PI on connected account (server-side handles routing).
+      const { data: piData, error: piError } = await supabase.functions.invoke("create-terminal-payment", {
+        body: { amount: amountMinor, currency: currency.toLowerCase() },
+      });
+      if (piError || !piData?.client_secret) {
+        return { success: false, error: piData?.error || "Failed to create payment intent", errorKind: "network", recoverable: false };
+      }
+      lastPaymentRef.current = {
+        clientSecret: piData.client_secret,
+        piId: piData.payment_intent_id || "",
+        amountMinor,
+        currency,
+      };
+      try {
+        const result = await collectAndProcessNative(piData.client_secret);
+        lastPaymentRef.current = null;
+        return { success: true, paymentIntentId: result.paymentIntentId };
+      } catch (e: any) {
+        const kind = classifyError(e);
+        return { success: false, error: e?.message || "Tap to Pay failed", errorKind: kind, recoverable: kind === "reader_disconnected" || kind === "network" };
+      }
+    } finally {
+      setIsCollecting(false);
+    }
   }, []);
 
   // Auto-discover once on mount
@@ -414,6 +480,7 @@ export function useTerminal(): UseTerminalReturn {
     rediscoverReaders,
     disconnect,
     collectPayment,
+    collectTapToPay,
     retryLastPayment,
     cancelCollect,
     isCollecting,
