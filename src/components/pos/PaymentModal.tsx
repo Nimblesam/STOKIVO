@@ -42,7 +42,10 @@ interface Props {
 
 export function PaymentModal({
   total, currency, onClose, onComplete, processing,
-  terminalStatus, tapToPaySupported = false, onTerminalPayment, isTerminalCollecting,
+  terminalStatus, tapToPaySupported = false,
+  availableReaders = [], connectedReader = null,
+  onTerminalPayment, onRetryTerminalPayment, onRediscoverReaders, onConnectToReader,
+  isTerminalCollecting,
   onCancelTerminalCollect, onRetryTerminal,
 }: Props) {
   const [inputValue, setInputValue] = useState("0");
@@ -53,7 +56,12 @@ export function PaymentModal({
   const [cardSuccess, setCardSuccess] = useState(false);
   const [showCardChoice, setShowCardChoice] = useState(false);
   const [showManualCard, setShowManualCard] = useState(false);
+  const [showReaderPicker, setShowReaderPicker] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   const [pendingCardAmount, setPendingCardAmount] = useState(0);
+  const [pendingCardMode, setPendingCardMode] = useState<CardMode>("integrated");
 
   const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, total - totalPaid);
@@ -61,6 +69,7 @@ export function PaymentModal({
   const isComplete = remaining === 0;
 
   const isTerminalOnline = terminalStatus === "connected";
+  const hasMultipleReaders = availableReaders.length > 1;
 
   const handleKey = useCallback((key: string) => {
     setInputValue((prev) => {
