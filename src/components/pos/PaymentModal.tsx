@@ -93,8 +93,9 @@ export function PaymentModal({
 
   const runIntegrated = async () => {
     if (!isTerminalOnline) {
+      // Soft fallback to Manual instead of leaving user stuck.
       setShowCardChoice(false);
-      setCardError("Card reader is offline. Use Manual or connect terminal.");
+      setShowManualCard(true);
       return;
     }
     setShowCardChoice(false);
@@ -105,7 +106,27 @@ export function PaymentModal({
       setInputValue("0");
       setTimeout(() => setCardSuccess(false), 2000);
     } else {
-      setCardError(result.error || "Card payment failed. Try again.");
+      // Terminal failed mid-flow — keep user moving with Manual.
+      setCardError(result.error || "Card payment failed. You can use Manual Card instead.");
+      setShowManualCard(true);
+    }
+  };
+
+  const runTapToPay = async () => {
+    setShowCardChoice(false);
+    if (!tapToPaySupported) {
+      setShowManualCard(true);
+      return;
+    }
+    const result = await onTerminalPayment(pendingCardAmount);
+    if (result.success) {
+      setCardSuccess(true);
+      setPayments((prev) => [...prev, { method: "card", amount: pendingCardAmount, card_mode: "tap_to_pay" }]);
+      setInputValue("0");
+      setTimeout(() => setCardSuccess(false), 2000);
+    } else {
+      setCardError(result.error || "Tap to Pay failed. Use Manual Card instead.");
+      setShowManualCard(true);
     }
   };
 
@@ -121,6 +142,7 @@ export function PaymentModal({
     setCardSuccess(true);
     setTimeout(() => setCardSuccess(false), 2000);
   };
+
 
   const handleComplete = () => {
     if (!isComplete) return;
