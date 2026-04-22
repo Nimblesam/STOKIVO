@@ -13,7 +13,7 @@ import {
 import type { Currency } from "@/lib/types";
 import type { TerminalStatus } from "@/hooks/use-terminal";
 
-export type CardMode = "manual" | "integrated";
+export type CardMode = "manual" | "integrated" | "tap_to_pay";
 
 export interface PaymentLine {
   method: string;
@@ -28,6 +28,7 @@ interface Props {
   onComplete: (payments: PaymentLine[], customerName?: string) => void;
   processing: boolean;
   terminalStatus: TerminalStatus;
+  tapToPaySupported?: boolean;
   onTerminalPayment: (amount: number) => Promise<{ success: boolean; error?: string; paymentIntentId?: string }>;
   isTerminalCollecting: boolean;
   onCancelTerminalCollect: () => void;
@@ -36,7 +37,7 @@ interface Props {
 
 export function PaymentModal({
   total, currency, onClose, onComplete, processing,
-  terminalStatus, onTerminalPayment, isTerminalCollecting,
+  terminalStatus, tapToPaySupported = false, onTerminalPayment, isTerminalCollecting,
   onCancelTerminalCollect, onRetryTerminal,
 }: Props) {
   const [inputValue, setInputValue] = useState("0");
