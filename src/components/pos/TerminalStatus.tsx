@@ -35,8 +35,8 @@ export function TerminalStatus({ status, readerLabel, error, onConnect, onDiscon
           )}
           {status === "offline" && (
             <Badge variant="outline" className="gap-1.5 text-xs text-muted-foreground/60 cursor-pointer" onClick={onConnect}>
-              <WifiOff className="h-3 w-3" />
-              <span className="hidden sm:inline">Terminal Offline</span>
+              <Wifi className="h-3 w-3 animate-pulse" />
+              <span className="hidden sm:inline">Searching readers…</span>
             </Badge>
           )}
           {status === "not_configured" && (
@@ -64,9 +64,9 @@ export function TerminalStatus({ status, readerLabel, error, onConnect, onDiscon
           )}
           {status === "offline" && (
             <>
-              <p className="font-medium text-muted-foreground">🔴 Terminal Offline</p>
+              <p className="font-medium text-muted-foreground">Searching for readers…</p>
+              <p className="text-muted-foreground">We auto-connect any Wi-Fi or Bluetooth reader on this network. Click to scan now.</p>
               {error && <p className="text-destructive">{error}</p>}
-              <p className="text-muted-foreground">Click to connect</p>
             </>
           )}
           {status === "not_configured" && (

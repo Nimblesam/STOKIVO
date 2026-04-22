@@ -458,6 +458,21 @@ export function useTerminal(): UseTerminalReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Background re-discovery: while we're offline (no reader connected), poll
+  // every 15s for newly powered-on Wi-Fi or Bluetooth readers and silently
+  // auto-connect to them. This makes "plug in your reader" Just Work — the
+  // merchant doesn't have to tap anything in the UI.
+  useEffect(() => {
+    if (status === "connected" || status === "connecting" || status === "not_configured") return;
+    const interval = setInterval(() => {
+      // Only attempt while the page is visible to avoid wasted Stripe API calls.
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      connect().catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   useEffect(() => {
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
