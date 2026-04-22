@@ -14,8 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, Download, Upload, ScanBarcode, CalendarClock, Tag, AlertTriangle, Mic } from "lucide-react";
-import { ProductImport } from "@/components/ProductImport";
+import { Plus, Search, Package, Barcode, Loader2, MoreHorizontal, Pencil, Trash2, Printer, RefreshCw, Wand2, ScanBarcode, CalendarClock, Tag, AlertTriangle, Mic } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
@@ -47,7 +46,7 @@ export default function Products() {
   const [barcodeFormat, setBarcodeFormat] = useState<BarcodeFormat>("EAN13");
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showImport, setShowImport] = useState(false);
+  
   const [showVoice, setShowVoice] = useState(false);
 
   // Batch print
@@ -224,9 +223,6 @@ export default function Products() {
                 <Printer className="h-4 w-4" /> Print {selectedIds.size} Labels
               </Button>
             )}
-            <Button variant="outline" className="gap-2" onClick={() => setShowImport(true)}>
-              <Upload className="h-4 w-4" /> Import CSV
-            </Button>
             <Button variant="outline" size="icon" onClick={() => setShowVoice(true)} title="Add product by voice">
               <Mic className="h-4 w-4" />
             </Button>
@@ -238,23 +234,17 @@ export default function Products() {
       />
 
       <div className="stokivo-card">
-        <div className="p-4 border-b flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-card">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name, SKU, barcode, or category..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input
+              placeholder="Search by name, SKU, barcode, or category..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-11 text-base"
+              enterKeyHint="search"
+            />
           </div>
-          <Button variant="outline" className="gap-2" onClick={() => {
-            const lines = ["Name,SKU,Barcode,Category,Unit Type,Cost Price,Selling Price,Stock Qty,Min Stock"];
-            filtered.forEach(p => {
-              lines.push(`"${p.name}","${p.sku}","${p.barcode || ""}","${p.category || ""}","${p.unit_type}",${(p.cost_price/100).toFixed(2)},${(p.selling_price/100).toFixed(2)},${p.stock_qty},${p.min_stock_level}`);
-            });
-            const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a"); a.href = url; a.download = "products.csv"; a.click();
-            URL.revokeObjectURL(url);
-          }}>
-            <Download className="h-4 w-4" /> Export CSV
-          </Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -670,16 +660,6 @@ export default function Products() {
         requiredPlan="growth"
         featureLabel={`More than ${limits.maxProducts} products`}
         currentPlan={currentPlan}
-      />
-
-      <ProductImport
-        open={showImport}
-        onOpenChange={setShowImport}
-        companyId={profile?.company_id || ""}
-        storeId={activeStoreId}
-        onComplete={fetchProducts}
-        existingCount={products.length}
-        maxProducts={limits.maxProducts}
       />
 
       <VoiceProductEntry

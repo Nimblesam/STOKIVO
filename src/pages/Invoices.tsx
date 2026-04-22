@@ -617,8 +617,8 @@ export default function Invoices() {
                 <span className="text-xs text-muted-foreground">Synced live with your product list</span>
               </div>
 
-              {/* Scrollable line items list */}
-              <div className="rounded-md border border-border bg-muted/20 max-h-[40vh] overflow-y-auto p-2 space-y-2">
+              {/* Line items list — let dialog body scroll so picker dropdown isn't clipped */}
+              <div className="rounded-md border border-border bg-muted/20 p-2 space-y-2">
                 {newInv.items.map((item, idx) => {
                   const prod = products.find(p => p.id === item.product_id);
                   const qty = parseInt(item.qty) || 0;

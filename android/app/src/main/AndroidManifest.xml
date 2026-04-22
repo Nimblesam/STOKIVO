@@ -17,6 +17,7 @@
             android:label="@string/title_activity_main"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="true">
 
             <intent-filter>
