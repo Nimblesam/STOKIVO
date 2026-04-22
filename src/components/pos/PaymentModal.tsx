@@ -32,6 +32,7 @@ interface Props {
   availableReaders?: TerminalReader[];
   connectedReader?: TerminalReader | null;
   onTerminalPayment: (amount: number) => Promise<CollectResult>;
+  onTapToPayPayment?: (amount: number) => Promise<CollectResult>;
   onRetryTerminalPayment?: () => Promise<CollectResult>;
   onRediscoverReaders?: () => Promise<TerminalReader[]>;
   onConnectToReader?: (readerId: string) => Promise<void>;
@@ -44,7 +45,7 @@ export function PaymentModal({
   total, currency, onClose, onComplete, processing,
   terminalStatus, tapToPaySupported = false,
   availableReaders = [], connectedReader = null,
-  onTerminalPayment, onRetryTerminalPayment, onRediscoverReaders, onConnectToReader,
+  onTerminalPayment, onTapToPayPayment, onRetryTerminalPayment, onRediscoverReaders, onConnectToReader,
   isTerminalCollecting,
   onCancelTerminalCollect, onRetryTerminal,
 }: Props) {
@@ -163,13 +164,14 @@ export function PaymentModal({
 
   const runTapToPay = async () => {
     setShowCardChoice(false);
-    if (!tapToPaySupported) {
+    if (!tapToPaySupported || !onTapToPayPayment) {
       setShowManualCard(true);
       return;
     }
     setPendingCardMode("tap_to_pay");
     setRetryAttempts(0);
-    const result = await onTerminalPayment(pendingCardAmount);
+    // Routes through the native Capacitor StripeTerminal plugin (Tap to Pay on Android).
+    const result = await onTapToPayPayment(pendingCardAmount);
     handleTerminalResult(result, "tap_to_pay");
   };
 
