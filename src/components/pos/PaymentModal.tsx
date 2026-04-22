@@ -195,7 +195,11 @@ export function PaymentModal({
 
   // Card method choice modal
   if (showCardChoice) {
-    const defaultIntegrated = isTerminalOnline;
+    // Recommendation order: Tap to Pay (if device supports) > Card Machine (if connected) > Manual.
+    // Manual is ALWAYS available as fallback.
+    const recommendedKey: "tap" | "machine" | "manual" =
+      tapToPaySupported ? "tap" : isTerminalOnline ? "machine" : "manual";
+
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
         <Card className="w-full max-w-md overflow-hidden">
@@ -211,39 +215,69 @@ export function PaymentModal({
               <p className="text-3xl font-bold">{formatMoney(pendingCardAmount, currency)}</p>
             </div>
 
-            {/* Integrated */}
-            <button
-              onClick={runIntegrated}
-              disabled={!isTerminalOnline}
-              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                defaultIntegrated
-                  ? "border-primary bg-primary/5 hover:bg-primary/10"
-                  : "border-border opacity-60 cursor-not-allowed"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Smartphone className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold">Send to Card Machine</p>
-                    {defaultIntegrated && <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>}
+            {/* Tap to Pay — only if device supports it */}
+            {tapToPaySupported && (
+              <button
+                onClick={runTapToPay}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                  recommendedKey === "tap"
+                    ? "border-primary bg-primary/5 hover:bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Smartphone className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isTerminalOnline
-                      ? "Amount sent automatically to your connected terminal."
-                      : "No terminal connected. Connect one to use this option."}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold">Tap to Pay on Phone</p>
+                      {recommendedKey === "tap" && (
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Customer taps their card or phone directly on this device.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            )}
 
-            {/* Manual */}
+            {/* Send to Card Machine — only if a reader is actually connected */}
+            {isTerminalOnline && (
+              <button
+                onClick={runIntegrated}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                  recommendedKey === "machine"
+                    ? "border-primary bg-primary/5 hover:bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold">Send to Card Machine</p>
+                      {recommendedKey === "machine" && (
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Amount sent automatically to your connected card reader.
+                    </p>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* Manual Card Payment — always available */}
             <button
               onClick={openManual}
               className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                !defaultIntegrated
+                recommendedKey === "manual"
                   ? "border-primary bg-primary/5 hover:bg-primary/10"
                   : "border-border hover:border-primary/50"
               }`}
@@ -255,7 +289,9 @@ export function PaymentModal({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-semibold">Manual Card Payment</p>
-                    {!defaultIntegrated && <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>}
+                    {recommendedKey === "manual" && (
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Enter the amount on your external card machine, then confirm here.
@@ -263,6 +299,12 @@ export function PaymentModal({
                 </div>
               </div>
             </button>
+
+            {!isTerminalOnline && !tapToPaySupported && (
+              <p className="text-[11px] text-muted-foreground text-center pt-1">
+                No card reader detected. Manual Card always works as a fallback.
+              </p>
+            )}
           </div>
         </Card>
       </div>
