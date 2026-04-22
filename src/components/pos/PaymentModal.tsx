@@ -432,8 +432,8 @@ export function PaymentModal({
               </button>
             )}
 
-            {/* Send to Card Machine — only if a reader is actually connected */}
-            {isTerminalOnline && (
+            {/* Send to Card Machine — visible if connected OR readers were discovered */}
+            {canUseMachine && (
               <button
                 onClick={runIntegrated}
                 className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
@@ -452,9 +452,14 @@ export function PaymentModal({
                       {recommendedKey === "machine" && (
                         <Badge variant="default" className="text-[10px] px-1.5 py-0">Recommended</Badge>
                       )}
+                      {hasMultipleReaders && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{availableReaders.length} readers</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Amount sent automatically to your connected card reader.
+                      {isTerminalOnline
+                        ? `Connected: ${connectedReader?.label || "Card reader"}`
+                        : "Tap to connect and send the amount to a reader."}
                     </p>
                   </div>
                 </div>
