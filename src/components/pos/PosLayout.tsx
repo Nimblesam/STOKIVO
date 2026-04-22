@@ -1,4 +1,4 @@
-import { ReactNode, useCallback } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppMode } from "@/contexts/AppModeContext";
@@ -40,6 +40,25 @@ export function PosLayout({ children }: PosLayoutProps) {
     window.dispatchEvent(new CustomEvent("sunmi-barcode", { detail: { barcode } }));
   }, []);
   useSunmiScanner(handleSunmiScan);
+
+  // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't float over the keyboard / inputs.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const check = () => {
+      // Heuristic: if visual viewport is at least 150px shorter than layout viewport, the keyboard is up.
+      const diff = window.innerHeight - vv.height;
+      setKeyboardOpen(diff > 150);
+    };
+    check();
+    vv.addEventListener("resize", check);
+    vv.addEventListener("scroll", check);
+    return () => {
+      vv.removeEventListener("resize", check);
+      vv.removeEventListener("scroll", check);
+    };
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
