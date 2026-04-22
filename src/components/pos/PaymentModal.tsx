@@ -493,7 +493,7 @@ export function PaymentModal({
               </div>
             </button>
 
-            {!isTerminalOnline && !tapToPaySupported && (
+            {!canUseMachine && !tapToPaySupported && (
               <p className="text-[11px] text-muted-foreground text-center pt-1">
                 No card reader detected. Manual Card always works as a fallback.
               </p>
