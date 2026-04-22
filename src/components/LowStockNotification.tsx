@@ -51,6 +51,14 @@ export function LowStockNotification() {
     return () => clearInterval(interval);
   }, [profile?.company_id, soundEnabled]);
 
+  // Auto-dismiss the banner after 12s so it doesn't permanently take up screen space.
+  // Reappears next poll if alerts still exist after the user navigates / refetches.
+  useEffect(() => {
+    if (alerts.length === 0 || dismissed) return;
+    const t = setTimeout(() => setDismissed(true), 12000);
+    return () => clearTimeout(t);
+  }, [alerts, dismissed]);
+
   const playAlertSound = () => {
     try {
       const ctx = new AudioContext();

@@ -26,10 +26,26 @@ export function VoiceProductEntry({ open, onOpenChange, onProductParsed, isResta
   const [parsing, setParsing] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error("Speech recognition not supported in this browser. Try Chrome.");
+      toast.error("Speech recognition not supported on this device. Try Chrome on Android or desktop.");
+      return;
+    }
+
+    // Pre-flight: request microphone permission so the OS shows the prompt
+    // before SpeechRecognition fails silently with "not-allowed".
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately release — SpeechRecognition manages its own audio capture.
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    } catch (err: any) {
+      const msg = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError"
+        ? "Microphone permission denied. Enable it in your device settings to use voice entry."
+        : "Could not access the microphone. Check that no other app is using it.";
+      toast.error(msg);
       return;
     }
 
@@ -53,7 +69,11 @@ export function VoiceProductEntry({ open, onOpenChange, onProductParsed, isResta
     };
 
     recognition.onerror = (event: any) => {
-      if (event.error !== "aborted") {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        toast.error("Microphone blocked. Enable it in your device settings, then try again.");
+      } else if (event.error === "no-speech") {
+        toast.info("Didn't catch anything — please try again.");
+      } else if (event.error !== "aborted") {
         toast.error(`Speech error: ${event.error}`);
       }
       setListening(false);
@@ -64,9 +84,14 @@ export function VoiceProductEntry({ open, onOpenChange, onProductParsed, isResta
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-    setTranscript("");
+    try {
+      recognition.start();
+      setListening(true);
+      setTranscript("");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to start voice recognition");
+      setListening(false);
+    }
   }, []);
 
   const stopListening = useCallback(() => {

@@ -146,6 +146,7 @@ export default function Cashier() {
   const [discountInput, setDiscountInput] = useState("");
   const [discountType, setDiscountType] = useState<"fixed" | "percent">("fixed");
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [customerForm, setCustomerForm] = useState({ name: "", email: "", phone: "" });
   const [savingCustomer, setSavingCustomer] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -527,7 +528,7 @@ export default function Cashier() {
               </div>
             ))}
             {completedSale.payments.length === 0 && (
-              <div className="flex justify-between text-amber-600 font-semibold">
+              <div className="flex justify-between text-warning font-semibold">
                 <span>Status</span><span>Pay Later — Added to Credit Ledger</span>
               </div>
             )}
@@ -566,11 +567,11 @@ export default function Cashier() {
 
   // MAIN POS LAYOUT
   return (
-    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100dvh-6.5rem)] lg:h-[calc(100dvh-3.5rem)]">
+    <div className="flex flex-col lg:flex-row gap-0 h-[calc(100dvh-3rem)] lg:h-[calc(100dvh-3.5rem)]">
       {/* LEFT: Product Grid */}
-      <div className="flex-1 flex flex-col min-w-0 border-b lg:border-b-0 lg:border-r border-border min-h-[40vh] lg:min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:border-r border-border min-h-0">
         {/* Search + Status Bar */}
-        <div className="p-3 border-b border-border space-y-2">
+        <div className="p-2 sm:p-3 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -578,24 +579,22 @@ export default function Cashier() {
                 ref={searchRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Products..."
-                className="pl-10 h-10"
+                placeholder="Search products…"
+                className="pl-10 h-11 text-base"
                 autoFocus
               />
             </div>
-            <div className="flex items-center gap-1.5">
-              <OfflineIndicator />
-              <PrinterStatusIndicator />
+            <div className="hidden sm:flex items-center gap-1.5">
               <ScannerStatus />
             </div>
           </div>
         </div>
 
         {/* Category Tabs */}
-        <div className="px-3 pt-2 pb-1 border-b border-border flex gap-1 overflow-x-auto">
+        <div className="px-2 sm:px-3 pt-2 pb-1 border-b border-border flex gap-1 overflow-x-auto">
           <button
             onClick={() => setCategoryFilter(null)}
-            className={`px-4 py-1.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+            className={`px-3 sm:px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               !categoryFilter ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -605,7 +604,7 @@ export default function Cashier() {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-4 py-1.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 categoryFilter === cat ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -615,7 +614,7 @@ export default function Cashier() {
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-24 lg:pb-0">
           {filteredProducts.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
@@ -623,27 +622,24 @@ export default function Cashier() {
               <p className="text-sm mt-1">Try a different search or category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-2 sm:p-3">
               {filteredProducts.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => addToCart(p)}
-                  className="relative bg-card border border-border rounded-lg p-2 flex flex-col items-center text-center hover:border-primary/50 hover:shadow-md transition-all group"
+                  className="relative bg-card border border-border rounded-lg p-2 flex flex-col items-center text-center hover:border-primary/50 hover:shadow-md active:scale-[0.98] transition-all group"
                 >
-                  {/* Product Image */}
-                  <div className="w-full aspect-square rounded-md overflow-hidden bg-muted mb-1.5 flex items-center justify-center">
+                  <div className="w-full aspect-square rounded-md overflow-hidden bg-muted mb-2 flex items-center justify-center">
                     {p.image_url ? (
                       <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
                     ) : (
                       <Package className="h-8 w-8 text-muted-foreground/50" />
                     )}
                   </div>
-                  {/* Name + Price */}
-                  <p className="font-medium text-xs leading-tight line-clamp-2 mb-0.5">{p.name}</p>
-                  <p className="text-xs font-bold text-primary">{formatMoney(p.selling_price, currency)}</p>
-                  {/* Add button */}
-                  <div className="absolute bottom-1.5 right-1.5 h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-                    <Plus className="h-3.5 w-3.5" />
+                  <p className="font-medium text-sm leading-tight line-clamp-2 mb-0.5 w-full">{p.name}</p>
+                  <p className="text-sm font-bold text-primary">{formatMoney(p.selling_price, currency)}</p>
+                  <div className="absolute bottom-1.5 right-1.5 h-7 w-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center opacity-90 group-hover:opacity-100 transition-opacity shadow-sm">
+                    <Plus className="h-4 w-4" />
                   </div>
                 </button>
               ))}
@@ -652,9 +648,8 @@ export default function Cashier() {
         </div>
       </div>
 
-      {/* RIGHT: Current Order Panel */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0 bg-card max-h-[60vh] lg:max-h-none">
-        {/* Header */}
+      {/* RIGHT: Current Order Panel — Desktop only */}
+      <div className="hidden lg:flex w-full lg:w-[380px] xl:w-[420px] flex-col shrink-0 bg-card">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
             <h2 className="font-display font-bold text-lg">Current Order</h2>
@@ -686,7 +681,6 @@ export default function Cashier() {
           </div>
         </div>
 
-        {/* Cart Header Row */}
         {cart.length > 0 && (
           <div className="px-4 py-2 border-b border-border grid grid-cols-[1fr_auto_auto] gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
             <span>Item</span>
@@ -695,7 +689,6 @@ export default function Cashier() {
           </div>
         )}
 
-        {/* Cart Items */}
         <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
@@ -714,25 +707,10 @@ export default function Cashier() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 w-24 justify-center">
-                    <button
-                      onClick={() => updateQty(item.product_id, -1)}
-                      className="h-6 w-6 rounded bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-colors"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
+                    <button onClick={() => updateQty(item.product_id, -1)} className="h-6 w-6 rounded bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80"><Minus className="h-3 w-3" /></button>
                     <span className="text-sm font-medium w-6 text-center">{item.qty}</span>
-                    <button
-                      onClick={() => updateQty(item.product_id, 1)}
-                      className="h-6 w-6 rounded bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={() => removeItem(item.product_id)}
-                      className="h-6 w-6 rounded bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button onClick={() => updateQty(item.product_id, 1)} className="h-6 w-6 rounded bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20"><Plus className="h-3 w-3" /></button>
+                    <button onClick={() => removeItem(item.product_id)} className="h-6 w-6 rounded bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20"><X className="h-3 w-3" /></button>
                   </div>
                   <span className="text-sm font-semibold text-right w-16">{formatMoney(item.line_total, currency)}</span>
                 </div>
@@ -741,42 +719,17 @@ export default function Cashier() {
           )}
         </div>
 
-        {/* Totals + Actions */}
         <div className="border-t border-border p-4 space-y-3">
           <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatMoney(subtotal, currency)}</span>
-            </div>
-            {discountAmount > 0 && (
-              <div className="flex justify-between text-success">
-                <span>Discount</span>
-                <span>-{formatMoney(discountAmount, currency)}</span>
-              </div>
-            )}
-            {taxRate > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span>
-                <span>{formatMoney(tax, currency)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-lg font-bold pt-1 border-t border-border">
-              <span>Total</span>
-              <span className="text-primary">{formatMoney(grandTotal, currency)}</span>
-            </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
+            {discountAmount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatMoney(discountAmount, currency)}</span></div>}
+            {taxRate > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span><span>{formatMoney(tax, currency)}</span></div>}
+            <div className="flex justify-between text-lg font-bold pt-1 border-t border-border"><span>Total</span><span className="text-primary">{formatMoney(grandTotal, currency)}</span></div>
           </div>
 
-          {stockErrors.length > 0 && (
-            <p className="text-xs text-destructive text-center">
-              {stockErrors.length} item(s) exceed stock — adjust quantities
-            </p>
-          )}
+          {stockErrors.length > 0 && <p className="text-xs text-destructive text-center">{stockErrors.length} item(s) exceed stock — adjust quantities</p>}
 
-          <Button
-            className="w-full h-12 text-base font-bold gap-2"
-            disabled={cart.length === 0 || stockErrors.length > 0}
-            onClick={() => setShowPayment(true)}
-          >
+          <Button className="w-full h-12 text-base font-bold gap-2" disabled={cart.length === 0 || stockErrors.length > 0} onClick={() => setShowPayment(true)}>
             <CreditCard className="h-5 w-5" /> Complete Sale
           </Button>
 
@@ -798,6 +751,100 @@ export default function Cashier() {
           <p className="text-[10px] text-center text-muted-foreground">Press F2 for quick pay</p>
         </div>
       </div>
+
+      {/* MOBILE: Floating cart button + slide-up sheet */}
+      {cart.length > 0 && (
+        <button
+          onClick={() => setMobileCartOpen(true)}
+          className="lg:hidden fixed left-3 right-3 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-40 h-14 rounded-xl bg-primary text-primary-foreground shadow-lg flex items-center justify-between px-4 active:scale-[0.99] transition-transform"
+        >
+          <span className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            <span className="font-semibold text-sm">
+              {cart.reduce((s, i) => s + i.qty, 0)} item{cart.reduce((s, i) => s + i.qty, 0) === 1 ? "" : "s"} · View cart
+            </span>
+          </span>
+          <span className="font-bold text-base">{formatMoney(grandTotal, currency)}</span>
+        </button>
+      )}
+
+      {/* Mobile cart sheet */}
+      <Dialog open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+        <DialogContent className="lg:hidden p-0 gap-0 max-w-full w-[100vw] sm:max-w-md max-h-[88dvh] flex flex-col rounded-t-2xl">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center justify-between text-base">
+              <span>Current Order</span>
+              <button
+                onClick={() => { persistCashier(null); clearCart(); setMobileCartOpen(false); }}
+                className="text-xs font-normal text-muted-foreground hover:text-primary"
+              >
+                {activeCashier.name} · Switch
+              </button>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {cart.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                <p>No items yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {cart.map((item) => (
+                  <div key={item.product_id} className="px-4 py-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatMoney(item.unit_price, currency)} ea · {formatMoney(item.line_total, currency)}</p>
+                      {!isRestaurant && item.qty > item.stock_qty && (
+                        <p className="text-[10px] text-destructive">Only {item.stock_qty} in stock</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => updateQty(item.product_id, -1)} className="h-9 w-9 rounded-full bg-muted text-foreground flex items-center justify-center active:bg-muted/70">
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="text-sm font-semibold w-6 text-center">{item.qty}</span>
+                      <button onClick={() => updateQty(item.product_id, 1)} className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center active:bg-primary/20">
+                        <Plus className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => removeItem(item.product_id)} className="h-9 w-9 rounded-full bg-destructive/10 text-destructive flex items-center justify-center ml-1 active:bg-destructive/20">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t p-4 space-y-3 bg-card">
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
+              {discountAmount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatMoney(discountAmount, currency)}</span></div>}
+              {taxRate > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span><span>{formatMoney(tax, currency)}</span></div>}
+              <div className="flex justify-between text-lg font-bold pt-1 border-t"><span>Total</span><span className="text-primary">{formatMoney(grandTotal, currency)}</span></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" className="h-10" onClick={() => setShowCustomerDialog(true)}>
+                <UserPlus className="h-3.5 w-3.5 mr-1" /> Customer
+              </Button>
+              <Button variant="outline" size="sm" className="h-10" onClick={() => setShowDiscountDialog(true)}>
+                <Percent className="h-3.5 w-3.5 mr-1" /> Discount
+              </Button>
+            </div>
+
+            <Button
+              className="w-full h-12 text-base font-bold gap-2"
+              disabled={cart.length === 0 || stockErrors.length > 0}
+              onClick={() => { setMobileCartOpen(false); setShowPayment(true); }}
+            >
+              <CreditCard className="h-5 w-5" /> Complete Sale
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {showPayment && (
         <PaymentModal

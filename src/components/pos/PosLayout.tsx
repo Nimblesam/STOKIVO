@@ -8,8 +8,8 @@ import { useSunmiScanner } from "@/hooks/use-sunmi-scanner";
 import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog";
 import { LowStockNotification } from "@/components/LowStockNotification";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ShoppingCart, RotateCcw, Receipt, User, LogOut, Printer, Settings, Monitor, Package, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ShoppingCart, RotateCcw, Receipt, LogOut, Monitor, Package, FileText, Printer } from "lucide-react";
 import stokivoLogo from "@/assets/stokivo-logo.png";
 import { PrinterStatusIndicator } from "@/components/PrinterStatusIndicator";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -136,30 +136,35 @@ export function PosLayout({ children }: PosLayoutProps) {
     <>
     <div className="min-h-screen flex flex-col bg-background">
       {/* Mobile header */}
-      <header className="h-12 border-b bg-card flex items-center px-3 shrink-0">
+      <header className="h-12 border-b bg-card flex items-center px-3 shrink-0 gap-2">
         <img src={stokivoLogo} alt="Stokivo" className="h-7 w-7 rounded-lg" />
-        <span className="font-display font-bold text-sm text-foreground ml-2">Stokivo</span>
+        <span className="font-display font-bold text-sm text-foreground">Stokivo</span>
         <div className="flex-1" />
         <OfflineIndicator />
+        <PrinterStatusIndicator />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">
+              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-semibold text-primary">
                 {initials}
               </div>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground truncate">
+              {profile?.full_name}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
             {!isNativeShell && (
               <>
                 <DropdownMenuItem onClick={() => setMode("full")} className="gap-2">
                   <Monitor className="h-4 w-4" />
-                  Full Mode
+                  Switch to Full Mode
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
             )}
-            <DropdownMenuItem onClick={signOut} className="gap-2 text-destructive">
+            <DropdownMenuItem onClick={signOut} className="gap-2 text-destructive focus:text-destructive">
               <LogOut className="h-4 w-4" />
               Logout
             </DropdownMenuItem>
@@ -168,36 +173,39 @@ export function PosLayout({ children }: PosLayoutProps) {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto pb-16">
+      <main className="flex-1 overflow-auto pb-[calc(4rem+env(safe-area-inset-bottom))]">
         <div className="px-3 pt-2">
           <LowStockNotification />
         </div>
         {children}
       </main>
 
-      {/* Bottom tabs */}
-      <nav className="fixed bottom-0 left-0 right-0 h-14 border-t bg-card flex items-center justify-around z-50">
+      {/* Bottom tabs (4 items, no More) */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 border-t bg-card flex items-center justify-around z-50"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "calc(4rem + env(safe-area-inset-bottom))" }}
+      >
         {[
           { title: "Sell", url: "/pos", icon: ShoppingCart },
           { title: "Products", url: "/pos/products", icon: Package },
           { title: "Invoices", url: "/pos/invoices", icon: FileText },
           { title: "Orders", url: "/pos/receipts", icon: Receipt },
-          { title: "More", url: "/pos/more", icon: Settings },
-        ].map((item) => (
-          <button
-            key={item.url}
-            onClick={() => navigate(item.url)}
-            className={cn(
-              "flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors",
-              isActive(item.url)
-                ? "text-primary"
-                : "text-muted-foreground"
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="text-[10px] font-medium">{item.title}</span>
-          </button>
-        ))}
+        ].map((item) => {
+          const active = isActive(item.url);
+          return (
+            <button
+              key={item.url}
+              onClick={() => navigate(item.url)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:bg-muted/50",
+                active ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <item.icon className={cn("h-5 w-5", active && "scale-110")} />
+              <span className="text-[11px] font-medium">{item.title}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
     {unknownBarcode && (
