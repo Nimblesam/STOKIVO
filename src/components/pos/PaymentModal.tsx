@@ -321,37 +321,40 @@ export function PaymentModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md overflow-hidden max-h-[95vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-muted/30 sticky top-0 z-10">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
+      <Card className="w-full max-w-md overflow-hidden max-h-[95vh] flex flex-col">
+        {/* Header — sticky */}
+        <div className="flex items-center justify-between p-4 border-b bg-muted/30 shrink-0">
           <h3 className="font-display font-bold text-lg">Payment</h3>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* Amount summary */}
+        {/* Amount summary — sticky inside scroll container so it stays visible */}
+        <div className="border-b bg-card shrink-0 px-4 py-3">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Due</p>
-              <p className="font-bold text-lg">{formatMoney(total, currency)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Due</p>
+              <p className="font-bold text-base sm:text-lg tabular-nums">{formatMoney(total, currency)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Paid</p>
-              <p className="font-bold text-lg text-accent">{formatMoney(totalPaid, currency)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Paid</p>
+              <p className="font-bold text-base sm:text-lg text-accent tabular-nums">{formatMoney(totalPaid, currency)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
                 {isComplete && change > 0 ? "Change" : "Remaining"}
               </p>
-              <p className={`font-bold text-lg ${isComplete && change > 0 ? "text-success" : remaining > 0 ? "text-destructive" : ""}`}>
+              <p className={`font-bold text-base sm:text-lg tabular-nums ${isComplete && change > 0 ? "text-success" : remaining > 0 ? "text-destructive" : ""}`}>
                 {isComplete && change > 0 ? formatMoney(change, currency) : formatMoney(remaining, currency)}
               </p>
             </div>
           </div>
+        </div>
 
+        {/* Scrollable middle: alerts, history, keypad */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
           {/* Card error/success feedback */}
           {cardError && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
@@ -400,7 +403,7 @@ export function PaymentModal({
               {/* Input display */}
               <div className="bg-muted/30 rounded-lg p-3 text-center">
                 <p className="text-xs text-muted-foreground mb-1">Enter amount</p>
-                <p className="text-3xl font-mono font-bold tabular-nums">
+                <p className="text-2xl sm:text-3xl font-mono font-bold tabular-nums">
                   {currency === "GBP" ? "£" : "₦"}{inputValue}
                 </p>
               </div>
@@ -408,7 +411,7 @@ export function PaymentModal({
               {/* Keypad */}
               <div className="grid grid-cols-3 gap-2">
                 {keys.map((k) => (
-                  <Button key={k} variant="outline" className="h-12 text-lg font-semibold"
+                  <Button key={k} variant="outline" className="h-11 text-base font-semibold"
                     onClick={() => handleKey(k)}>
                     {k}
                   </Button>
@@ -423,8 +426,6 @@ export function PaymentModal({
                   Clear
                 </Button>
               </div>
-
-              <Separator />
 
               {/* Quick amounts */}
               <div className="flex gap-2 flex-wrap">
@@ -441,33 +442,34 @@ export function PaymentModal({
                   </Badge>
                 ))}
               </div>
+            </>
+          )}
+        </div>
 
-              {/* Payment method buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="h-14 text-base font-semibold gap-2"
+        {/* Sticky footer — payment method buttons OR complete sale */}
+        <div className="border-t bg-card px-4 py-3 shrink-0 space-y-2">
+          {!isComplete ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="h-12 text-sm font-semibold gap-2"
                   onClick={applyCash}>
-                  <Banknote className="h-5 w-5" /> Cash
+                  <Banknote className="h-4 w-4" /> Cash
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-14 w-full text-base font-semibold gap-2"
+                  className="h-12 w-full text-sm font-semibold gap-2"
                   onClick={openCardFlow}
                 >
-                  <CreditCard className="h-5 w-5" /> Card
+                  <CreditCard className="h-4 w-4" /> Card
                   {!isTerminalOnline && <WifiOff className="h-3 w-3 text-muted-foreground" />}
                 </Button>
               </div>
-
-              {/* Pay Later */}
-              <Button variant="secondary" className="w-full" onClick={() => setShowPayLater(true)}>
+              <Button variant="secondary" className="w-full h-10" onClick={() => setShowPayLater(true)}>
                 <Clock className="h-4 w-4 mr-2" /> Pay Later
               </Button>
             </>
-          )}
-
-          {/* Complete button */}
-          {isComplete && (
-            <Button className="w-full h-14 text-lg font-bold" onClick={handleComplete} disabled={processing}>
+          ) : (
+            <Button className="w-full h-12 text-base font-bold" onClick={handleComplete} disabled={processing}>
               {processing ? (
                 <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Processing…</>
               ) : (
