@@ -209,7 +209,7 @@ export function PosLayout({ children }: PosLayoutProps) {
     <>
     <div className="min-h-screen flex flex-col bg-background">
       {/* Mobile header */}
-      <header className="h-12 border-b bg-card flex items-center px-3 shrink-0 gap-2">
+      <header className="h-12 border-b bg-card flex items-center px-3 shrink-0 gap-2 sticky top-0 z-40">
         <img src={stokivoLogo} alt="Stokivo" className="h-7 w-7 rounded-lg" />
         <span className="font-display font-bold text-sm text-foreground">Stokivo</span>
         <div className="flex-1" />
