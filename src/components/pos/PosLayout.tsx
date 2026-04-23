@@ -35,13 +35,51 @@ export function PosLayout({ children }: PosLayoutProps) {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { setMode, isNativeShell } = useAppMode();
+  const { activeStoreId } = useStore();
   const isMobile = useIsMobile();
   const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
+  const sunmiBusyRef = useRef(false);
+  const [unknownSunmiBarcode, setUnknownSunmiBarcode] = useState<string | null>(null);
 
   // Bridge SUNMI hardware scanner -> Cashier's product lookup pipeline.
-  const handleSunmiScan = useCallback((barcode: string) => {
-    window.dispatchEvent(new CustomEvent("sunmi-barcode", { detail: { barcode } }));
-  }, []);
+  // We do the product lookup HERE (not in Cashier) so a scan from Products,
+  // Receipts, or any other POS page also adds to the cart and navigates to /pos.
+  const handleSunmiScan = useCallback(async (barcode: string) => {
+    if (!barcode || sunmiBusyRef.current || !profile?.company_id) return;
+    sunmiBusyRef.current = true;
+    try {
+      let q = supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty, image_url")
+        .eq("company_id", profile.company_id)
+        .eq("barcode", barcode);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q.limit(1).maybeSingle();
+
+      if (data) {
+        const dispatchScan = () => {
+          // Cashier listens for both events; keep both for backwards compat.
+          window.dispatchEvent(new CustomEvent("global-barcode-scan", { detail: data }));
+          window.dispatchEvent(new CustomEvent("sunmi-barcode", { detail: { barcode } }));
+        };
+        if (location.pathname !== "/pos") {
+          navigate("/pos");
+          // Wait for Cashier to mount its listener before dispatching.
+          setTimeout(dispatchScan, 250);
+        } else {
+          dispatchScan();
+        }
+        toast.success(`${data.name} scanned`, { duration: 1500 });
+      } else {
+        setUnknownSunmiBarcode(barcode);
+      }
+    } catch {
+      // silent fail — never block UI on a scan
+    } finally {
+      // Small cool-down so a double-trigger from the SDK doesn't double-add.
+      setTimeout(() => { sunmiBusyRef.current = false; }, 300);
+    }
+  }, [profile?.company_id, activeStoreId, navigate, location.pathname]);
   useSunmiScanner(handleSunmiScan);
 
   // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't float over the keyboard / inputs.
