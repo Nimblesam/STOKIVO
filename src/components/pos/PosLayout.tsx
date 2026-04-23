@@ -30,6 +30,15 @@ const posNavItems = [
   { title: "Receipts", url: "/pos/receipts", icon: Receipt },
 ];
 
+function isEditableElement(element: Element | null): element is HTMLElement {
+  return !!element && (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    (element as HTMLElement).isContentEditable
+  );
+}
+
 export function PosLayout({ children }: PosLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,28 +91,53 @@ export function PosLayout({ children }: PosLayoutProps) {
   }, [profile?.company_id, activeStoreId, navigate, location.pathname]);
   useSunmiScanner(handleSunmiScan);
 
-  // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't
-  // float over the keyboard. Also expose `data-keyboard="open"` on <html> so
-  // overlays like the Cashier floating cart pill can re-anchor to bottom: 0.
+  // Detect the Android keyboard from a stable baseline height so the bottom nav
+  // only hides for real text input and doesn't jump around during normal viewport changes.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
-    const vv = window.visualViewport;
+    if (typeof window === "undefined") return;
+
+    const getViewportHeight = () => Math.round(window.visualViewport?.height ?? window.innerHeight);
+    let baselineHeight = getViewportHeight();
+
     const check = () => {
-      const diff = window.innerHeight - vv.height;
-      const open = diff > 150;
-      setKeyboardOpen(open);
+      const viewportHeight = getViewportHeight();
+      const typingIntoField = isEditableElement(document.activeElement);
+
+      if (!typingIntoField && viewportHeight >= baselineHeight - 40) {
+        baselineHeight = Math.max(baselineHeight, viewportHeight);
+      }
+
+      const open = typingIntoField && baselineHeight - viewportHeight > 120;
+      setKeyboardOpen((prev) => prev === open ? prev : open);
+
       try {
         document.documentElement.setAttribute("data-keyboard", open ? "open" : "closed");
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
+
+    const handleFocusOut = () => window.setTimeout(check, 80);
+
     check();
-    vv.addEventListener("resize", check);
-    vv.addEventListener("scroll", check);
+    window.visualViewport?.addEventListener("resize", check);
+    window.visualViewport?.addEventListener("scroll", check);
+    window.addEventListener("resize", check);
+    window.addEventListener("focusin", check);
+    window.addEventListener("focusout", handleFocusOut);
+
     return () => {
-      vv.removeEventListener("resize", check);
-      vv.removeEventListener("scroll", check);
-      try { document.documentElement.removeAttribute("data-keyboard"); } catch { /* ignore */ }
+      window.visualViewport?.removeEventListener("resize", check);
+      window.visualViewport?.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+      window.removeEventListener("focusin", check);
+      window.removeEventListener("focusout", handleFocusOut);
+      try {
+        document.documentElement.removeAttribute("data-keyboard");
+      } catch {
+        /* ignore */
+      }
     };
   }, []);
 
@@ -209,7 +243,7 @@ export function PosLayout({ children }: PosLayoutProps) {
     <>
     <div className="min-h-screen flex flex-col bg-background">
       {/* Mobile header */}
-      <header className="h-12 border-b bg-card flex items-center px-3 shrink-0 gap-2 sticky top-0 z-40">
+      <header className="h-12 border-b bg-card flex items-center px-3 shrink-0 gap-2">
         <img src={stokivoLogo} alt="Stokivo" className="h-7 w-7 rounded-lg" />
         <span className="font-display font-bold text-sm text-foreground">Stokivo</span>
         <div className="flex-1" />
@@ -246,7 +280,7 @@ export function PosLayout({ children }: PosLayoutProps) {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto pb-[calc(4rem+env(safe-area-inset-bottom))]">
+      <main className={cn("flex-1 overflow-auto", keyboardOpen ? "pb-2" : "pb-[calc(4rem+env(safe-area-inset-bottom))]") }>
         <div className="px-3 pt-2">
           <LowStockNotification />
         </div>
@@ -255,7 +289,10 @@ export function PosLayout({ children }: PosLayoutProps) {
 
       {/* Bottom tabs (4 items, no More) — hidden when virtual keyboard is open */}
       <nav
-        className={`fixed bottom-0 left-0 right-0 border-t bg-card flex items-center justify-around z-50 transition-transform duration-150 ${keyboardOpen ? "translate-y-full pointer-events-none" : ""}`}
+        className={cn(
+          "fixed bottom-0 left-0 right-0 border-t bg-card flex items-center justify-around z-50 transition-transform duration-150 will-change-transform",
+          keyboardOpen && "translate-y-full pointer-events-none"
+        )}
         style={{ paddingBottom: "env(safe-area-inset-bottom)", height: "calc(4rem + env(safe-area-inset-bottom))" }}
       >
         {[
