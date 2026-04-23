@@ -62,19 +62,37 @@ export function useGlobalScanner() {
   }, [profile?.company_id, activeStoreId, navigate, location.pathname]);
 
   useEffect(() => {
-    const SCAN_SPEED_THRESHOLD = 50;
+    const SCAN_SPEED_THRESHOLD = 50;   // ms between keys to qualify as a scan burst
     const MIN_LENGTH = 4;
 
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const isInput = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 
       const now = Date.now();
+      const burstActive = now - lastKeyTimeRef.current < SCAN_SPEED_THRESHOLD;
+
+      // Only ignore inputs when the user is typing manually (not in a scan burst).
+      // This lets HID/Bluetooth scanners that emit scans into a focused field
+      // (e.g. Products page search) still trigger the add-to-cart pipeline.
+      if (isInput && !burstActive && e.key.length === 1) return;
 
       if (e.key === "Enter" && bufferRef.current.length >= MIN_LENGTH) {
         const timeSinceLastKey = now - lastKeyTimeRef.current;
         if (timeSinceLastKey < SCAN_SPEED_THRESHOLD * 3) {
           e.preventDefault();
+          // Strip the buffered text from the focused input so the user doesn't
+          // see the barcode in the search box.
+          if (isInput) {
+            try {
+              const el = e.target as HTMLInputElement;
+              const v = el.value || "";
+              if (v.endsWith(bufferRef.current)) {
+                el.value = v.slice(0, v.length - bufferRef.current.length);
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+              }
+            } catch { /* ignore */ }
+          }
           const barcode = bufferRef.current;
           bufferRef.current = "";
           handleBarcode(barcode);
@@ -83,7 +101,7 @@ export function useGlobalScanner() {
       }
 
       if (e.key.length === 1) {
-        if (now - lastKeyTimeRef.current < SCAN_SPEED_THRESHOLD) {
+        if (burstActive) {
           bufferRef.current += e.key;
         } else {
           bufferRef.current = e.key;
