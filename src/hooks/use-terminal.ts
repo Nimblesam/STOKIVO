@@ -22,9 +22,10 @@ export type TerminalErrorKind =
 export interface TerminalReader {
   id: string;
   label: string;
-  status: string;
+  status: string;                 // "online" | "offline"
   type?: "internet" | "bluetooth" | "tap_to_pay";
   serial_number?: string;
+  device_type?: string;
 }
 
 export interface CollectResult {
@@ -72,12 +73,6 @@ function classifyError(err: any): TerminalErrorKind {
   return "unknown";
 }
 
-/**
- * Resolve a Stripe Terminal `location` (tml_xxx) for Tap to Pay on this
- * merchant's connected account. Tap to Pay REQUIRES a location. We cache the
- * first one we find in localStorage. If none exists, the merchant must create
- * one in Settings → Locations (powered by the `terminal-locations` function).
- */
 async function resolveTerminalLocationId(): Promise<string | null> {
   try {
     const cached = localStorage.getItem(LAST_LOCATION_KEY);
@@ -102,7 +97,6 @@ export function useTerminal(): UseTerminalReturn {
   const [isCollecting, setIsCollecting] = useState(false);
   const [tapToPaySupported, setTapToPaySupported] = useState<boolean>(false);
 
-  // Ask the native plugin whether Tap to Pay is actually supported on this device.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -116,144 +110,82 @@ export function useTerminal(): UseTerminalReturn {
     return () => { cancelled = true; };
   }, []);
 
-  const terminalRef = useRef<any>(null);
-  const readerRef = useRef<any>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAttemptedAutoConnect = useRef(false);
-
-  // Last payment context for retry without recreating the PaymentIntent.
-  const lastPaymentRef = useRef<{ clientSecret: string; piId: string; amountMinor: number; currency: string } | null>(null);
-
-  const fetchConnectionToken = useCallback(async () => {
-    const { data, error } = await supabase.functions.invoke("create-terminal-token");
-    if (error || !data?.secret) {
-      throw new Error(data?.error || "Failed to get terminal token");
-    }
-    return data.secret;
-  }, []);
-
-  const loadSDK = useCallback(async (): Promise<any> => {
-    if ((window as any).StripeTerminal) return (window as any).StripeTerminal;
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[src*="stripe-terminal"]');
-      if (existing) {
-        existing.addEventListener("load", () => resolve((window as any).StripeTerminal));
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://js.stripe.com/terminal/v1/";
-      script.async = true;
-      script.onload = () => resolve((window as any).StripeTerminal);
-      script.onerror = () => reject(new Error("Failed to load Stripe Terminal SDK"));
-      document.head.appendChild(script);
-    });
-  }, []);
-
-  const scheduleReconnect = useCallback((delayMs = 5000) => {
-    if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-    reconnectTimer.current = setTimeout(() => {
-      console.log("[Terminal] Attempting reconnection...");
-      connect();
-    }, delayMs);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPaymentRef = useRef<{ readerId: string; piId: string; amountMinor: number; currency: string } | null>(null);
+  const cancelRef = useRef<{ piId: string; readerId: string } | null>(null);
 
   const mapReader = (r: any): TerminalReader => ({
     id: r.id,
     label: r.label || r.serial_number || "Card Reader",
-    status: r.status,
-    serial_number: r.serial_number,
+    status: r.status || "offline",
     type: "internet",
+    serial_number: r.serial_number,
+    device_type: r.device_type,
   });
 
-  const connectReaderById = useCallback(async (terminal: any, discovered: any[], targetId?: string) => {
-    let target: any | undefined;
-    if (targetId) {
-      target = discovered.find((r) => r.id === targetId);
-    }
-    if (!target) {
-      // Prefer last used reader if remembered
-      const lastId = typeof window !== "undefined" ? localStorage.getItem(LAST_READER_KEY) : null;
-      if (lastId) target = discovered.find((r) => r.id === lastId);
-    }
-    if (!target) target = discovered[0];
-
-    const connectResult = await terminal.connectReader(target);
-    if (connectResult.error) throw new Error(connectResult.error.message);
-    const r = connectResult.reader;
-    readerRef.current = r;
-    const mapped = mapReader(r);
-    setReader(mapped);
-    setStatus("connected");
-    try { localStorage.setItem(LAST_READER_KEY, r.id); } catch { /* ignore */ }
-  }, []);
-
-  const ensureTerminal = useCallback(async () => {
-    if (terminalRef.current) return terminalRef.current;
-    const StripeTerminal = await loadSDK();
-    const terminal = StripeTerminal.create({
-      onFetchConnectionToken: fetchConnectionToken,
-      onUnexpectedReaderDisconnect: () => {
-        console.warn("[Terminal] Reader disconnected unexpectedly");
-        setStatus("offline");
-        setReader(null);
-        readerRef.current = null;
-        scheduleReconnect(8000);
-      },
+  const listInternetReaders = useCallback(async (): Promise<TerminalReader[]> => {
+    const { data, error: fnErr } = await supabase.functions.invoke("terminal-readers", {
+      body: { action: "list" },
     });
-    terminalRef.current = terminal;
-    return terminal;
-  }, [fetchConnectionToken, loadSDK, scheduleReconnect]);
+    if (fnErr) throw new Error(fnErr.message || "Failed to list readers");
+    if (data?.error) throw new Error(data.error);
+    return (data?.readers || []).map(mapReader);
+  }, []);
 
   const rediscoverReaders = useCallback(async (): Promise<TerminalReader[]> => {
     try {
-      const terminal = await ensureTerminal();
-      const discoverResult = await terminal.discoverReaders({ simulated: false });
-      const discovered = !discoverResult.error ? discoverResult.discoveredReaders || [] : [];
-      const mapped = discovered.map(mapReader);
-      setAvailableReaders(mapped);
-      return mapped;
-    } catch (err) {
-      console.warn("[Terminal] Rediscover failed:", err);
+      const readers = await listInternetReaders();
+      setAvailableReaders(readers);
+      return readers;
+    } catch (err: any) {
+      console.warn("[Terminal] Rediscover failed:", err?.message);
       setAvailableReaders([]);
       return [];
     }
-  }, [ensureTerminal]);
+  }, [listInternetReaders]);
+
+  const scheduleReconnect = useCallback((delayMs = 8000) => {
+    if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+    reconnectTimer.current = setTimeout(() => {
+      connect();
+    }, delayMs);
+  }, []);
 
   const connect = useCallback(async () => {
     setStatus("connecting");
     setError(null);
     try {
-      const terminal = await ensureTerminal();
-      const discoverResult = await terminal.discoverReaders({ simulated: false });
-      const discovered = !discoverResult.error ? discoverResult.discoveredReaders || [] : [];
+      const readers = await listInternetReaders();
+      setAvailableReaders(readers);
 
-      if (discovered.length === 0) {
-        setAvailableReaders([]);
+      const onlineReaders = readers.filter((r) => r.status === "online");
+      if (readers.length === 0) {
+        setReader(null);
         setStatus("offline");
-        setError(null);
         return;
       }
 
-      setAvailableReaders(discovered.map(mapReader));
+      const lastId = typeof window !== "undefined" ? localStorage.getItem(LAST_READER_KEY) : null;
+      const remembered = lastId ? readers.find((r) => r.id === lastId) : undefined;
 
-      // Smart auto-connect rules:
-      // - 1 reader → silent connect
-      // - multiple readers → try last-used; otherwise leave for UI to pick
-      if (discovered.length === 1) {
-        await connectReaderById(terminal, discovered);
+      let chosen: TerminalReader | undefined;
+      if (remembered && remembered.status === "online") chosen = remembered;
+      else if (onlineReaders.length === 1) chosen = onlineReaders[0];
+
+      if (chosen) {
+        setReader(chosen);
+        setStatus("connected");
+        try { localStorage.setItem(LAST_READER_KEY, chosen.id); } catch { /* ignore */ }
       } else {
-        const lastId = localStorage.getItem(LAST_READER_KEY);
-        if (lastId && discovered.some((r: any) => r.id === lastId)) {
-          await connectReaderById(terminal, discovered, lastId);
-        } else {
-          setStatus("offline"); // wait for user to pick
-        }
+        setReader(null);
+        setStatus("offline");
       }
     } catch (err: any) {
-      console.warn("[Terminal] Connection failed (graceful):", err?.message);
       const msg = err?.message || "Connection failed";
-      if (msg.toLowerCase().includes("not configured") || msg.toLowerCase().includes("stripe terminal is not enabled")) {
+      console.warn("[Terminal] connect failed:", msg);
+      const lower = msg.toLowerCase();
+      if (lower.includes("not configured") || lower.includes("stripe terminal is not enabled") || lower.includes("not a connect")) {
         setStatus("not_configured");
       } else {
         setStatus("offline");
@@ -261,71 +193,83 @@ export function useTerminal(): UseTerminalReturn {
       setError(msg);
       setAvailableReaders([]);
     }
-  }, [ensureTerminal, connectReaderById]);
+  }, [listInternetReaders]);
 
   const connectToReader = useCallback(async (readerId: string) => {
     setStatus("connecting");
     try {
-      const terminal = await ensureTerminal();
-      const discoverResult = await terminal.discoverReaders({ simulated: false });
-      if (discoverResult.error) throw new Error(discoverResult.error.message);
-      const discovered = discoverResult.discoveredReaders || [];
-      setAvailableReaders(discovered.map(mapReader));
-      await connectReaderById(terminal, discovered, readerId);
+      const readers = await listInternetReaders();
+      setAvailableReaders(readers);
+      const target = readers.find((r) => r.id === readerId);
+      if (!target) throw new Error("Reader not found. It may have been removed.");
+      if (target.status !== "online") throw new Error(`${target.label} is offline. Power it on and connect to Wi-Fi.`);
+      setReader(target);
+      setStatus("connected");
+      try { localStorage.setItem(LAST_READER_KEY, target.id); } catch { /* ignore */ }
     } catch (err: any) {
       setStatus("offline");
-      setError(err?.message || "Failed to connect to reader");
+      setError(err?.message || "Failed to select reader");
     }
-  }, [ensureTerminal, connectReaderById]);
+  }, [listInternetReaders]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-    if (terminalRef.current && readerRef.current) {
-      terminalRef.current.disconnectReader().catch(() => {});
-    }
-    terminalRef.current = null;
-    readerRef.current = null;
     setReader(null);
     setStatus("offline");
-    setAvailableReaders([]);
+    try { localStorage.removeItem(LAST_READER_KEY); } catch { /* ignore */ }
   }, []);
 
-  // Internal: run collect + process for a given client_secret on the connected terminal.
-  const runIntent = useCallback(async (clientSecret: string, piId: string): Promise<CollectResult> => {
-    const terminal = terminalRef.current;
-    if (!terminal || status !== "connected") {
+  const runOnReader = useCallback(async (
+    readerId: string, amountMinor: number, currency: string,
+  ): Promise<CollectResult> => {
+    try {
+      const { data: startData, error: startErr } = await supabase.functions.invoke("terminal-readers", {
+        body: { action: "process", reader_id: readerId, amount: amountMinor, currency: currency.toLowerCase() },
+      });
+      if (startErr) throw new Error(startErr.message || "Failed to start payment");
+      if (startData?.error) throw new Error(startData.error);
+
+      const piId = String(startData.payment_intent_id);
+      lastPaymentRef.current = { readerId, piId, amountMinor, currency };
+      cancelRef.current = { piId, readerId };
+
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const { data: pollData, error: pollErr } = await supabase.functions.invoke("terminal-readers", {
+          body: { action: "poll", payment_intent_id: piId, reader_id: readerId },
+        });
+        if (pollErr) continue;
+        if (pollData?.error) continue;
+        const piStatus: string = pollData?.payment_intent?.status || "";
+        const lastErr: string | null = pollData?.payment_intent?.last_payment_error;
+        if (piStatus === "succeeded") {
+          lastPaymentRef.current = null;
+          cancelRef.current = null;
+          return { success: true, paymentIntentId: piId };
+        }
+        if (piStatus === "canceled") {
+          cancelRef.current = null;
+          return { success: false, error: "Payment cancelled.", errorKind: "cancelled", recoverable: true };
+        }
+        if (piStatus === "requires_payment_method") {
+          cancelRef.current = null;
+          return {
+            success: false,
+            error: lastErr || "Card was declined. Try another card.",
+            errorKind: "card_declined",
+            recoverable: true,
+          };
+        }
+      }
+      cancelRef.current = null;
       return {
         success: false,
-        error: "No card reader connected.",
+        error: "Reader timed out. Please try again.",
         errorKind: "reader_disconnected",
         recoverable: true,
       };
-    }
-    try {
-      const collectResult = await terminal.collectPaymentMethod(clientSecret);
-      if (collectResult.error) {
-        const kind = classifyError(collectResult.error);
-        return {
-          success: false,
-          error: collectResult.error.message,
-          errorKind: kind,
-          recoverable: kind === "reader_disconnected" || kind === "network",
-        };
-      }
-      const processResult = await terminal.processPayment(collectResult.paymentIntent);
-      if (processResult.error) {
-        const kind = classifyError(processResult.error);
-        return {
-          success: false,
-          error: processResult.error.message,
-          errorKind: kind,
-          recoverable: kind === "reader_disconnected" || kind === "network",
-        };
-      }
-      // Success — clear retry context
-      lastPaymentRef.current = null;
-      return { success: true, paymentIntentId: processResult.paymentIntent.id };
     } catch (err: any) {
+      cancelRef.current = null;
       const kind = classifyError(err);
       return {
         success: false,
@@ -334,36 +278,25 @@ export function useTerminal(): UseTerminalReturn {
         recoverable: kind === "reader_disconnected" || kind === "network",
       };
     }
-  }, [status]);
+  }, []);
 
   const collectPayment = useCallback(async (amountMinor: number, currency: string): Promise<CollectResult> => {
     setIsCollecting(true);
     try {
-      // Create a fresh PaymentIntent for this charge
-      const { data: piData, error: piError } = await supabase.functions.invoke("create-terminal-payment", {
-        body: { amount: amountMinor, currency: currency.toLowerCase() },
-      });
-      if (piError || !piData?.client_secret) {
+      if (!reader || status !== "connected") {
         return {
           success: false,
-          error: piData?.error || "Failed to create payment intent",
-          errorKind: "network",
-          recoverable: false,
+          error: "No card reader selected.",
+          errorKind: "reader_disconnected",
+          recoverable: true,
         };
       }
-      lastPaymentRef.current = {
-        clientSecret: piData.client_secret,
-        piId: piData.payment_intent_id || "",
-        amountMinor,
-        currency,
-      };
-      return await runIntent(piData.client_secret, piData.payment_intent_id || "");
+      return await runOnReader(reader.id, amountMinor, currency);
     } finally {
       setIsCollecting(false);
     }
-  }, [runIntent]);
+  }, [reader, status, runOnReader]);
 
-  // Retry the SAME PaymentIntent (no recreate) – used after reader recovery.
   const retryLastPayment = useCallback(async (): Promise<CollectResult> => {
     const last = lastPaymentRef.current;
     if (!last) {
@@ -371,26 +304,26 @@ export function useTerminal(): UseTerminalReturn {
     }
     setIsCollecting(true);
     try {
-      return await runIntent(last.clientSecret, last.piId);
+      return await runOnReader(last.readerId, last.amountMinor, last.currency);
     } finally {
       setIsCollecting(false);
     }
-  }, [runIntent]);
+  }, [runOnReader]);
 
   const cancelCollect = useCallback(() => {
     if (isNativeTerminalAvailable()) {
       cancelNativeCollect().catch(() => {});
     }
-    if (terminalRef.current) {
-      terminalRef.current.cancelCollectPaymentMethod().catch(() => {});
+    const ctx = cancelRef.current;
+    if (ctx) {
+      supabase.functions.invoke("terminal-readers", {
+        body: { action: "cancel", reader_id: ctx.readerId },
+      }).catch(() => {});
     }
+    cancelRef.current = null;
     setIsCollecting(false);
   }, []);
 
-  /**
-   * Tap to Pay on Android — routed through the native Capacitor plugin.
-   * The web has no Tap to Pay support, so this short-circuits with a clear error.
-   */
   const collectTapToPay = useCallback(async (amountMinor: number, currency: string): Promise<CollectResult> => {
     if (!isNativeTerminalAvailable()) {
       return {
@@ -403,9 +336,7 @@ export function useTerminal(): UseTerminalReturn {
     setIsCollecting(true);
     try {
       const ok = await ensureNativeInitialized();
-      if (!ok) {
-        return { success: false, error: "Failed to initialize Tap to Pay.", errorKind: "unknown", recoverable: false };
-      }
+      if (!ok) return { success: false, error: "Failed to initialize Tap to Pay.", errorKind: "unknown", recoverable: false };
       const locationId = await resolveTerminalLocationId();
       if (!locationId) {
         return {
@@ -424,22 +355,14 @@ export function useTerminal(): UseTerminalReturn {
       } catch (e: any) {
         return { success: false, error: e?.message || "Failed to start Tap to Pay.", errorKind: "reader_disconnected", recoverable: true };
       }
-      // Create PI on connected account (server-side handles routing).
       const { data: piData, error: piError } = await supabase.functions.invoke("create-terminal-payment", {
         body: { amount: amountMinor, currency: currency.toLowerCase() },
       });
       if (piError || !piData?.client_secret) {
         return { success: false, error: piData?.error || "Failed to create payment intent", errorKind: "network", recoverable: false };
       }
-      lastPaymentRef.current = {
-        clientSecret: piData.client_secret,
-        piId: piData.payment_intent_id || "",
-        amountMinor,
-        currency,
-      };
       try {
         const result = await collectAndProcessNative(piData.client_secret);
-        lastPaymentRef.current = null;
         return { success: true, paymentIntentId: result.paymentIntentId };
       } catch (e: any) {
         const kind = classifyError(e);
@@ -450,35 +373,23 @@ export function useTerminal(): UseTerminalReturn {
     }
   }, []);
 
-  // Auto-discover once on mount
   useEffect(() => {
     if (hasAttemptedAutoConnect.current) return;
     hasAttemptedAutoConnect.current = true;
     connect().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Background re-discovery: while we're offline (no reader connected), poll
-  // every 15s for newly powered-on Wi-Fi or Bluetooth readers and silently
-  // auto-connect to them. This makes "plug in your reader" Just Work — the
-  // merchant doesn't have to tap anything in the UI.
   useEffect(() => {
     if (status === "connected" || status === "connecting" || status === "not_configured") return;
     const interval = setInterval(() => {
-      // Only attempt while the page is visible to avoid wasted Stripe API calls.
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       connect().catch(() => {});
-    }, 15000);
+    }, 20000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  useEffect(() => {
-    return () => {
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => {
+    if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
   }, []);
 
   const hasReaderAvailable = availableReaders.length > 0 || status === "connected" || tapToPaySupported;

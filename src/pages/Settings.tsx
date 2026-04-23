@@ -30,6 +30,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { toast } from "sonner";
 import type { Currency } from "@/lib/types";
 import { PosSettingsTab } from "@/components/PosSettingsTab";
+import { ReaderManager } from "@/components/ReaderManager";
 
 export default function Settings() {
   const { company, profile, user, refreshProfile, role } = useAuth();
@@ -777,6 +778,12 @@ export default function Settings() {
                   </Button>
                 </div>
               </div>
+            )}
+
+
+            {/* Card Readers — only show once Stripe is connected */}
+            {stripeStatus?.connected && stripeStatus?.details_submitted && (
+              <ReaderManager />
             )}
 
             {/* Reassurance footer */}
