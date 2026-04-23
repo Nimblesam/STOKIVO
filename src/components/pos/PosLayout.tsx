@@ -1,11 +1,14 @@
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppMode } from "@/contexts/AppModeContext";
+import { useStore } from "@/contexts/StoreContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useGlobalScanner } from "@/hooks/use-global-scanner";
 import { useSunmiScanner } from "@/hooks/use-sunmi-scanner";
 import { AddProductFromScanDialog } from "@/components/AddProductFromScanDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { LowStockNotification } from "@/components/LowStockNotification";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -32,24 +35,67 @@ export function PosLayout({ children }: PosLayoutProps) {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { setMode, isNativeShell } = useAppMode();
+  const { activeStoreId } = useStore();
   const isMobile = useIsMobile();
   const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
+  const sunmiBusyRef = useRef(false);
+  const [unknownSunmiBarcode, setUnknownSunmiBarcode] = useState<string | null>(null);
 
   // Bridge SUNMI hardware scanner -> Cashier's product lookup pipeline.
-  const handleSunmiScan = useCallback((barcode: string) => {
-    window.dispatchEvent(new CustomEvent("sunmi-barcode", { detail: { barcode } }));
-  }, []);
+  // We do the product lookup HERE (not in Cashier) so a scan from Products,
+  // Receipts, or any other POS page also adds to the cart and navigates to /pos.
+  const handleSunmiScan = useCallback(async (barcode: string) => {
+    if (!barcode || sunmiBusyRef.current || !profile?.company_id) return;
+    sunmiBusyRef.current = true;
+    try {
+      let q = supabase
+        .from("products")
+        .select("id, name, barcode, selling_price, stock_qty, image_url")
+        .eq("company_id", profile.company_id)
+        .eq("barcode", barcode);
+      if (activeStoreId) q = q.eq("store_id", activeStoreId);
+      const { data } = await q.limit(1).maybeSingle();
+
+      if (data) {
+        const dispatchScan = () => {
+          // Cashier listens for both events; keep both for backwards compat.
+          window.dispatchEvent(new CustomEvent("global-barcode-scan", { detail: data }));
+          window.dispatchEvent(new CustomEvent("sunmi-barcode", { detail: { barcode } }));
+        };
+        if (location.pathname !== "/pos") {
+          navigate("/pos");
+          // Wait for Cashier to mount its listener before dispatching.
+          setTimeout(dispatchScan, 250);
+        } else {
+          dispatchScan();
+        }
+        toast.success(`${data.name} scanned`, { duration: 1500 });
+      } else {
+        setUnknownSunmiBarcode(barcode);
+      }
+    } catch {
+      // silent fail — never block UI on a scan
+    } finally {
+      // Small cool-down so a double-trigger from the SDK doesn't double-add.
+      setTimeout(() => { sunmiBusyRef.current = false; }, 300);
+    }
+  }, [profile?.company_id, activeStoreId, navigate, location.pathname]);
   useSunmiScanner(handleSunmiScan);
 
-  // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't float over the keyboard / inputs.
+  // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't
+  // float over the keyboard. Also expose `data-keyboard="open"` on <html> so
+  // overlays like the Cashier floating cart pill can re-anchor to bottom: 0.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
     const vv = window.visualViewport;
     const check = () => {
-      // Heuristic: if visual viewport is at least 150px shorter than layout viewport, the keyboard is up.
       const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(diff > 150);
+      const open = diff > 150;
+      setKeyboardOpen(open);
+      try {
+        document.documentElement.setAttribute("data-keyboard", open ? "open" : "closed");
+      } catch { /* ignore */ }
     };
     check();
     vv.addEventListener("resize", check);
@@ -57,6 +103,7 @@ export function PosLayout({ children }: PosLayoutProps) {
     return () => {
       vv.removeEventListener("resize", check);
       vv.removeEventListener("scroll", check);
+      try { document.documentElement.removeAttribute("data-keyboard"); } catch { /* ignore */ }
     };
   }, []);
 
@@ -146,6 +193,13 @@ export function PosLayout({ children }: PosLayoutProps) {
           onClose={clearUnknownBarcode}
         />
       )}
+      {unknownSunmiBarcode && (
+        <AddProductFromScanDialog
+          barcode={unknownSunmiBarcode}
+          open={!!unknownSunmiBarcode}
+          onClose={() => setUnknownSunmiBarcode(null)}
+        />
+      )}
       </>
     );
   }
@@ -232,6 +286,13 @@ export function PosLayout({ children }: PosLayoutProps) {
         barcode={unknownBarcode}
         open={!!unknownBarcode}
         onClose={clearUnknownBarcode}
+      />
+    )}
+    {unknownSunmiBarcode && (
+      <AddProductFromScanDialog
+        barcode={unknownSunmiBarcode}
+        open={!!unknownSunmiBarcode}
+        onClose={() => setUnknownSunmiBarcode(null)}
       />
     )}
     </>
