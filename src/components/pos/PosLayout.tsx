@@ -82,15 +82,20 @@ export function PosLayout({ children }: PosLayoutProps) {
   }, [profile?.company_id, activeStoreId, navigate, location.pathname]);
   useSunmiScanner(handleSunmiScan);
 
-  // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't float over the keyboard / inputs.
+  // Detect virtual keyboard via visualViewport — hide bottom nav so it doesn't
+  // float over the keyboard. Also expose `data-keyboard="open"` on <html> so
+  // overlays like the Cashier floating cart pill can re-anchor to bottom: 0.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
     const vv = window.visualViewport;
     const check = () => {
-      // Heuristic: if visual viewport is at least 150px shorter than layout viewport, the keyboard is up.
       const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(diff > 150);
+      const open = diff > 150;
+      setKeyboardOpen(open);
+      try {
+        document.documentElement.setAttribute("data-keyboard", open ? "open" : "closed");
+      } catch { /* ignore */ }
     };
     check();
     vv.addEventListener("resize", check);
@@ -98,6 +103,7 @@ export function PosLayout({ children }: PosLayoutProps) {
     return () => {
       vv.removeEventListener("resize", check);
       vv.removeEventListener("scroll", check);
+      try { document.documentElement.removeAttribute("data-keyboard"); } catch { /* ignore */ }
     };
   }, []);
 
@@ -187,6 +193,13 @@ export function PosLayout({ children }: PosLayoutProps) {
           onClose={clearUnknownBarcode}
         />
       )}
+      {unknownSunmiBarcode && (
+        <AddProductFromScanDialog
+          barcode={unknownSunmiBarcode}
+          open={!!unknownSunmiBarcode}
+          onClose={() => setUnknownSunmiBarcode(null)}
+        />
+      )}
       </>
     );
   }
@@ -273,6 +286,13 @@ export function PosLayout({ children }: PosLayoutProps) {
         barcode={unknownBarcode}
         open={!!unknownBarcode}
         onClose={clearUnknownBarcode}
+      />
+    )}
+    {unknownSunmiBarcode && (
+      <AddProductFromScanDialog
+        barcode={unknownSunmiBarcode}
+        open={!!unknownSunmiBarcode}
+        onClose={() => setUnknownSunmiBarcode(null)}
       />
     )}
     </>
