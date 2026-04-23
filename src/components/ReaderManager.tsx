@@ -261,7 +261,7 @@ export function ReaderManager() {
                         </Badge>
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {r.device_type?.replaceAll("_", " ") || "Reader"}
+                        {r.device_type?.replace(/_/g, " ") || "Reader"}
                         {r.serial_number ? ` · S/N ${r.serial_number}` : ""}
                       </p>
                     </>
