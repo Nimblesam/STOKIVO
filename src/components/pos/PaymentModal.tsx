@@ -97,6 +97,8 @@ export function PaymentModal({
   //   • Exactly one available reader → connect & use it ("machine").
   //   • Multiple readers (or readers + Tap to Pay) → show chooser.
   //   • No readers AND no Tap to Pay → fallback to Manual Card.
+  //   • No readers AND Tap to Pay only → fallback to Manual Card too
+  //     (Tap to Pay is opt-in via the picker, never the default).
   const openCardFlow = () => {
     const amountMajor = parseFloat(inputValue) || 0;
     let amountMinor = Math.round(amountMajor * 100);
@@ -108,23 +110,21 @@ export function PaymentModal({
     setCardError(null);
     setCardSuccess(false);
 
-    // Count the number of distinct card "methods" available to the merchant.
-    // Tap to Pay only counts as a separate option if no physical reader is
-    // already connected (otherwise the connected reader is preferred).
-    const tapAvailable = tapToPaySupported && !isTerminalOnline;
     const machineAvailable = isTerminalOnline || availableReaders.length > 0;
-    const totalOptions =
-      (machineAvailable ? Math.max(availableReaders.length, 1) : 0) +
-      (tapAvailable ? 1 : 0);
 
-    // No card-machine path at all → straight to manual card.
-    if (totalOptions === 0) {
-      setShowManualCard(true);
+    // 1) Already connected to a single reader → run it directly.
+    if (isTerminalOnline && availableReaders.length <= 1) {
+      setPendingCardMode("integrated");
+      setRetryAttempts(0);
+      void (async () => {
+        const result = await onTerminalPayment(effectiveAmount);
+        handleTerminalResult(result, "integrated");
+      })();
       return;
     }
 
-    // Single physical reader, none connected yet → connect silently and run.
-    if (!isTerminalOnline && availableReaders.length === 1 && !tapAvailable && onConnectToReader) {
+    // 2) Exactly one reader available, not yet connected → silently connect & run.
+    if (!isTerminalOnline && availableReaders.length === 1 && onConnectToReader) {
       setPendingCardMode("integrated");
       setRetryAttempts(0);
       setShowReaderPicker(false);
@@ -141,19 +141,15 @@ export function PaymentModal({
       return;
     }
 
-    // Already connected and only one card method total → use it directly.
-    if (isTerminalOnline && totalOptions === 1) {
-      setPendingCardMode("integrated");
-      setRetryAttempts(0);
-      void (async () => {
-        const result = await onTerminalPayment(effectiveAmount);
-        handleTerminalResult(result, "integrated");
-      })();
+    // 3) Multiple readers → let user pick (Tap to Pay shown alongside if supported).
+    if (machineAvailable && availableReaders.length > 1) {
+      setShowCardChoice(true);
       return;
     }
 
-    // Multiple options (e.g. reader + Tap to Pay, or 2 readers) → let user pick.
-    setShowCardChoice(true);
+    // 4) No physical readers at all → Manual Card. Tap to Pay is never the
+    //    silent default; the user can still reach it via the recovery picker.
+    setShowManualCard(true);
   };
 
   // Handle the result of a Terminal collect (initial or retry).
