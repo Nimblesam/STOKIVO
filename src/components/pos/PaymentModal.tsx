@@ -437,8 +437,10 @@ export function PaymentModal({
   if (showCardChoice) {
     // "Send to Card Machine" is offered if currently connected OR readers were discovered.
     const canUseMachine = isTerminalOnline || availableReaders.length > 0;
+    // Prefer a physical reader over Tap to Pay so the user isn't pushed to use
+    // their phone when they have a real card terminal sitting on the counter.
     const recommendedKey: "tap" | "machine" | "manual" =
-      isTerminalOnline ? "machine" : tapToPaySupported ? "tap" : canUseMachine ? "machine" : "manual";
+      canUseMachine ? "machine" : tapToPaySupported ? "tap" : "manual";
 
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
