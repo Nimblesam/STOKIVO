@@ -759,7 +759,7 @@ export default function Cashier() {
       {cart.length > 0 && (
         <button
           onClick={() => setMobileCartOpen(true)}
-          className="lg:hidden fixed left-3 right-3 z-40 h-14 rounded-xl bg-primary text-primary-foreground shadow-lg flex items-center justify-between px-4 active:scale-[0.99] transition-[bottom] duration-150 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] [html[data-keyboard=open]_&]:bottom-2"
+          className="lg:hidden fixed left-3 right-3 z-40 h-14 rounded-xl bg-primary text-primary-foreground shadow-lg flex items-center justify-between px-4 active:scale-[0.99] transition-transform duration-150 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] [html[data-keyboard=open]_&]:bottom-3"
         >
           <span className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
