@@ -21,6 +21,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { profile, company } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { unknownBarcode, clearUnknownBarcode } = useGlobalScanner();
   const initials = company?.name?.split(" ").map((n) => n[0]).slice(0, 2).join("") || "S";
   const [alerts, setAlerts] = useState<any[]>([]);
