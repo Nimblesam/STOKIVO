@@ -219,10 +219,13 @@ function ModeRouter() {
     );
   }
 
-  // Full mode: standard web app routing
+  // Full mode: standard web app routing.
+  // Per product decision: root path always loads the Login screen on both
+  // mobile and desktop. Marketing pages remain reachable via direct nav links.
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/features" element={<Landing />} />
       <Route path="/download" element={<Landing />} />
       <Route path="/pricing" element={<Landing />} />
