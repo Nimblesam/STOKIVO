@@ -58,10 +58,21 @@ export function AppLayout({ children }: AppLayoutProps) {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <TrialBanner />
-          <header className="h-14 flex items-center border-b bg-card px-4 gap-3 shrink-0">
-            <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+          <header className="h-14 flex items-center border-b bg-card px-3 sm:px-4 gap-2 sm:gap-3 shrink-0">
+            <SidebarTrigger className="h-9 w-9 text-foreground hover:bg-muted shrink-0" />
+            {isMobile && (
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex items-center gap-2 min-w-0"
+              >
+                <img src={stokivoLogo} alt="Stokivo" className="h-7 w-7 rounded-lg shrink-0" />
+                <span className="font-display font-bold text-sm text-foreground truncate">
+                  {company?.name || "Stokivo"}
+                </span>
+              </button>
+            )}
             <div className="flex-1" />
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-9 w-9">
@@ -104,7 +115,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </ScrollArea>
                 </PopoverContent>
               </Popover>
-              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground">
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground shrink-0">
                 {initials}
               </div>
             </div>
