@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { TrialBanner } from "@/components/TrialBanner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import stokivoLogo from "@/assets/stokivo-logo.png";
 
 interface AppLayoutProps {
   children: React.ReactNode;
