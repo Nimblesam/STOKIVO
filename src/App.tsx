@@ -224,7 +224,7 @@ function ModeRouter() {
   // mobile and desktop. Marketing pages remain reachable via direct nav links.
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/features" element={<Landing />} />
       <Route path="/download" element={<Landing />} />
