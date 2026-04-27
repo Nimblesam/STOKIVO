@@ -147,23 +147,23 @@ function WebRoutes() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/inventory/movements" element={<InventoryMovements />} />
-        <Route path="/suppliers" element={<Suppliers />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/invoices" element={<Invoices />} />
-        <Route path="/alerts/low-stock" element={<LowStockAlerts />} />
-        <Route path="/alerts/price-changes" element={<PriceChangeAlerts />} />
-        <Route path="/credit-ledger" element={<CreditLedger />} />
-        <Route path="/payouts" element={<Payouts />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/accounting" element={<Accounting />} />
-        <Route path="/payroll" element={<Payroll />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/ai-insights" element={<AIInsights />} />
-        <Route path="/kds" element={<KitchenDisplay />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="products" element={<Products />} />
+        <Route path="inventory/movements" element={<InventoryMovements />} />
+        <Route path="suppliers" element={<Suppliers />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="alerts/low-stock" element={<LowStockAlerts />} />
+        <Route path="alerts/price-changes" element={<PriceChangeAlerts />} />
+        <Route path="credit-ledger" element={<CreditLedger />} />
+        <Route path="payouts" element={<Payouts />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="accounting" element={<Accounting />} />
+        <Route path="payroll" element={<Payroll />} />
+        <Route path="integrations" element={<Integrations />} />
+        <Route path="ai-insights" element={<AIInsights />} />
+        <Route path="kds" element={<KitchenDisplay />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
