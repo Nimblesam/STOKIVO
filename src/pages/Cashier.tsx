@@ -832,7 +832,12 @@ export default function Cashier() {
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
               {discountAmount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatMoney(discountAmount, currency)}</span></div>}
-              {taxRate > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span><span>{formatMoney(tax, currency)}</span></div>}
+              <div className="flex justify-between items-center">
+                <button type="button" onClick={() => setTaxEnabled(v => !v)} className="text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                  Tax {taxEnabled ? `(${(taxRate * 100).toFixed(0)}%)` : "(off)"}
+                </button>
+                <span>{formatMoney(tax, currency)}</span>
+              </div>
               <div className="flex justify-between text-lg font-bold pt-1 border-t"><span>Total</span><span className="text-primary">{formatMoney(grandTotal, currency)}</span></div>
             </div>
 
