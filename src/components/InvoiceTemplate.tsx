@@ -94,8 +94,8 @@ export function InvoiceTemplate({ company, invoice, compact = false }: InvoiceTe
           <h1 className={`${compact ? "text-2xl" : "text-3xl"} font-display font-bold`} style={{ color: brandColor }}>INVOICE</h1>
           <p className="text-sm font-semibold text-foreground mt-1">{invoice.invoiceNumber}</p>
           <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
-            <p>Date: {invoice.createdAt}</p>
-            <p>Due: {invoice.dueDate}</p>
+            <p>Date: {(invoice.createdAt || "").slice(0, 10)}</p>
+            <p>Due: {(invoice.dueDate || "").slice(0, 10)}</p>
           </div>
         </div>
       </div>
