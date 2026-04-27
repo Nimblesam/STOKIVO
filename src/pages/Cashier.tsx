@@ -141,6 +141,7 @@ export default function Cashier() {
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [taxRate, setTaxRate] = useState(0);
+  const [taxEnabled, setTaxEnabled] = useState(false);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
@@ -152,11 +153,12 @@ export default function Cashier() {
   const searchRef = useRef<HTMLInputElement>(null);
   const terminal = useTerminal();
 
+  const effectiveTaxRate = taxEnabled ? taxRate : 0;
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
-  const tax = Math.round((subtotal - discountAmount) * taxRate);
+  const tax = Math.round((subtotal - discountAmount) * effectiveTaxRate);
   const grandTotal = subtotal - discountAmount + tax;
 
-  // Load tax rate from store location / company country
+  // Load default tax rate (kept available, but tax is OFF by default and toggled by user)
   useEffect(() => {
     if (!company?.country) return;
     supabase.from("tax_rates").select("rate").eq("country", company.country).limit(1).maybeSingle()
