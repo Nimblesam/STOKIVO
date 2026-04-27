@@ -141,6 +141,7 @@ export default function Cashier() {
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [taxRate, setTaxRate] = useState(0);
+  const [taxEnabled, setTaxEnabled] = useState(false);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
@@ -152,11 +153,12 @@ export default function Cashier() {
   const searchRef = useRef<HTMLInputElement>(null);
   const terminal = useTerminal();
 
+  const effectiveTaxRate = taxEnabled ? taxRate : 0;
   const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
-  const tax = Math.round((subtotal - discountAmount) * taxRate);
+  const tax = Math.round((subtotal - discountAmount) * effectiveTaxRate);
   const grandTotal = subtotal - discountAmount + tax;
 
-  // Load tax rate from store location / company country
+  // Load default tax rate (kept available, but tax is OFF by default and toggled by user)
   useEffect(() => {
     if (!company?.country) return;
     supabase.from("tax_rates").select("rate").eq("country", company.country).limit(1).maybeSingle()
@@ -726,7 +728,12 @@ export default function Cashier() {
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
             {discountAmount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatMoney(discountAmount, currency)}</span></div>}
-            {taxRate > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span><span>{formatMoney(tax, currency)}</span></div>}
+            <div className="flex justify-between items-center">
+              <button type="button" onClick={() => setTaxEnabled(v => !v)} className="text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                Tax {taxEnabled ? `(${(taxRate * 100).toFixed(0)}%)` : "(off)"}
+              </button>
+              <span>{formatMoney(tax, currency)}</span>
+            </div>
             <div className="flex justify-between text-lg font-bold pt-1 border-t border-border"><span>Total</span><span className="text-primary">{formatMoney(grandTotal, currency)}</span></div>
           </div>
 
@@ -825,7 +832,12 @@ export default function Cashier() {
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
               {discountAmount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatMoney(discountAmount, currency)}</span></div>}
-              {taxRate > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Tax ({(taxRate * 100).toFixed(0)}%)</span><span>{formatMoney(tax, currency)}</span></div>}
+              <div className="flex justify-between items-center">
+                <button type="button" onClick={() => setTaxEnabled(v => !v)} className="text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                  Tax {taxEnabled ? `(${(taxRate * 100).toFixed(0)}%)` : "(off)"}
+                </button>
+                <span>{formatMoney(tax, currency)}</span>
+              </div>
               <div className="flex justify-between text-lg font-bold pt-1 border-t"><span>Total</span><span className="text-primary">{formatMoney(grandTotal, currency)}</span></div>
             </div>
 
